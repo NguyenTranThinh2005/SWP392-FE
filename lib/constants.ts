@@ -12,3 +12,62 @@ export const ROUTES = {
   REGISTER: "/register",
   DASHBOARD: "/dashboard",
 } as const;
+
+// Domain Constants - Manga Publishing
+export const GENRES = [
+  'Action',
+  'Drama',
+  'Romance',
+  'Fantasy',
+  'Sci-Fi',
+  'Comedy',
+  'Thriller',
+  'Horror',
+  'Slice of Life',
+  'Mystery',
+] as const
+
+export const PUBLICATION_TYPES = ['Weekly', 'Monthly', 'One-shot'] as const
+
+export const SERIES_STATUS = {
+  PROPOSED: 'Proposed',
+  ACTIVE: 'Active',
+  REJECTED: 'Rejected',
+  DEFERRED: 'Deferred',
+  CANCELLED: 'Cancelled',
+} as const
+
+export const PAGE_TASK_STATUS = {
+  PENDING: 'Pending',
+  IN_PROGRESS: 'In-Progress',
+  SUBMITTED: 'Submitted',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  UNASSIGNED: 'Unassigned',
+  SUSPENDED: 'Suspended',
+} as const
+
+export const MANUSCRIPT_STATUS = {
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  REVISION_REQUIRED: 'Revision Required',
+} as const
+
+export const ROLE_NAMES = {
+  MANGAKA: 'Mangaka',
+  ASSISTANT: 'Assistant',
+  TANTOU_EDITOR: 'Tantou Editor',
+  EDITORIAL_BOARD: 'Editorial Board',
+} as const
+
+// Business Constants
+export const CHAPTER_DEADLINE_DAYS_BEFORE = 14
+export const VOTING_QUORUM_REQUIRED = 3
+export const MAX_REVISION_CYCLES = 3
+export const BOTTOM_PERCENTILE_FOR_CANCELLATION = 20
+
+export const PUBLICATION_CYCLES = {
+  Weekly: 7,
+  Monthly: 30,
+  'One-shot': null,
+} as const
