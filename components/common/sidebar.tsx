@@ -30,8 +30,9 @@ export function Sidebar() {
 
   const menuItems = {
     Mangaka: [
-      { label: 'Manga List', href: '/dashboard', icon: BookOpen },
+      { label: 'Dashboard', href: '/dashboard/mangaka', icon: BookOpen },
       { label: 'My Proposals', href: '/dashboard/series', icon: PenTool },
+      { label: 'New Proposal', href: '/dashboard/series/new', icon: UserPlus },
       { label: 'Manuscripts', href: '/dashboard/manuscripts', icon: Layers },
       { label: 'Tasks', href: '/dashboard/chapters', icon: ClipboardList },
     ],
