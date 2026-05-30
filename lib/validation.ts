@@ -1,15 +1,24 @@
 import { z } from 'zod'
 
+// BR-15: Proposal Validation Requirements
 export const seriesProposalSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters').max(100, 'Title must be less than 100 characters'),
-  genre: z.string().min(1, 'Please select a genre'),
-  publicationType: z.enum(['Weekly', 'Monthly', 'One-shot'], {
-    message: 'Please select a valid publication type',
-  }),
-  description: z
+  title: z
     .string()
-    .min(10, 'Description must be at least 10 characters')
-    .max(1000, 'Description must be less than 1000 characters'),
+    .min(1, 'Title is required')
+    .max(100, 'Title must be ≤ 100 characters'),
+  genre: z.string().min(1, 'Genre is required'),
+  publicationType: z.enum(['Weekly', 'Bi-Weekly', 'Monthly', 'Quarterly', 'One-Shot'], {
+    message: 'Publication type is required',
+  }),
+  // BR-15: Synopsis must be 200–2000 characters
+  synopsis: z
+    .string()
+    .min(200, 'Synopsis must be ≥ 200 characters')
+    .max(2000, 'Synopsis must be ≤ 2000 characters'),
+  // BR-15: At least 1 sample chapter with ≥ 5 pages
+  samplePages: z
+    .number()
+    .min(5, 'Must have ≥ 5 sample pages'),
   coverImageUrl: z.string().url('Invalid image URL').optional().or(z.literal('')),
 })
 

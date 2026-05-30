@@ -34,8 +34,8 @@ export default function FormsDemoPage() {
     setLog((prev) => [new Date().toLocaleTimeString() + ' - ' + message, ...prev.slice(0, 9)])
   }
 
-  const handleSeriesSubmit = async (data: SeriesProposalInput) => {
-    addLog(`Series proposal submitted: ${data.title}`)
+  const handleSeriesSubmit = async (data: SeriesProposalInput, action: 'draft' | 'submit') => {
+    addLog(`Series proposal ${action === 'draft' ? 'saved as draft' : 'submitted'}: ${data.title}`)
     await new Promise((resolve) => setTimeout(resolve, 1000))
   }
 
