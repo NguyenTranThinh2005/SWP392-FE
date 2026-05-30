@@ -5,16 +5,16 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useRole } from '@/context/RoleContext'
 import Image from 'next/image'
-import { 
-  BookOpen, 
-  PenTool, 
-  Layers, 
-  ClipboardList, 
-  BarChart3, 
-  LogOut, 
-  Menu, 
-  X, 
-  ChevronDown, 
+import {
+  BookOpen,
+  PenTool,
+  Layers,
+  ClipboardList,
+  BarChart3,
+  LogOut,
+  Menu,
+  X,
+  ChevronDown,
   FileSpreadsheet,
   UserPlus
 } from 'lucide-react'
@@ -89,11 +89,10 @@ export function Sidebar() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all group ${
-                    isActive 
-                      ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all group ${isActive
+                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
                   onClick={() => setIsOpen(false)}
                 >
                   <Icon className={`w-4 h-4 transition-transform group-hover:scale-105 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'}`} />
@@ -102,25 +101,6 @@ export function Sidebar() {
               )
             })}
           </nav>
-        </div>
-
-        {/* Forms Demo Shortcut */}
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2.5 mb-2">
-            Sandbox & Demos
-          </p>
-          <Link
-            href="/dashboard/forms-demo"
-            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all group ${
-              pathname === '/dashboard/forms-demo' 
-                ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-            onClick={() => setIsOpen(false)}
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            Forms Validation Demo
-          </Link>
         </div>
       </div>
 
@@ -148,9 +128,8 @@ export function Sidebar() {
                     setRole(r)
                     setShowRoleSelector(false)
                   }}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-muted transition-colors ${
-                    role === r ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-muted transition-colors ${role === r ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   {r}
                 </button>
@@ -170,7 +149,7 @@ export function Sidebar() {
               <p className="text-[10px] text-muted-foreground truncate">demo@mangaflow.com</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={handleLogout}
             className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-lg transition-colors shrink-0"
             title="Sign Out"
@@ -210,9 +189,9 @@ export function Sidebar() {
       {isOpen && (
         <div className="lg:hidden fixed inset-0 z-40 flex">
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm" 
-            onClick={() => setIsOpen(false)} 
+          <div
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
           />
           {/* Drawer content */}
           <aside className="relative w-64 h-full flex flex-col z-50">

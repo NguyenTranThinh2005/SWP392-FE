@@ -168,8 +168,8 @@ export function SeriesProposalForm({
             type="button"
             onClick={() => setIsOpen(!isOpen)}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 bg-background border rounded-xl text-sm transition-all focus:outline-none ${isOpen
-                ? 'border-primary ring-2 ring-primary/20'
-                : 'border-border hover:bg-muted/50'
+              ? 'border-primary ring-2 ring-primary/20'
+              : 'border-border hover:bg-muted/50'
               } ${hasActivePendingProposal || isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
             disabled={isLoading || hasActivePendingProposal}
           >
@@ -330,7 +330,7 @@ export function SeriesProposalForm({
           disabled={isLoading || hasActivePendingProposal}
           className="flex-1 py-2.5 font-semibold rounded-xl border-border"
         >
-          {isLoading && action === 'draft' ? 'Saving…' : '💾 Save as Draft'}
+          {isLoading && action === 'draft' ? 'Saving…' : 'Save as Draft'}
         </Button>
 
         {/* Submit for Review */}
@@ -340,7 +340,7 @@ export function SeriesProposalForm({
           disabled={isLoading || hasActivePendingProposal}
           className="flex-1 py-2.5 font-bold rounded-xl shadow-sm"
         >
-          {isLoading && action === 'submit' ? 'Submitting…' : '🚀 Submit for Review'}
+          {isLoading && action === 'submit' ? 'Submitting…' : 'Submit for Review'}
         </Button>
       </div>
     </form>
