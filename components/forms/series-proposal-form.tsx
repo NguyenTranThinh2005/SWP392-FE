@@ -30,7 +30,6 @@ export function SeriesProposalForm({ onSubmit, isLoading }: SeriesProposalFormPr
   const [error, setError] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
-  const [mustHaveAll, setMustHaveAll] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const {
@@ -80,7 +79,6 @@ export function SeriesProposalForm({ onSubmit, isLoading }: SeriesProposalFormPr
       await onSubmit(finalData)
       reset()
       setSelectedGenres([])
-      setMustHaveAll(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit proposal')
     }
@@ -161,19 +159,6 @@ export function SeriesProposalForm({ onSubmit, isLoading }: SeriesProposalFormPr
                   </label>
                 )
               })}
-            </div>
-
-            {/* Separator line & Must Have All */}
-            <div className="border-t border-border pt-2">
-              <label className="flex items-center gap-2 text-emerald-600 hover:text-emerald-500 cursor-pointer select-none text-xs font-semibold">
-                <input
-                  type="checkbox"
-                  checked={mustHaveAll}
-                  onChange={(e) => setMustHaveAll(e.target.checked)}
-                  className="rounded border-emerald-500/30 text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 bg-background"
-                />
-                Must have all the selected genres
-              </label>
             </div>
           </div>
         )}

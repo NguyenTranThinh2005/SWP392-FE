@@ -11,9 +11,10 @@ export default function LoginPage() {
           <Image
             src="/logo.png"
             alt="MangaFlow Logo"
-            width={150}
-            height={150}
+            width={50}
+            height={50}
             className="object-contain"
+            priority
           />
           MangaFlow
         </a>
