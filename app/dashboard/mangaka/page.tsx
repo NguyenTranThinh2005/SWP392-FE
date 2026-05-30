@@ -158,9 +158,9 @@ export default function MangakaDashboardPage() {
                   <div key={p.id} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors">
                     {/* Left accent */}
                     <div className={`w-1 h-10 rounded-full shrink-0 ${p.status === 'Approved' ? 'bg-emerald-500' :
-                        p.status === 'Rejected' ? 'bg-red-500' :
-                          p.status === 'Under Review' ? 'bg-blue-500' :
-                            p.status === 'Pending Review' ? 'bg-amber-500' : 'bg-slate-400'
+                      p.status === 'Rejected' ? 'bg-red-500' :
+                        p.status === 'Under Review' ? 'bg-blue-500' :
+                          p.status === 'Pending Review' ? 'bg-amber-500' : 'bg-slate-400'
                       }`} />
 
                     <div className="flex-1 min-w-0">
@@ -185,99 +185,6 @@ export default function MangakaDashboardPage() {
             )}
           </div>
         </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <h2 className="font-bold text-sm flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" /> Quick Actions
-          </h2>
-
-          <div className="space-y-3">
-            {[
-              {
-                href: '/dashboard/series/new',
-                icon: Plus,
-                label: 'New Series Proposal',
-                desc: 'Pitch a new manga concept to the Editorial Board',
-                color: 'text-primary',
-                bg: 'bg-primary/10',
-                disabled: isBlocked,
-              },
-              {
-                href: '/dashboard/series',
-                icon: PenTool,
-                label: 'My Proposals',
-                desc: 'View & manage all your submitted proposals',
-                color: 'text-violet-600',
-                bg: 'bg-violet-500/10',
-                disabled: false,
-              },
-              {
-                href: '/dashboard/manuscripts',
-                icon: Layers,
-                label: 'Manuscripts',
-                desc: 'Submit chapter manuscripts for editor review',
-                color: 'text-amber-600',
-                bg: 'bg-amber-500/10',
-                disabled: false,
-              },
-              {
-                href: '/dashboard/chapters',
-                icon: ClipboardList,
-                label: 'Tasks & Chapters',
-                desc: 'Manage page tasks assigned to your assistants',
-                color: 'text-cyan-600',
-                bg: 'bg-cyan-500/10',
-                disabled: false,
-              },
-            ].map(({ href, icon: Icon, label, desc, color, bg, disabled }) => (
-              disabled ? (
-                <div
-                  key={label}
-                  className="flex items-start gap-3 p-4 bg-card border border-border rounded-xl opacity-50 cursor-not-allowed"
-                >
-                  <div className={`w-9 h-9 ${bg} ${color} rounded-lg flex items-center justify-center shrink-0`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-foreground">{label}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
-                    <p className="text-[10px] text-amber-500 font-semibold mt-1">⚠ Blocked by BR-19</p>
-                  </div>
-                </div>
-              ) : (
-                <Link
-                  key={label}
-                  href={href}
-                  className="flex items-start gap-3 p-4 bg-card border border-border rounded-xl hover:border-primary/25 hover:bg-accent/30 hover:shadow-sm transition-all group"
-                >
-                  <div className={`w-9 h-9 ${bg} ${color} rounded-lg flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{label}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 mt-0.5" />
-                </Link>
-              )
-            ))}
-          </div>
-
-          {/* BR-19 warning */}
-          {isBlocked && (
-            <div className="flex items-start gap-2.5 p-3.5 bg-amber-500/8 border border-amber-500/20 rounded-xl text-xs">
-              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-amber-600">Proposal in review (BR-19)</p>
-                <p className="text-muted-foreground mt-0.5 leading-relaxed">
-                  New proposals are blocked until your current one is resolved by the Editorial Board.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
       </div>
     </div>
   )
