@@ -249,7 +249,7 @@ export default function ReviewProposalsPage() {
                   {/* Proposal Header Info */}
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-extrabold text-lg text-foreground tracking-tight">
+                      <h3 className="font-extrabold text-lg text-foreground tracking-tight break-words">
                         {proposal.title}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
@@ -294,7 +294,7 @@ export default function ReviewProposalsPage() {
                     <p className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
                       Synopsis
                     </p>
-                    <p className="text-xs text-muted-foreground leading-relaxed font-normal">
+                    <p className="text-xs text-muted-foreground leading-relaxed font-normal break-words">
                       {proposal.synopsis}
                     </p>
                   </div>
