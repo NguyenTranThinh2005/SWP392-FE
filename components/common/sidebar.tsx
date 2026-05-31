@@ -16,7 +16,8 @@ import {
   X,
   ChevronDown,
   FileSpreadsheet,
-  UserPlus
+  UserPlus,
+  LayoutDashboard
 } from 'lucide-react'
 
 export function Sidebar() {
@@ -30,17 +31,19 @@ export function Sidebar() {
 
   const menuItems = {
     Mangaka: [
-      { label: 'Dashboard', href: '/dashboard/mangaka', icon: BookOpen },
+      { label: 'Dashboard', href: '/dashboard/mangaka', icon: LayoutDashboard },
       { label: 'My Proposals', href: '/dashboard/series', icon: PenTool },
       { label: 'New Proposal', href: '/dashboard/series/new', icon: UserPlus },
       { label: 'Manuscripts', href: '/dashboard/manuscripts', icon: Layers },
       { label: 'Chapter&Tasks', href: '/dashboard/chapters', icon: ClipboardList },
     ],
     Assistant: [
+      { label: 'Dashboard', href: '/dashboard/assistant', icon: LayoutDashboard },
       { label: 'Manga List', href: '/dashboard', icon: BookOpen },
       { label: 'My Tasks', href: '/dashboard/chapters', icon: ClipboardList },
     ],
     'Tantou Editor': [
+      { label: 'Dashboard', href: '/dashboard/tantou-editor', icon: LayoutDashboard },
       { label: 'Manga List', href: '/dashboard', icon: BookOpen },
       { label: 'Assign Tasks', href: '/dashboard/chapters', icon: ClipboardList },
       { label: 'Review Drafts', href: '/dashboard/manuscripts', icon: Layers },
@@ -52,9 +55,9 @@ export function Sidebar() {
       { label: 'Create Account', href: '/signup', icon: UserPlus },
     ],
     'Editor-in-Chief': [
+      { label: 'Dashboard', href: '/dashboard/editor-in-chief', icon: LayoutDashboard },
       { label: 'Manga List', href: '/dashboard', icon: BookOpen },
       { label: 'Review Proposals', href: '/dashboard/reviews', icon: PenTool },
-      { label: 'Chief Control Panel', href: '/dashboard/editor-in-chief', icon: ClipboardList },
     ],
   }
 
