@@ -25,6 +25,7 @@ import {
   type ProposalStatus,
 } from '@/lib/proposals-store'
 import { useRole } from '@/context/RoleContext'
+import { notificationStore } from '@/store/notificationStore'
 
 // Status badge configurations for Editorial Board view
 const STATUS_CONFIG: Record<
@@ -96,9 +97,42 @@ export default function ReviewProposalsPage() {
   }
 
   const handleStatusChange = (id: string, newStatus: ProposalStatus) => {
+    const proposal = proposals.find(p => p.id === id)
     const success = updateProposalStatus(id, newStatus)
     if (success) {
       showNotification(`Proposal status updated to "${newStatus}"!`)
+      
+      if (proposal) {
+        if (newStatus === 'Under Review') {
+          notificationStore.addNotification(
+            'Proposal Under Review',
+            `Your proposal "${proposal.title}" is now being reviewed by the Editorial Board.`,
+            'Mangaka',
+            'info'
+          )
+        } else if (newStatus === 'Approved') {
+          notificationStore.addNotification(
+            'Proposal Approved & Activated',
+            `Congratulations! Your proposal "${proposal.title}" has been approved. Tantou Editor Nakamura Takeshi is confirmed.`,
+            'Mangaka',
+            'success'
+          )
+          notificationStore.addNotification(
+            'Proposal Approved',
+            `Proposal "${proposal.title}" has been approved and activated by the Editorial Board.`,
+            'Editor-in-Chief',
+            'success'
+          )
+        } else if (newStatus === 'Rejected') {
+          notificationStore.addNotification(
+            'Proposal Rejected',
+            `Your proposal "${proposal.title}" was rejected by the Editorial Board.`,
+            'Mangaka',
+            'error'
+          )
+        }
+      }
+      
       loadProposals()
     } else {
       showNotification(`Failed to update proposal status.`, 'error')
@@ -107,8 +141,8 @@ export default function ReviewProposalsPage() {
 
   if (!mounted) return null
 
-  // Editorial Board check
-  if (role !== 'Editorial Board') {
+  // Editorial Board or Editor-in-Chief check
+  if (role !== 'Editorial Board' && role !== 'Editor-in-Chief') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
@@ -116,10 +150,10 @@ export default function ReviewProposalsPage() {
         </div>
         <h2 className="text-xl font-bold">Access Denied</h2>
         <p className="text-muted-foreground text-sm max-w-md">
-          Only members of the <strong>Editorial Board</strong> can review series proposals.
+          Only members of the <strong>Editorial Board</strong> or the <strong>Editor-in-Chief</strong> can review series proposals.
         </p>
         <p className="text-xs text-muted-foreground bg-muted p-3 rounded-lg border border-border">
-          💡 <strong>Tip:</strong> Use the role switcher in the bottom left of the sidebar to change your active role to <strong>Editorial Board</strong>.
+          💡 <strong>Tip:</strong> Use the role switcher in the bottom left of the sidebar to change your active role to <strong>Editorial Board</strong> or <strong>Editor-in-Chief</strong>.
         </p>
         <Link
           href="/dashboard/mangaka"

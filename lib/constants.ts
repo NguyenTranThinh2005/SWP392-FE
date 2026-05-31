@@ -58,6 +58,7 @@ export const ROLE_NAMES = {
   ASSISTANT: 'Assistant',
   TANTOU_EDITOR: 'Tantou Editor',
   EDITORIAL_BOARD: 'Editorial Board',
+  EDITOR_IN_CHIEF: 'Editor-in-Chief',
 } as const
 
 // Business Constants

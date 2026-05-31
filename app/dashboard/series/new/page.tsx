@@ -13,6 +13,7 @@ import {
   submitProposal,
 } from '@/lib/proposals-store'
 import { useRole } from '@/context/RoleContext'
+import { notificationStore } from '@/store/notificationStore'
 
 // Fake "current user" id — will be wired to real auth later
 const MOCK_MANGAKA_ID = 'U01'
@@ -68,6 +69,26 @@ export default function NewProposalPage() {
           mangakaId: MOCK_MANGAKA_ID,
           coverImageUrl: data.coverImageUrl,
         })
+
+        // Dispatch notifications to Mangaka, Editorial Board, and Editor-in-Chief
+        notificationStore.addNotification(
+          'Proposal Submitted',
+          `Your proposal "${data.title}" has been successfully queued for review.`,
+          'Mangaka',
+          'success'
+        )
+        notificationStore.addNotification(
+          'New Proposal Pending Review',
+          `Mangaka Tanaka Yuki has submitted a new proposal "${data.title}" for review.`,
+          'Editorial Board',
+          'info'
+        )
+        notificationStore.addNotification(
+          'New Proposal Pending Review',
+          `Mangaka Tanaka Yuki has submitted a new proposal "${data.title}" for review.`,
+          'Editor-in-Chief',
+          'info'
+        )
 
         setSuccessMessage('submitted')
         setTimeout(() => router.push('/dashboard/series'), 1800)

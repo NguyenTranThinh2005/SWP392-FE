@@ -26,7 +26,7 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
   const [showRoleSelector, setShowRoleSelector] = useState(false)
 
-  const roles = ['Mangaka', 'Assistant', 'Tantou Editor', 'Editorial Board'] as const
+  const roles = ['Mangaka', 'Assistant', 'Tantou Editor', 'Editorial Board', 'Editor-in-Chief'] as const
 
   const menuItems = {
     Mangaka: [
@@ -50,6 +50,11 @@ export function Sidebar() {
       { label: 'Review Proposals', href: '/dashboard/reviews', icon: PenTool },
       { label: 'Reader Analytics', href: '/dashboard/analytics', icon: BarChart3 },
       { label: 'Create Account', href: '/signup', icon: UserPlus },
+    ],
+    'Editor-in-Chief': [
+      { label: 'Manga List', href: '/dashboard', icon: BookOpen },
+      { label: 'Review Proposals', href: '/dashboard/reviews', icon: PenTool },
+      { label: 'Chief Control Panel', href: '/dashboard/editor-in-chief', icon: ClipboardList },
     ],
   }
 

@@ -1,5 +1,6 @@
 import { RoleProvider } from '@/context/RoleContext'
 import { Sidebar } from '@/components/common/sidebar'
+import { DashboardHeader } from '@/components/common/dashboard-header'
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default function DashboardLayout({
 
         {/* Right Main Page Content */}
         <main className="flex-1 min-w-0 flex flex-col min-h-[calc(100vh-3.5rem)] lg:min-h-screen">
+          <DashboardHeader />
           <div className="flex-1 p-6 sm:p-8 lg:p-10 overflow-y-auto">
             {children}
           </div>
