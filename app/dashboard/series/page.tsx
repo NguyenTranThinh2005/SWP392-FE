@@ -143,7 +143,7 @@ function ProposalCard({
         </div>
 
         {/* Synopsis preview */}
-        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 flex-1">
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 flex-1 break-words">
           {proposal.synopsis}
         </p>
 
