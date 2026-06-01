@@ -210,124 +210,122 @@ export default function RankingPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 rounded-3xl p-6 sm:p-7">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Series Ranking
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Automated ranking based on reader votes (BR-90)
-            </p>
-          </div>
-
-          {/* Import Button: only visible to Editorial Board or Editor-in-Chief (BR-87) */}
-          {isAuthorized ? (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full sm:w-auto inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md cursor-pointer transition-all">
-                  <Plus className="w-4 h-4" /> Enter Vote Data (BR-87)
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border border-border rounded-2xl max-w-md p-6">
-                <DialogHeader>
-                  <DialogTitle className="text-lg font-bold text-foreground">
-                    Import Reader Vote Data
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleImportSubmit} className="space-y-4 pt-3">
-                  {/* Select Series */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Select Series</label>
-                    <select
-                      value={formSeriesId}
-                      onChange={(e) => {
-                        setFormSeriesId(e.target.value)
-                        setFormChapterId('')
-                      }}
-                      className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
-                      required
-                    >
-                      <option value="">-- Choose a Series --</option>
-                      {allSeries.map(s => (
-                        <option key={s.id} value={s.id}>{s.title} ({s.id})</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Select Chapter */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Select Chapter</label>
-                    <select
-                      value={formChapterId}
-                      onChange={(e) => setFormChapterId(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
-                      disabled={!formSeriesId}
-                      required
-                    >
-                      <option value="">-- Choose a Chapter --</option>
-                      {availableChapters.map(c => (
-                        <option key={c.id} value={c.id}>{c.title}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Select Period */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Target Period</label>
-                    <select
-                      value={formPeriod}
-                      onChange={(e) => setFormPeriod(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
-                      required
-                    >
-                      {periods.map(p => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Input Counts */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Readers</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formReaderCount}
-                        onChange={(e) => setFormReaderCount(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Votes</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formVoteCount}
-                        onChange={(e) => setFormVoteCount(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Submit Button */}
-                  <Button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl mt-2 cursor-pointer transition-colors">
-                    Submit Vote Record
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          ) : (
-            <div className="text-[11px] bg-muted/50 border border-border p-2 rounded-xl text-muted-foreground max-w-xs text-center">
-              💡 <strong>Read-Only Mode:</strong> Only the Editorial Board is authorized to import ranking vote data.
-            </div>
-          )}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
+            <Trophy className="w-8 h-8 text-primary" />
+            Series Ranking
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Automated ranking based on reader votes (BR-90)
+          </p>
         </div>
+
+        {/* Import Button: only visible to Editorial Board or Editor-in-Chief (BR-87) */}
+        {isAuthorized ? (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full sm:w-auto inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md cursor-pointer transition-all">
+                <Plus className="w-4 h-4" /> Enter Vote Data (BR-87)
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border border-border rounded-2xl max-w-md p-6">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-bold text-foreground">
+                  Import Reader Vote Data
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleImportSubmit} className="space-y-4 pt-3">
+                {/* Select Series */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Select Series</label>
+                  <select
+                    value={formSeriesId}
+                    onChange={(e) => {
+                      setFormSeriesId(e.target.value)
+                      setFormChapterId('')
+                    }}
+                    className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
+                    required
+                  >
+                    <option value="">-- Choose a Series --</option>
+                    {allSeries.map(s => (
+                      <option key={s.id} value={s.id}>{s.title} ({s.id})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Select Chapter */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Select Chapter</label>
+                  <select
+                    value={formChapterId}
+                    onChange={(e) => setFormChapterId(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
+                    disabled={!formSeriesId}
+                    required
+                  >
+                    <option value="">-- Choose a Chapter --</option>
+                    {availableChapters.map(c => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Select Period */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Target Period</label>
+                  <select
+                    value={formPeriod}
+                    onChange={(e) => setFormPeriod(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
+                    required
+                  >
+                    {periods.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Input Counts */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Readers</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formReaderCount}
+                      onChange={(e) => setFormReaderCount(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Votes</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formVoteCount}
+                      onChange={(e) => setFormVoteCount(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <Button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl mt-2 cursor-pointer transition-colors">
+                  Submit Vote Record
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        ) : (
+          <div className="text-[11px] bg-muted/50 border border-border p-2 rounded-xl text-muted-foreground max-w-xs text-center">
+            💡 <strong>Read-Only Mode:</strong> Only the Editorial Board is authorized to import ranking vote data.
+          </div>
+        )}
       </div>
 
       {/* Pending Confirmation (BR-92 Area) */}

@@ -111,7 +111,7 @@ export default function NewProposalPage() {
           Only <strong>Mangaka</strong> can create series proposals.
         </p>
         <Link
-          href="/dashboard"
+          href="/dashboard/manga-list"
           className="mt-2 text-sm font-semibold text-primary hover:underline"
         >
           Return to Dashboard

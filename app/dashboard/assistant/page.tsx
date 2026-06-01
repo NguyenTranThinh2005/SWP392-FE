@@ -74,7 +74,7 @@ export default function AssistantDashboardPage() {
           💡 <strong>Tip:</strong> Use the role switcher in the bottom left of the sidebar to change your active role to <strong>Assistant</strong>.
         </p>
         <Link
-          href="/dashboard"
+          href="/dashboard/manga-list"
           className="mt-2 text-sm font-semibold text-primary hover:underline"
         >
           Go to Manga List

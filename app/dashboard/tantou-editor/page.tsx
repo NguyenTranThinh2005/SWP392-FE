@@ -72,7 +72,7 @@ export default function TantouEditorDashboard() {
           💡 <strong>Tip:</strong> Use the role switcher in the bottom left of the sidebar to change your active role to <strong>Tantou Editor</strong>.
         </p>
         <Link
-          href="/dashboard"
+          href="/dashboard/manga-list"
           className="mt-2 text-sm font-semibold text-primary hover:underline"
         >
           Go to Manga List
@@ -131,30 +131,25 @@ export default function TantouEditorDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Top Welcome Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 rounded-3xl p-6 sm:p-8">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
-              <Sparkles className="w-3.5 h-3.5" /> Editorial Supervision
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Tantou Editor Dashboard
-            </h1>
-            <p className="text-sm text-muted-foreground max-w-lg">
-              Coordinate serialization with mangakas, assign drawing tasks to assistants, and approve manuscript storyboards for publication.
-            </p>
-          </div>
-          
-          <div className="flex gap-3 shrink-0">
-            <Link
-              href="/dashboard"
-              className="px-4 py-2.5 bg-card border border-border text-foreground hover:bg-muted text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1"
-            >
-              Browse Manga <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
+            <Layers className="w-8 h-8 text-primary" />
+            Tantou Editor Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Coordinate serialization with mangakas, assign drawing tasks to assistants, and approve manuscript storyboards for publication
+          </p>
+        </div>
+        
+        <div className="flex gap-3 shrink-0 self-start md:self-center">
+          <Link
+            href="/dashboard/manga-list"
+            className="px-4 py-2 bg-card border border-border text-foreground hover:bg-muted text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1"
+          >
+            Browse Manga <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
 
