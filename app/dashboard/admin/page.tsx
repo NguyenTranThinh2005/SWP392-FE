@@ -15,7 +15,14 @@ import {
   Mail,
   User as UserIcon,
   Link as LinkIcon,
-  Info
+  Info,
+  PlusCircle,
+  CalendarDays,
+  BookOpen,
+  Layers,
+  X,
+  Clock,
+  ClipboardList
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -44,6 +51,46 @@ import {
   assignEditorToMangaka,
   type User
 } from '@/lib/users-store'
+import { authService } from '@/services/authService'
+
+// Import chapters store utilities
+import {
+  getSeriesByMangaka,
+  getChapters,
+  createTask,
+  getTasks,
+  type Series,
+  type Chapter,
+  type Task
+} from '@/lib/chapters-store'
+
+const TASK_TYPE_SUGGESTIONS = [
+  {
+    name: 'Line Art',
+    description: 'Phác thảo nét vẽ và vẽ viền cho nhân vật/bối cảnh.',
+    template: 'Yêu cầu đi nét vẽ chi tiết cho nhân vật chính ở trang {pages}. Chú ý độ dày nét viền mặt và tóc.'
+  },
+  {
+    name: 'Coloring',
+    description: 'Tô màu, đánh bóng và xử lý nguồn sáng cảnh tranh.',
+    template: 'Thực hiện tô màu kỹ thuật số cho trang {pages}. Sử dụng tông màu hoàng hôn vàng ấm áp theo moodboard.'
+  },
+  {
+    name: 'Background Art',
+    description: 'Vẽ bối cảnh, môi trường và cảnh nền chi tiết.',
+    template: 'Vẽ chi tiết bối cảnh ngôi đền cổ ở hậu cảnh cho các trang {pages}. Tập trung vào họa tiết mái ngói.'
+  },
+  {
+    name: 'Screentoning',
+    description: 'Dán lưới tông màu và tạo hiệu ứng chiều sâu cho trang truyện.',
+    template: 'Dán lưới screentone tạo chiều sâu bóng râm và vân sáng cho trang {pages}.'
+  },
+  {
+    name: 'Clean-up',
+    description: 'Làm sạch nét vẽ phác thảo thô, căn chỉnh các khung tranh.',
+    template: 'Tẩy xóa nét nháp thô thừa và chuẩn hóa kích thước khung hình cho trang {pages}.'
+  }
+]
 
 export default function AdminPage() {
   const { role } = useRole()
@@ -71,6 +118,24 @@ export default function AdminPage() {
   const [formPassword, setFormPassword] = useState('')
   const [formConfirmPassword, setFormConfirmPassword] = useState('')
 
+  // --- States for Mangaka Assign Task Modal ---
+  const [isAssignTaskModalOpen, setIsAssignTaskModalOpen] = useState(false)
+  const [selectedAssistant, setSelectedAssistant] = useState<any>(null)
+  const [taskSeriesList, setTaskSeriesList] = useState<Series[]>([])
+  const [selectedSeriesId, setSelectedSeriesId] = useState('')
+  const [chaptersList, setChaptersList] = useState<Chapter[]>([])
+  const [selectedChapterId, setSelectedChapterId] = useState('')
+  const [newTaskType, setNewTaskType] = useState('Line Art')
+  const [newTaskPageStart, setNewTaskPageStart] = useState<number>(1)
+  const [newTaskPageEnd, setNewTaskPageEnd] = useState<number>(3)
+  const [newTaskDesc, setNewTaskDesc] = useState('')
+  const [newTaskDueDate, setNewTaskDueDate] = useState('')
+
+  // --- States for Assistant View Series Modal ---
+  const [isViewSeriesModalOpen, setIsViewSeriesModalOpen] = useState(false)
+  const [selectedMangaka, setSelectedMangaka] = useState<any>(null)
+  const [mangakaSeriesList, setMangakaSeriesList] = useState<Series[]>([])
+
   useEffect(() => {
     setMounted(true)
     refreshUsers()
@@ -78,6 +143,84 @@ export default function AdminPage() {
 
   const refreshUsers = () => {
     setUsersList(getUsers())
+  }
+
+  const handleOpenAssignTaskModal = (assistantUser: User) => {
+    const series = getSeriesByMangaka('U01') // Mock current mangaka ID
+    setTaskSeriesList(series)
+    
+    const initialSeriesId = series.length > 0 ? series[0].id : ''
+    setSelectedSeriesId(initialSeriesId)
+    
+    if (initialSeriesId) {
+      const chaps = getChapters(initialSeriesId)
+      setChaptersList(chaps)
+      setSelectedChapterId(chaps.length > 0 ? chaps[0].id : '')
+    } else {
+      setChaptersList([])
+      setSelectedChapterId('')
+    }
+    
+    setSelectedAssistant(assistantUser)
+    setNewTaskType('Line Art')
+    setNewTaskPageStart(1)
+    setNewTaskPageEnd(3)
+    setNewTaskDesc('')
+    setNewTaskDueDate('')
+    setIsAssignTaskModalOpen(true)
+  }
+
+  const handleSeriesChangeInModal = (seriesId: string) => {
+    setSelectedSeriesId(seriesId)
+    const chaps = getChapters(seriesId)
+    setChaptersList(chaps)
+    setSelectedChapterId(chaps.length > 0 ? chaps[0].id : '')
+  }
+
+  const handleAssignTaskSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedChapterId) {
+      toast.error('Vui lòng chọn chapter!')
+      return
+    }
+    if (!newTaskType.trim()) {
+      toast.error('Vui lòng điền loại task!')
+      return
+    }
+    if (newTaskPageStart > newTaskPageEnd) {
+      toast.error('Trang bắt đầu không thể lớn hơn trang kết thúc!')
+      return
+    }
+    if (!newTaskDesc.trim()) {
+      toast.error('Vui lòng điền mô tả công việc!')
+      return
+    }
+    
+    const targetEmail = selectedAssistant.email.toLowerCase()
+    let assistantId = 'A01'
+    if (targetEmail.includes('suzuki')) assistantId = 'A02'
+    else if (targetEmail.includes('watanabe')) assistantId = 'A03'
+    
+    createTask({
+      chapterId: selectedChapterId,
+      type: newTaskType.trim(),
+      pages: `${newTaskPageStart}-${newTaskPageEnd}`,
+      pageStart: newTaskPageStart,
+      pageEnd: newTaskPageEnd,
+      description: newTaskDesc,
+      assistantId: assistantId,
+      dueDate: newTaskDueDate || undefined
+    })
+    
+    toast.success(`Đã tạo nhiệm vụ thành công cho trợ lý ${selectedAssistant.name}!`)
+    setIsAssignTaskModalOpen(false)
+  }
+
+  const handleOpenViewSeriesModal = (mangakaUser: User) => {
+    setSelectedMangaka(mangakaUser)
+    const series = getSeriesByMangaka(mangakaUser.id)
+    setMangakaSeriesList(series)
+    setIsViewSeriesModalOpen(true)
   }
 
   // Get available Editors for dropdown
@@ -165,6 +308,7 @@ export default function AdminPage() {
     }
 
     try {
+      // 1. Tạo ở local store (Offline Mode fallback)
       createUser({
         name: formName.trim(),
         username: formUsername.trim(),
@@ -173,7 +317,29 @@ export default function AdminPage() {
         editorId: formRole === 'Mangaka' && formEditorId ? formEditorId : undefined
       })
 
-      toast.success(`Tài khoản "${formName}" đã được tạo thành công (BR-01)!`)
+      // 2. Đồng bộ với Backend API
+      const roleIdMapping: Record<string, string> = {
+        'Mangaka': '11111111-1111-1111-1111-111111111111',
+        'Assistant': '33333333-3333-3333-3333-333333333333',
+        'Tantou Editor': '22222222-2222-2222-2222-222222222222',
+        'Admin': '10101010-1010-1010-1010-101010101010'
+      }
+      const roleId = roleIdMapping[formRole] || '11111111-1111-1111-1111-111111111111'
+
+      authService.register({
+        userName: formUsername.trim(),
+        email: formEmail.trim(),
+        displayName: formName.trim(),
+        password: formPassword,
+        roleId,
+        assignedFromUserId: formRole === 'Mangaka' && formEditorId ? formEditorId : null
+      }).then((res) => {
+        console.log("Account successfully registered on backend:", res)
+      }).catch(err => {
+        console.warn("Backend register failed, running on Offline Mode.", err)
+      })
+
+      toast.success(`Tài khoản "${formName}" đã được tạo thành công!`)
       
       // Reset Form
       setFormName('')
@@ -194,8 +360,8 @@ export default function AdminPage() {
 
   if (!mounted) return null
 
-  // Security Gate: Ensure user role is Admin to access
-  if (role !== 'Admin') {
+  // Security Gate: Ensure user role is Admin, Mangaka, or Assistant to access
+  if (role !== 'Admin' && role !== 'Mangaka' && role !== 'Assistant') {
     return (
       <div className="flex flex-col items-center justify-center p-12 bg-card border border-border rounded-2xl max-w-md mx-auto text-center space-y-5 shadow-lg my-12">
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
@@ -203,10 +369,10 @@ export default function AdminPage() {
         </div>
         <h2 className="text-xl font-bold text-foreground">Không có quyền truy cập</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Chỉ tài khoản đang hoạt động với vai trò <strong>Admin</strong> mới được phép truy cập trang quản trị này.
+          Chỉ tài khoản hoạt động với vai trò <strong>Admin, Mangaka, hoặc Assistant</strong> mới được phép truy cập trang này.
         </p>
         <div className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/5 border border-amber-500/10 p-3.5 rounded-xl leading-relaxed">
-          💡 Vui lòng sử dụng <strong>Bộ chọn Vai trò (Active Role Switcher)</strong> ở góc dưới bên trái Sidebar để chuyển sang vai trò <strong>Admin</strong>.
+          💡 Vui lòng sử dụng <strong>Bộ chọn Vai trò (Active Role Switcher)</strong> ở góc dưới bên trái Sidebar để chuyển sang vai trò thích hợp.
         </div>
       </div>
     )
@@ -219,36 +385,40 @@ export default function AdminPage() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
             <Users className="w-8 h-8 text-primary" />
-            Quản trị Tài khoản
+            {role === 'Admin' ? 'Quản trị Tài khoản' : 'Danh sách Thành viên'}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Thiết lập tài khoản nội bộ và phân quyền vai trò cho hệ thống (BR-01)
+            {role === 'Admin'
+              ? 'Thiết lập tài khoản nội bộ và phân quyền vai trò cho hệ thống (BR-01)'
+              : 'Xem danh sách tác giả, trợ lý vẽ và biên tập viên phụ trách trong hệ thống'}
           </p>
         </div>
 
-        {/* Tab Buttons */}
-        <div className="flex items-center gap-2 bg-card border border-border p-1 rounded-xl shrink-0 w-fit">
-          <button
-            onClick={() => setActiveTab('list')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'list'
-                ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" /> Danh sách Tài khoản
-          </button>
-          <button
-            onClick={() => setActiveTab('create')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'create'
-                ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" /> Tạo Tài khoản mới
-          </button>
-        </div>
+        {/* Tab Buttons (Only for Admin) */}
+        {role === 'Admin' && (
+          <div className="flex items-center gap-2 bg-card border border-border p-1 rounded-xl shrink-0 w-fit">
+            <button
+              onClick={() => setActiveTab('list')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'list'
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" /> Danh sách Tài khoản
+            </button>
+            <button
+              onClick={() => setActiveTab('create')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'create'
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5" /> Tạo Tài khoản mới
+            </button>
+          </div>
+        )}
       </div>
 
       {activeTab === 'list' ? (
@@ -311,7 +481,7 @@ export default function AdminPage() {
                     <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Tài khoản</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Email</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Vai trò</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Editor Phụ Trách</TableHead>
+                    {role === 'Admin' && <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Editor Phụ Trách</TableHead>}
                     <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Trạng thái</TableHead>
                     <TableHead className="w-32 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Hành động</TableHead>
                   </TableRow>
@@ -367,21 +537,23 @@ export default function AdminPage() {
                           </TableCell>
 
                           {/* Assigned Editor */}
-                          <TableCell className="text-xs font-semibold text-slate-300">
-                            {user.role === 'Mangaka' ? (
-                              <div className="flex items-center gap-1.5">
-                                <span>{getEditorName(user.editorId)}</span>
-                                <button
-                                  onClick={() => handleOpenAssignModal(user)}
-                                  className="text-[10px] text-primary hover:underline font-bold"
-                                >
-                                  (Thay đổi)
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground/30">—</span>
-                            )}
-                          </TableCell>
+                          {role === 'Admin' && (
+                            <TableCell className="text-xs font-semibold text-slate-300">
+                              {user.role === 'Mangaka' ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span>{getEditorName(user.editorId)}</span>
+                                  <button
+                                    onClick={() => handleOpenAssignModal(user)}
+                                    className="text-[10px] text-primary hover:underline font-bold"
+                                  >
+                                    (Thay đổi)
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground/30">—</span>
+                              )}
+                            </TableCell>
+                          )}
 
                           {/* Status */}
                           <TableCell className="text-center">
@@ -398,28 +570,46 @@ export default function AdminPage() {
 
                           {/* Actions */}
                           <TableCell className="text-center">
-                            {user.id === 'U10' ? (
-                              <span className="text-[10px] text-muted-foreground italic">Hệ thống</span>
-                            ) : (
+                            {role === 'Admin' ? (
+                              user.id === 'U10' ? (
+                                <span className="text-[10px] text-muted-foreground italic">Hệ thống</span>
+                              ) : (
+                                <Button
+                                  onClick={() => handleToggleStatus(user.id, user.status)}
+                                  variant="outline"
+                                  className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border cursor-pointer transition-all flex items-center gap-1 mx-auto ${
+                                    user.status === 'Active'
+                                      ? 'hover:bg-rose-500/10 hover:text-rose-600 border-rose-500/20 text-rose-500/80'
+                                      : 'hover:bg-emerald-500/10 hover:text-emerald-600 border-emerald-500/20 text-emerald-500/80'
+                                  }`}
+                                >
+                                  {user.status === 'Active' ? (
+                                    <>
+                                      <UserX className="w-3 h-3" /> Tạm khóa
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserCheck className="w-3 h-3" /> Mở khóa
+                                    </>
+                                  )}
+                                </Button>
+                              )
+                            ) : role === 'Mangaka' && user.role === 'Assistant' ? (
                               <Button
-                                onClick={() => handleToggleStatus(user.id, user.status)}
-                                variant="outline"
-                                className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border cursor-pointer transition-all flex items-center gap-1 mx-auto ${
-                                  user.status === 'Active'
-                                    ? 'hover:bg-rose-500/10 hover:text-rose-600 border-rose-500/20 text-rose-500/80'
-                                    : 'hover:bg-emerald-500/10 hover:text-emerald-600 border-emerald-500/20 text-emerald-500/80'
-                                }`}
+                                onClick={() => handleOpenAssignTaskModal(user)}
+                                className="bg-primary hover:bg-primary/95 text-primary-foreground text-[10px] font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 mx-auto shadow-sm"
                               >
-                                {user.status === 'Active' ? (
-                                  <>
-                                    <UserX className="w-3 h-3" /> Tạm khóa
-                                  </>
-                                ) : (
-                                  <>
-                                    <UserCheck className="w-3 h-3" /> Mở khóa
-                                  </>
-                                )}
+                                Giao việc
                               </Button>
+                            ) : role === 'Assistant' && user.role === 'Mangaka' ? (
+                              <Button
+                                onClick={() => handleOpenViewSeriesModal(user)}
+                                className="bg-cyan-600 hover:bg-cyan-750 text-white text-[10px] font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 mx-auto shadow-sm"
+                              >
+                                Xem Series
+                              </Button>
+                            ) : (
+                              <span className="text-muted-foreground/30">—</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -509,24 +699,25 @@ export default function AdminPage() {
                 </select>
               </div>
 
-              {/* Conditionally Render Editor Assignment Dropdown (if role === Mangaka) */}
-              {formRole === 'Mangaka' && (
-                <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-200">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                    <LinkIcon className="w-3.5 h-3.5 text-primary" /> Tantou Editor Phụ Trách
-                  </label>
-                  <select
-                    value={formEditorId}
-                    onChange={(e) => setFormEditorId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer focus:border-primary/50"
-                  >
-                    <option value="">-- Chưa gán Editor --</option>
-                    {editors.map(ed => (
-                      <option key={ed.id} value={ed.id}>{ed.name} ({ed.username})</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* Editor Assignment Dropdown (Always visible, disabled for non-Mangaka) */}
+              <div className={`space-y-1.5 transition-all duration-200 ${formRole !== 'Mangaka' ? 'opacity-40' : ''}`}>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <LinkIcon className="w-3.5 h-3.5 text-primary" /> Tantou Editor Phụ Trách
+                </label>
+                <select
+                  value={formEditorId}
+                  onChange={(e) => setFormEditorId(e.target.value)}
+                  disabled={formRole !== 'Mangaka'}
+                  className={`w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground focus:border-primary/50 ${
+                    formRole !== 'Mangaka' ? 'cursor-not-allowed' : 'cursor-pointer'
+                  }`}
+                >
+                  <option value="">-- Chưa gán Editor --</option>
+                  {editors.map(ed => (
+                    <option key={ed.id} value={ed.id}>{ed.name} ({ed.username})</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -605,6 +796,238 @@ export default function AdminPage() {
             <Button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl mt-2 cursor-pointer transition-all">
               Xác nhận Gán Biên Tập Viên
             </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assistant View Series & Chapters Modal */}
+      <Dialog open={isViewSeriesModalOpen} onOpenChange={(open) => !open && setIsViewSeriesModalOpen(false)}>
+        <DialogContent className="bg-card border border-border rounded-2xl max-w-lg p-6 max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="border-b border-border pb-3">
+            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-primary" />
+              Tác phẩm của Mangaka {selectedMangaka?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 pt-4">
+            {mangakaSeriesList.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground text-xs italic">
+                Mangaka này chưa có series hoạt động nào.
+              </div>
+            ) : (
+              mangakaSeriesList.map((series) => {
+                const chapters = getChapters(series.id)
+                return (
+                  <div key={series.id} className="p-4 bg-muted/30 border border-border rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-sm text-foreground">{series.title}</span>
+                      <Badge className="bg-primary/10 text-primary border border-primary/20 text-[9px] font-bold px-2 py-0.5 rounded">
+                        Active Series
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Danh sách Chương (Chapters):</p>
+                      {chapters.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">Chưa có chapter nào được đăng ký.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {chapters.map((chap) => {
+                            const tasks = getTasks(chap.id)
+                            return (
+                              <div key={chap.id} className="p-3 bg-card border border-border/80 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between text-xs font-bold text-foreground">
+                                  <span>Ch. {chap.number}: {chap.title}</span>
+                                  <span className="text-[10px] text-muted-foreground font-medium">Trạng thái: {chap.status}</span>
+                                </div>
+                                
+                                {/* Tasks inside chapter */}
+                                <div className="space-y-1.5 pt-1 border-t border-border/30">
+                                  <p className="text-[9px] font-bold text-muted-foreground uppercase">Nhiệm vụ vẽ:</p>
+                                  {tasks.length === 0 ? (
+                                    <p className="text-[10px] text-muted-foreground italic">Chưa giao nhiệm vụ vẽ nào.</p>
+                                  ) : (
+                                    <div className="space-y-1">
+                                      {tasks.map((t) => (
+                                        <div key={t.id} className="flex items-center justify-between text-[10px] bg-muted/50 p-1.5 rounded border border-border/40">
+                                          <span className="font-semibold">{t.type} (Trang {t.pages})</span>
+                                          <span className="text-muted-foreground font-mono">Trợ lý: {t.assistantName} ({t.status})</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mangaka Assign Drawing Task Modal */}
+      <Dialog open={isAssignTaskModalOpen} onOpenChange={(open) => !open && setIsAssignTaskModalOpen(false)}>
+        <DialogContent className="bg-card border border-border rounded-2xl max-w-lg p-6 max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="border-b border-border pb-3">
+            <DialogTitle className="text-base font-extrabold text-foreground flex items-center gap-2">
+              <PlusCircle className="w-5 h-5 text-primary" />
+              Giao nhiệm vụ vẽ cho {selectedAssistant?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleAssignTaskSubmit} className="space-y-4 pt-3">
+            {/* Series & Chapter Selection */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground">Chọn tác phẩm (Series)</label>
+                <select
+                  value={selectedSeriesId}
+                  onChange={(e) => handleSeriesChangeInModal(e.target.value)}
+                  className="w-full px-3 py-2 bg-muted/65 border border-border rounded-xl text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
+                  required
+                >
+                  <option value="">-- Chọn tác phẩm --</option>
+                  {taskSeriesList.map(s => (
+                    <option key={s.id} value={s.id}>{s.title}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground">Chọn Chapter</label>
+                <select
+                  value={selectedChapterId}
+                  onChange={(e) => setSelectedChapterId(e.target.value)}
+                  className="w-full px-3 py-2 bg-muted/65 border border-border rounded-xl text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
+                  required
+                >
+                  <option value="">-- Chọn Chapter --</option>
+                  {chaptersList.map(c => (
+                    <option key={c.id} value={c.id}>Ch. {c.number}: {c.title}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            {/* Task Type and Suggestions */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground">Loại nhiệm vụ (Task Type)</label>
+              <input
+                type="text"
+                placeholder="VD: Line Art, Coloring..."
+                value={newTaskType}
+                onChange={(e) => setNewTaskType(e.target.value)}
+                className="w-full px-3 py-2.5 bg-muted/50 border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground font-semibold"
+                required
+              />
+              
+              {/* Task Type Suggestions */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Gợi ý loại task:</span>
+                <div className="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto p-1 bg-muted/20 border border-border/50 rounded-xl">
+                  {TASK_TYPE_SUGGESTIONS.map((suggestion) => {
+                    const isSelected = newTaskType.toLowerCase() === suggestion.name.toLowerCase();
+                    return (
+                      <button
+                        key={suggestion.name}
+                        type="button"
+                        onClick={() => {
+                          setNewTaskType(suggestion.name);
+                          const pagesText = `${newTaskPageStart}-${newTaskPageEnd}`;
+                          setNewTaskDesc(suggestion.template.replace('{pages}', pagesText));
+                        }}
+                        className={`text-left p-2.5 rounded-xl border text-xs transition-all flex flex-col gap-1 cursor-pointer ${
+                          isSelected
+                            ? 'bg-primary/10 border-primary text-foreground'
+                            : 'bg-muted/40 border-border/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-foreground">{suggestion.name}</span>
+                          {isSelected && <span className="text-[9px] bg-primary text-primary-foreground px-1.5 py-0.2 rounded font-bold">Đang chọn</span>}
+                        </div>
+                        <span className="text-[10px] opacity-80 leading-relaxed">{suggestion.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            
+            {/* Pages Start & End */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground">Trang bắt đầu</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={newTaskPageStart}
+                  onChange={(e) => setNewTaskPageStart(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground">Trang kết thúc</label>
+                <input
+                  type="number"
+                  min={newTaskPageStart}
+                  value={newTaskPageEnd}
+                  onChange={(e) => setNewTaskPageEnd(Math.max(newTaskPageStart, parseInt(e.target.value) || newTaskPageStart))}
+                  className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
+                  required
+                />
+              </div>
+            </div>
+            
+            {/* Due date */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+                <CalendarDays className="w-3.5 h-3.5 text-primary" /> Hạn nộp (Due Date)
+              </label>
+              <input
+                type="date"
+                value={newTaskDueDate}
+                onChange={(e) => setNewTaskDueDate(e.target.value)}
+                className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
+              />
+            </div>
+            
+            {/* Description / Instructions */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground">Mô tả chi tiết & Hướng dẫn</label>
+              <textarea
+                placeholder="Nhập hướng dẫn chi tiết cho trợ lý..."
+                value={newTaskDesc}
+                onChange={(e) => setNewTaskDesc(e.target.value)}
+                className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground resize-none"
+                required
+              />
+            </div>
+            
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
+              <Button
+                type="button"
+                onClick={() => setIsAssignTaskModalOpen(false)}
+                variant="outline"
+                className="px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Giao việc
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

@@ -3,6 +3,8 @@
  * Powers the Mangaka Chapter Creation, Assistant Task Assignment, and Approval workflow.
  */
 
+import { fetchAPI } from '@/services/api'
+
 export type ChapterStatus = 'Draft' | 'In Progress' | 'Ready for Editor' | 'Published'
 
 export type TaskStatus = 'Unassigned' | 'Pending' | 'In-Progress' | 'Submitted' | 'Approved' | 'Rejected'
@@ -42,6 +44,7 @@ export interface Task {
   attachments?: { name: string; size: string; type: string }[] // Tài liệu hướng dẫn đính kèm từ Mangaka
   submittedFiles?: { name: string; size: string; type: string }[] // Các file hình ảnh/sản phẩm Assistant đã nộp
   submitDescription?: string // Lời nhắn hoặc mô tả chỉnh sửa từ Assistant khi nộp bài
+  submissionId?: string // to support backend approve/reject calls
 }
 
 export interface Chapter {
@@ -298,6 +301,38 @@ export function createTask(data: Omit<Task, 'id' | 'status' | 'assistantName'>):
   tasks.push(newTask)
   saveTasks(tasks)
 
+  // Background API call to backend
+  if (typeof window !== 'undefined') {
+    const defaultManuscriptId = '77777777-7777-7777-7777-777777777777' // Seeded manuscript ID
+    
+    const payload = {
+      chapterId: data.chapterId,
+      manuscriptId: defaultManuscriptId,
+      assistantId: data.assistantId === 'Unassigned' ? '00000000-0000-0000-0000-000000000000' : data.assistantId,
+      pageStart: data.pageStart || 1,
+      pageEnd: data.pageEnd || 3,
+      taskType: data.type,
+      description: data.description,
+      dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null
+    }
+
+    fetchAPI<{ data: any }>('/api/page-tasks', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }).then((res: any) => {
+      if (res && res.data) {
+        const currentTasks = loadTasks()
+        const foundIdx = currentTasks.findIndex(t => t.id === newTask.id)
+        if (foundIdx !== -1) {
+          currentTasks[foundIdx].id = res.data.pageTaskId || res.data.id
+          saveTasks(currentTasks)
+        }
+      }
+    }).catch(err => {
+      console.warn("Failed to create task on backend:", err)
+    })
+  }
+
   // Update assistant active task count
   if (data.assistantId !== 'Unassigned') {
     updateAssistantTaskCount(data.assistantId, 1)
@@ -338,6 +373,56 @@ export function updateTaskStatus(
   }
   
   saveTasks(tasks)
+
+  // Background API calls to backend
+  if (typeof window !== 'undefined') {
+    // 1. Assistant submits task work
+    if (status === 'Submitted' && oldStatus !== 'Submitted') {
+      const payload = {
+        note: submitDescription || 'Nộp trang vẽ',
+        submittedFileAssetId: '88888888-8888-8888-8888-888888888888' // Default file asset ID
+      }
+      fetchAPI<any>(`/api/page-tasks/${taskId}/submissions`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      }).then(res => {
+        if (res && res.data) {
+          const currentTasks = loadTasks()
+          const foundIdx = currentTasks.findIndex(t => t.id === taskId)
+          if (foundIdx !== -1) {
+            currentTasks[foundIdx].submissionId = res.data.submissionId || res.data.id
+            saveTasks(currentTasks)
+          }
+        }
+      }).catch(err => {
+        console.warn("Failed to submit task work to backend:", err)
+      })
+    }
+    // 2. Mangaka approves drawing task submission
+    else if (status === 'Approved' && oldTask.submissionId) {
+      fetchAPI<any>(`/api/page-tasks/submissions/${oldTask.submissionId}/approve`, {
+        method: 'POST'
+      }).then(res => {
+        console.log("Approved submission on backend successfully", res)
+      }).catch(err => {
+        console.warn("Failed to approve submission on backend:", err)
+      })
+    }
+    // 3. Mangaka rejects drawing task submission
+    else if (status === 'Rejected' && oldTask.submissionId) {
+      const payload = {
+        rejectReason: feedback || 'Cần vẽ lại chi tiết hơn.'
+      }
+      fetchAPI<any>(`/api/page-tasks/submissions/${oldTask.submissionId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      }).then(res => {
+        console.log("Rejected submission on backend successfully", res)
+      }).catch(err => {
+        console.warn("Failed to reject submission on backend:", err)
+      })
+    }
+  }
 
   // Manage assistant active task counts
   if (oldTask.assistantId !== 'Unassigned') {
@@ -412,4 +497,59 @@ export function getAssistantById(id: string): Assistant | undefined {
 function updateAssistantTaskCount(assistantId: string, diff: number) {
   // Seed assistants is memory-only, but we dynamically recalculate activeTasks inside getAssistants()
   // based on active tasks in the tasks store, so no write needed.
+}
+
+// ---------- Async Backend Synchronizers ----------
+
+export async function syncTasksFromBackend(chapterId?: string): Promise<Task[]> {
+  try {
+    const role = typeof window !== 'undefined' ? localStorage.getItem('user-role') : null
+    let endpoint = '/api/page-tasks/mangaka'
+    if (role === 'Assistant') {
+      endpoint = '/api/page-tasks/assistant'
+    }
+    const response = await fetchAPI<{ data: any[] }>(endpoint)
+    if (response && response.data) {
+      const backendTasks: Task[] = response.data.map(t => {
+        const assistants = getAssistants()
+        const assistant = assistants.find(a => a.id === t.assistantId || a.name === t.assistantName)
+        const assistantName = t.assistantName || (assistant ? assistant.name : 'Unassigned')
+        
+        return {
+          id: t.pageTaskId || t.id,
+          chapterId: t.chapterId,
+          type: t.taskType,
+          pages: `${t.pageStart}-${t.pageEnd}`,
+          description: t.description || '',
+          assistantId: t.assistantId || 'Unassigned',
+          assistantName,
+          status: t.status as TaskStatus,
+          dueDate: t.dueDate || undefined,
+          pageStart: t.pageStart,
+          pageEnd: t.pageEnd,
+          submittedWorkUrl: t.submissions && t.submissions.length > 0 
+            ? t.submissions[0].submittedFileAssetUrl || 'https://images.unsplash.com/photo-1528164344705-47542687000d?w=800' 
+            : undefined,
+          submitDescription: t.submissions && t.submissions.length > 0 ? t.submissions[0].note : undefined,
+          submissionId: t.submissions && t.submissions.length > 0 ? t.submissions[0].submissionId : undefined,
+        }
+      })
+
+      const localTasks = loadTasks()
+      const merged = [...localTasks]
+      backendTasks.forEach(bt => {
+        const idx = merged.findIndex(lt => lt.id === bt.id)
+        if (idx !== -1) {
+          merged[idx] = { ...merged[idx], ...bt }
+        } else {
+          merged.push(bt)
+        }
+      })
+      saveTasks(merged)
+      return chapterId ? merged.filter(t => t.chapterId === chapterId) : merged
+    }
+  } catch (error) {
+    console.warn("syncTasksFromBackend failed, using offline data:", error)
+  }
+  return getTasks(chapterId)
 }
