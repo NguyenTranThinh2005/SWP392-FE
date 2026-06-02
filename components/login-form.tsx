@@ -50,7 +50,7 @@ export function LoginForm({
     try {
       setError(null)
       setIsLoading(true)
-      await authService.login()
+      await authService.login(data)
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid credentials. Please try again.")

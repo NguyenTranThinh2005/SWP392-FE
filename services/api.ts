@@ -6,26 +6,33 @@ export async function fetchAPI<T>(
   options?: RequestInit
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...options?.headers,
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+  };
+
   const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
     ...options,
+    headers,
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (endpoint.includes("/api/auth/login")) {
+        throw new Error("Tài khoản hoặc mật khẩu không chính xác.");
+      } else {
+        throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      }
+    }
     throw new Error(`API error: ${response.statusText}`);
   }
 
   return response.json();
 }
 
-/**
- * Gọi API từ Backend. 
- * Nếu API chưa tồn tại (404), Backend sập, hoặc gặp lỗi kết nối,
- * hàm sẽ tự động trả về mockData để giao diện FE không bị lỗi và tiếp tục hoạt động.
- */
 export async function fetchWithFallback<T>(
   endpoint: string,
   mockData: T,

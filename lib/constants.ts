@@ -3,7 +3,10 @@ export const APP_NAME = "My App";
 export const APP_VERSION = "1.0.0";
 
 // API endpoints
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL;
+export const API_BASE_URL = (rawApiUrl && rawApiUrl !== "undefined" && rawApiUrl !== "null" && rawApiUrl !== "")
+  ? rawApiUrl
+  : "http://localhost:5151";
 
 // Routes
 export const ROUTES = {
