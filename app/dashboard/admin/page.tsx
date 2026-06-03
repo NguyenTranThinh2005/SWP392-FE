@@ -44,6 +44,8 @@ import {
   assignEditorToMangaka,
   type User
 } from '@/lib/users-store'
+import { authService } from '@/services/authService'
+import { ROLE_IDS } from '@/lib/roles'
 
 export default function AdminPage() {
   const { role } = useRole()
@@ -145,7 +147,7 @@ export default function AdminPage() {
   }
 
   // Handle Create Account Submission (BR-01)
-  const handleCreateAccount = (e: React.FormEvent) => {
+  const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Valdiations
@@ -165,15 +167,35 @@ export default function AdminPage() {
     }
 
     try {
-      createUser({
-        name: formName.trim(),
-        username: formUsername.trim(),
+      const selectedRoleId = ROLE_IDS[formRole as keyof typeof ROLE_IDS]
+      if (!selectedRoleId) {
+        toast.error('Vai trò không hợp lệ hoặc chưa được ánh xạ UUID.')
+        return
+      }
+
+      await authService.register({
+        userName: formUsername.trim(),
         email: formEmail.trim(),
-        role: formRole,
-        editorId: formRole === 'Mangaka' && formEditorId ? formEditorId : undefined
+        displayName: formName.trim(),
+        password: formPassword,
+        roleId: selectedRoleId,
+        assignedFromUserId: formRole === 'Mangaka' && formEditorId.trim() ? formEditorId.trim() : undefined
       })
 
-      toast.success(`Tài khoản "${formName}" đã được tạo thành công (BR-01)!`)
+      // Also fallback update mock store to see it in Frontend list
+      try {
+        createUser({
+          name: formName.trim(),
+          username: formUsername.trim(),
+          email: formEmail.trim(),
+          role: formRole,
+          editorId: formRole === 'Mangaka' && formEditorId.trim() ? formEditorId.trim() : undefined
+        })
+      } catch (_) {
+        // Suppress mock creation errors if already exists locally
+      }
+
+      toast.success(`Tài khoản "${formName}" đã được tạo thành công trên Database (BR-01)!`)
       
       // Reset Form
       setFormName('')
@@ -509,22 +531,20 @@ export default function AdminPage() {
                 </select>
               </div>
 
-              {/* Conditionally Render Editor Assignment Dropdown (if role === Mangaka) */}
+              {/* Conditionally Render Editor Assignment Input (if role === Mangaka) */}
               {formRole === 'Mangaka' && (
                 <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-200">
                   <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                    <LinkIcon className="w-3.5 h-3.5 text-primary" /> Tantou Editor Phụ Trách
+                    <LinkIcon className="w-3.5 h-3.5 text-primary" /> UUID của Tantou Editor Phụ Trách <span className="text-destructive">*</span>
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: b6c7d8e9-2345-5678-90ab-cdef01234568"
                     value={formEditorId}
                     onChange={(e) => setFormEditorId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer focus:border-primary/50"
-                  >
-                    <option value="">-- Chưa gán Editor --</option>
-                    {editors.map(ed => (
-                      <option key={ed.id} value={ed.id}>{ed.name} ({ed.username})</option>
-                    ))}
-                  </select>
+                    className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground placeholder:text-muted-foreground/40 focus:border-primary/50"
+                    required
+                  />
                 </div>
               )}
             </div>
