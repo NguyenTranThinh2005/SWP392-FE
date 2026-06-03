@@ -13,7 +13,7 @@ export const authService = {
     const response = await fetchAPI<{ data: { token: string; refreshToken: string; user: User }; message: string }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
-    });  
+    });
     if (response.data && response.data.token) {
       localStorage.setItem('token', response.data.token);
       if (response.data.refreshToken) {
@@ -22,7 +22,7 @@ export const authService = {
       localStorage.setItem('user-role', response.data.user.role);
     }
     return response;
-  },  
+  },
 
   register: async (userData: any) => {
     return fetchAPI<any>('/api/auth/register', {
@@ -41,6 +41,7 @@ export const authService = {
       console.warn("Logout endpoint failed on backend, local session cleared", err);
     }
   },
+
 
   getCurrentUser: async () => {
     const response = await fetchAPI<{ data: User; message: string }>('/api/auth/me');

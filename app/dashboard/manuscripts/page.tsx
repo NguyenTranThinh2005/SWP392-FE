@@ -26,6 +26,8 @@ import {
   getAnnotations,
   addAnnotation,
   updateManuscriptStatus,
+  syncManuscriptsFromBackend,
+  syncAnnotationsFromBackend,
   type ManuscriptItem,
   type Annotation
 } from '@/lib/manuscripts-store'
@@ -37,6 +39,7 @@ export default function ManuscriptsPage() {
   // Page States
   const [manuscripts, setManuscripts] = useState<ManuscriptItem[]>([])
   const [activeManuscriptId, setActiveManuscriptId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'ALL' | 'SUBMITTED' | 'APPROVED' | 'REVISION REQUIRED'>('ALL')
 
   // Review Panel States
   const [annotations, setAnnotations] = useState<Annotation[]>([])
@@ -47,6 +50,11 @@ export default function ManuscriptsPage() {
   useEffect(() => {
     setMounted(true)
     setManuscripts(getManuscripts())
+
+    // Background sync from Backend
+    syncManuscriptsFromBackend().then((synced) => {
+      setManuscripts(synced)
+    })
   }, [])
 
   // Sync annotations when active manuscript changes
@@ -54,9 +62,19 @@ export default function ManuscriptsPage() {
     return manuscripts.find(m => m.id === activeManuscriptId)
   }, [manuscripts, activeManuscriptId])
 
+  const filteredManuscripts = useMemo(() => {
+    if (activeTab === 'ALL') return manuscripts
+    return manuscripts.filter(m => m.status === activeTab)
+  }, [manuscripts, activeTab])
+
   useEffect(() => {
     if (activeManuscript) {
       setAnnotations(getAnnotations(activeManuscript.id, activeManuscript.latestVersion))
+
+      // Background sync from Backend
+      syncAnnotationsFromBackend(activeManuscript.id).then((synced) => {
+        setAnnotations(synced)
+      })
     }
   }, [activeManuscript])
 
@@ -299,8 +317,30 @@ export default function ManuscriptsPage() {
             </div>
           </div>
 
+          {/* Status Tabs Menu */}
+          <div className="flex border-b border-border">
+            {[
+              { id: 'ALL', label: 'Tất cả Bản thảo' },
+              { id: 'SUBMITTED', label: 'Chờ Duyệt' },
+              { id: 'APPROVED', label: 'Đã Phê Duyệt' },
+              { id: 'REVISION REQUIRED', label: 'Yêu Cầu Sửa Đổi' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 gap-6">
-            {manuscripts.map((m) => {
+            {filteredManuscripts.map((m) => {
               const isSpecialHistoryCard = m.id === 'M04'
               const latestVer = m.history[0]
 

@@ -27,6 +27,7 @@ import {
   getAssistants,
   getChapters,
   getSeries,
+  syncTasksFromBackend,
   type Task,
   type TaskStatus,
   type Assistant
@@ -44,12 +45,24 @@ export default function AssistantDashboardPage() {
   
   // Submit modal states
   const [submittingTaskId, setSubmittingTaskId] = useState<string | null>(null)
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
+  const [activeTaskToSubmit, setActiveTaskToSubmit] = useState<Task | null>(null)
   const [submitDescription, setSubmitDescription] = useState('')
   const [submitUrl, setSubmitUrl] = useState('')
+  const [attachedFiles, setAttachedFiles] = useState<{ name: string; size: string; type: string }[]>([])
+  
+  // Task Detail Modal states
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
 
   const loadData = useCallback(() => {
     setAssistants(getAssistants())
     setTasks(getTasksByAssistant(selectedAssistantId))
+
+    // Background sync from Backend
+    syncTasksFromBackend().then(() => {
+      setTasks(getTasksByAssistant(selectedAssistantId))
+    })
   }, [selectedAssistantId])
 
   useEffect(() => {

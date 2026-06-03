@@ -46,6 +46,7 @@ import {
   getAssistants,
   getSeriesByMangaka,
   SEED_ASSISTANTS,
+  syncTasksFromBackend,
   type Chapter,
   type Task,
   type Assistant,
@@ -54,6 +55,34 @@ import {
   type TaskStatus
 } from '@/lib/chapters-store'
 import { calculateChapterDeadline, calculateChapterProgress } from '@/lib/business-logic'
+
+const TASK_TYPE_SUGGESTIONS = [
+  {
+    name: 'Line Art',
+    description: 'Phác thảo nét vẽ và vẽ viền cho nhân vật/bối cảnh.',
+    template: 'Yêu cầu đi nét vẽ chi tiết cho nhân vật chính ở trang {pages}. Chú ý độ dày nét viền mặt và tóc.'
+  },
+  {
+    name: 'Coloring',
+    description: 'Tô màu, đánh bóng và xử lý nguồn sáng cảnh tranh.',
+    template: 'Thực hiện tô màu kỹ thuật số cho trang {pages}. Sử dụng tông màu hoàng hôn vàng ấm áp theo moodboard.'
+  },
+  {
+    name: 'Background Art',
+    description: 'Vẽ bối cảnh, môi trường và cảnh nền chi tiết.',
+    template: 'Vẽ chi tiết bối cảnh ngôi đền cổ ở hậu cảnh cho các trang {pages}. Tập trung vào họa tiết mái ngói.'
+  },
+  {
+    name: 'Screentoning',
+    description: 'Dán lưới tông màu và tạo hiệu ứng chiều sâu cho trang truyện.',
+    template: 'Dán lưới screentone tạo chiều sâu bóng râm và vân sáng cho trang {pages}.'
+  },
+  {
+    name: 'Clean-up',
+    description: 'Làm sạch nét vẽ phác thảo thô, căn chỉnh các khung tranh.',
+    template: 'Tẩy xóa nét nháp thô thừa và chuẩn hóa kích thước khung hình cho trang {pages}.'
+  }
+]
 
 // Mock current logged in mangaka ID (matches seed data)
 const MOCK_MANGAKA_ID = 'U01'
@@ -93,7 +122,7 @@ export default function ChaptersPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Form states for creating task
-  const [newTaskTypes, setNewTaskTypes] = useState<string[]>(['Line Art'])
+  const [newTaskType, setNewTaskType] = useState<string>('Line Art')
   const [newTaskPageStart, setNewTaskPageStart] = useState<number>(1)
   const [newTaskPageEnd, setNewTaskPageEnd] = useState<number>(3)
   const [newTaskDesc, setNewTaskDesc] = useState('')
@@ -151,6 +180,11 @@ export default function ChaptersPage() {
         const chap = getChapterById(currentChapterId)
         setSelectedChapter(chap || null)
         setChapterTasks(getTasks(currentChapterId))
+
+        // Background sync tasks from Backend
+        syncTasksFromBackend(currentChapterId).then((synced) => {
+          setChapterTasks(synced)
+        })
       } else {
         setSelectedChapter(null)
         setChapterTasks([])
@@ -163,6 +197,11 @@ export default function ChaptersPage() {
     // 4. Load tasks for selected assistant
     if (selectedAssistantId) {
       setAssistantTasks(getTasksByAssistant(selectedAssistantId))
+
+      // Background sync tasks for assistant
+      syncTasksFromBackend().then(() => {
+        setAssistantTasks(getTasksByAssistant(selectedAssistantId))
+      })
     }
   }
 
@@ -397,8 +436,8 @@ export default function ChaptersPage() {
   // 2. Tạo Task & Giao việc cho Assistant
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault()
-    if (newTaskTypes.length === 0) {
-      showToast('Vui lòng chọn ít nhất một loại task!', 'error')
+    if (!newTaskType.trim()) {
+      showToast('Vui lòng nhập hoặc chọn loại task!', 'error')
       return
     }
     if (newTaskPageStart > newTaskPageEnd) {
@@ -412,7 +451,7 @@ export default function ChaptersPage() {
 
     createTask({
       chapterId: selectedChapterId,
-      type: newTaskTypes.join(', '),
+      type: newTaskType.trim(),
       pages: `${newTaskPageStart}-${newTaskPageEnd}`,
       pageStart: newTaskPageStart,
       pageEnd: newTaskPageEnd,
@@ -425,7 +464,7 @@ export default function ChaptersPage() {
     showToast(`Đã tạo task và giao việc thành công!`)
     setIsTaskModalOpen(false)
     setNewTaskDesc('')
-    setNewTaskTypes(['Line Art'])
+    setNewTaskType('Line Art')
     setNewTaskPageStart(1)
     setNewTaskPageEnd(3)
     setNewTaskDueDate('')
@@ -1432,30 +1471,48 @@ export default function ChaptersPage() {
             </div>
 
             <form onSubmit={handleCreateTask} className="space-y-4">
-              {/* Task Types Multiselect Checkboxes */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Task Types (Chọn một hoặc nhiều)</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3 bg-muted/40 border border-border rounded-xl">
-                  {['Line Art', 'Coloring', 'Background Art', 'Screentoning', 'Clean-up'].map((t) => {
-                    const checked = newTaskTypes.includes(t)
-                    return (
-                      <label key={t} className="flex items-center gap-2 text-xs font-semibold cursor-pointer text-foreground select-none">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            if (checked) {
-                              setNewTaskTypes(prev => prev.filter(x => x !== t))
-                            } else {
-                              setNewTaskTypes(prev => [...prev, t])
-                            }
+              {/* Task Type with Suggestions */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground">Task Type (Loại nhiệm vụ)</label>
+                <input
+                  type="text"
+                  placeholder="Nhập loại task (VD: Line Art, Coloring...)"
+                  value={newTaskType}
+                  onChange={(e) => setNewTaskType(e.target.value)}
+                  className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground font-semibold"
+                  required
+                />
+                
+                {/* Suggestions List */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Gợi ý loại task (Click để chọn nhanh):</span>
+                  <div className="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto p-1 bg-muted/20 border border-border/50 rounded-xl">
+                    {TASK_TYPE_SUGGESTIONS.map((suggestion) => {
+                      const isSelected = newTaskType.toLowerCase() === suggestion.name.toLowerCase();
+                      return (
+                        <button
+                          key={suggestion.name}
+                          type="button"
+                          onClick={() => {
+                            setNewTaskType(suggestion.name);
+                            const pagesText = `${newTaskPageStart}-${newTaskPageEnd}`;
+                            setNewTaskDesc(suggestion.template.replace('{pages}', pagesText));
                           }}
-                          className="rounded border-border text-primary focus:ring-primary/20 w-3.5 h-3.5 accent-primary"
-                        />
-                        {t}
-                      </label>
-                    )
-                  })}
+                          className={`text-left p-2.5 rounded-xl border text-xs transition-all flex flex-col gap-1 cursor-pointer ${
+                            isSelected
+                              ? 'bg-primary/10 border-primary text-foreground'
+                              : 'bg-muted/40 border-border/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-foreground">{suggestion.name}</span>
+                            {isSelected && <span className="text-[9px] bg-primary text-primary-foreground px-1.5 py-0.2 rounded font-bold">Đang chọn</span>}
+                          </div>
+                          <span className="text-[10px] opacity-80 leading-relaxed">{suggestion.description}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
