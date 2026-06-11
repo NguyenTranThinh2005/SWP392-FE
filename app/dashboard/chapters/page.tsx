@@ -1044,7 +1044,7 @@ export default function ChaptersPage() {
       {/* ========================================================================= */}
       {/* 3. EDITOR VIEW / GENERAL VIEW                                            */}
       {/* ========================================================================= */}
-      {(role === 'Tantou Editor' || role === 'Editorial Board') && (
+      {(role === 'TantouEditor' || role === 'EditorialBoard') && (
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
             <h3 className="font-bold text-sm text-foreground flex items-center gap-2">

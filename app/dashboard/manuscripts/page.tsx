@@ -80,7 +80,7 @@ export default function ManuscriptsPage() {
 
   // Is authorized editor (Tantou Editor)
   const isTantouEditor = useMemo(() => {
-    return role === 'Tantou Editor'
+    return role === 'TantouEditor'
   }, [role])
 
   const handleOpenReview = (id: string) => {

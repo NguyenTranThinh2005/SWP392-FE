@@ -341,7 +341,7 @@ function TantouEditorWorkspace() {
   }, [supervisedSeries, pendingReviewsCount])
 
   // Role Guard check
-  if (role !== 'Tantou Editor') {
+  if (role !== 'TantouEditor') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">

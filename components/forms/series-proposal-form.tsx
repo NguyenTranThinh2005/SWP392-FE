@@ -7,6 +7,7 @@ import { seriesProposalSchema, type SeriesProposalInput } from '@/lib/validation
 import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronUp, AlertCircle, BookOpen, FileText, Image as ImageIcon, Upload, X } from 'lucide-react'
 import { API_BASE_URL } from '@/lib/constants'
+import { systemService } from '@/services/systemService'
 
 const uploadSampleImagesToBackend = async (files: File[]): Promise<string> => {
   const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
@@ -85,20 +86,6 @@ interface SeriesProposalFormProps {
   defaultValues?: Partial<SeriesProposalInput>
 }
 
-const ALL_GENRES = [
-  'Action', 'Adventure', 'Avant Garde', 'Boys Love',
-  'Comedy', 'Demons', 'Drama', 'Ecchi',
-  'Fantasy', 'Girls Love', 'Gourmet', 'Harem',
-  'Horror', 'Isekai', 'Iyashikei', 'Josei',
-  'Kids', 'Magic', 'Mahou Shoujo', 'Martial Arts',
-  'Mecha', 'Military', 'Music', 'Mystery',
-  'Parody', 'Psychological', 'Reverse Harem', 'Romance',
-  'School', 'Sci-Fi', 'Seinen', 'Shoujo',
-  'Shounen', 'Slice of Life', 'Space', 'Sports',
-  'Super Power', 'Supernatural', 'Suspense', 'Thriller',
-  'Vampire'
-]
-
 const SYNOPSIS_MIN = 200
 const SYNOPSIS_MAX = 2000
 
@@ -111,6 +98,7 @@ export function SeriesProposalForm({
   const [error, setError] = useState<string | null>(null)
   const [action, setAction] = useState<'draft' | 'submit'>('submit')
   const [isOpen, setIsOpen] = useState(false)
+  const [genres, setGenres] = useState<string[]>([])
   const [selectedGenres, setSelectedGenres] = useState<string[]>(
     defaultValues?.genre ? defaultValues.genre.split(', ').filter(Boolean) : []
   )
@@ -119,6 +107,25 @@ export function SeriesProposalForm({
   const [sourceZipFile, setSourceZipFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let active = true
+    async function loadGenres() {
+      try {
+        const list = await systemService.getGenres()
+        if (active) {
+          const activeGenres = list.filter(g => !g.deletedAt).map(g => g.title)
+          setGenres(activeGenres)
+        }
+      } catch (err) {
+        console.error('Failed to load genres from API:', err)
+      }
+    }
+    loadGenres()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const {
     register,
@@ -345,7 +352,7 @@ export function SeriesProposalForm({
           {isOpen && (
             <div className="absolute left-0 right-0 md:left-auto md:w-[560px] z-50 mt-1 bg-card border border-border rounded-2xl shadow-2xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-3 gap-y-2 max-h-[220px] overflow-y-auto pr-1">
-                {ALL_GENRES.map((g) => {
+                {genres.map((g) => {
                   const isChecked = selectedGenres.includes(g)
                   return (
                     <label

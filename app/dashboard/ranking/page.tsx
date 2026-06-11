@@ -69,7 +69,7 @@ export default function RankingPage() {
 
   // Determine if active user is Authorized Admin for Vote Imports (BR-87)
   const isAuthorized = useMemo(() => {
-    return role === 'Editorial Board' || role === 'Editor-in-Chief'
+    return role === 'EditorialBoard' || role === 'EditorInChief'
   }, [role])
 
   useEffect(() => {

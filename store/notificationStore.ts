@@ -4,7 +4,7 @@ export interface AppNotification {
   id: string
   title: string
   message: string
-  role: 'Mangaka' | 'Assistant' | 'Tantou Editor' | 'Editorial Board' | 'Editor-in-Chief' | 'All'
+  role: 'Mangaka' | 'Assistant' | 'TantouEditor' | 'EditorialBoard' | 'EditorInChief' | 'All'
   read: boolean
   createdAt: string
   type: 'info' | 'success' | 'warning' | 'error'

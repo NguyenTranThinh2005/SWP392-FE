@@ -127,7 +127,7 @@ export default function ReviewProposalsPage() {
           notificationStore.addNotification(
             'Proposal Approved',
             `Proposal "${proposal.title}" has been approved and activated by the Editorial Board.`,
-            'Editor-in-Chief',
+            'EditorInChief',
             'success'
           )
         } else if (newStatus === 'Rejected') {
@@ -149,7 +149,7 @@ export default function ReviewProposalsPage() {
   if (!mounted) return null
 
   // Editorial Board or Editor-in-Chief check
-  if (role !== 'Editorial Board' && role !== 'Editor-in-Chief') {
+  if (role !== 'EditorialBoard' && role !== 'EditorInChief') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">

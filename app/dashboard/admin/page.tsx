@@ -173,11 +173,7 @@ export default function AdminPage() {
         const mappedUsers: User[] = response.data.map((u) => {
           const id = u.userId || "default"
           const code = id.charCodeAt(id.length - 1) || 0
-          let roleName = u.roleName;
-          if (roleName === 'TantouEditor') roleName = 'Tantou Editor';
-          else if (roleName === 'EditorialBoard') roleName = 'Editorial Board';
-          else if (roleName === 'EditorInChief') roleName = 'Editor-in-Chief';
-          const role = roleName as any
+          const role = u.roleName as any
           const status = u.deletedAt === null ? 'Active' : 'Inactive'
 
           const localUser: User = {
@@ -288,7 +284,7 @@ export default function AdminPage() {
 
   // Get available Editors for dropdown
   const editors = useMemo(() => {
-    return usersList.filter(u => u.role === 'Tantou Editor' && u.status === 'Active')
+    return usersList.filter(u => u.role === 'TantouEditor' && u.status === 'Active')
   }, [usersList])
 
   // Look up editor name helper
@@ -595,9 +591,9 @@ export default function AdminPage() {
                 <option value="all">Tất cả Vai trò</option>
                 <option value="Admin">Admin</option>
                 <option value="Mangaka">Mangaka</option>
-                <option value="Tantou Editor">Tantou Editor</option>
-                <option value="Editorial Board">Editorial Board</option>
-                <option value="Editor-in-Chief">Editor-in-Chief</option>
+                <option value="TantouEditor">Tantou Editor</option>
+                <option value="EditorialBoard">Editorial Board</option>
+                <option value="EditorInChief">Editor-in-Chief</option>
                 <option value="Assistant">Assistant</option>
               </select>
             </div>
@@ -647,9 +643,9 @@ export default function AdminPage() {
                       let roleBadgeClass = 'bg-slate-500/10 text-slate-600 border-slate-500/20'
                       if (user.role === 'Admin') roleBadgeClass = 'bg-amber-500/10 text-amber-600 border-amber-500/20'
                       else if (user.role === 'Mangaka') roleBadgeClass = 'bg-primary/10 text-primary border-primary/20'
-                      else if (user.role === 'Tantou Editor') roleBadgeClass = 'bg-sky-500/10 text-sky-600 border-sky-500/20'
-                      else if (user.role === 'Editorial Board') roleBadgeClass = 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20'
-                      else if (user.role === 'Editor-in-Chief') roleBadgeClass = 'bg-red-500/10 text-red-600 border-red-500/20'
+                      else if (user.role === 'TantouEditor') roleBadgeClass = 'bg-sky-500/10 text-sky-600 border-sky-500/20'
+                      else if (user.role === 'EditorialBoard') roleBadgeClass = 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20'
+                      else if (user.role === 'EditorInChief') roleBadgeClass = 'bg-red-500/10 text-red-600 border-red-500/20'
 
                       return (
                         <TableRow key={user.id} className="border-b border-border hover:bg-muted/15 transition-colors">

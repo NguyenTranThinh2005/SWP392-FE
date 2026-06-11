@@ -4,7 +4,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'Mangaka' | 'Assistant' | 'Tantou Editor' | 'Editorial Board' | 'Editor-in-Chief';
+  role: 'Mangaka' | 'Assistant' | 'TantouEditor' | 'EditorialBoard' | 'EditorInChief' | 'Admin';
   avatarUrl: string;
   assignedEditorId?: string;
   assignedEditorName?: string;
@@ -63,6 +63,7 @@ export const authService = {
       response.data.avatarUrl = `https://xsgames.co/randomusers/assets/avatars/${code % 2 === 0 ? 'male' : 'female'}/${code % 50}.jpg`;
     }
     if (response.data) {
+      localStorage.setItem('user-role', response.data.role);
       localStorage.setItem('user-info', JSON.stringify(response.data));
     }
     return response.data;

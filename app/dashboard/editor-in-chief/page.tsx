@@ -84,7 +84,7 @@ export default function EditorInChiefDashboard() {
         notificationStore.addNotification(
           'Proposal Veto Approved',
           `Editor-in-Chief has vetoed and approved proposal "${proposal.title}".`,
-          'Editorial Board',
+          'EditorialBoard',
           'success'
         )
       } else {
@@ -99,7 +99,7 @@ export default function EditorInChiefDashboard() {
         notificationStore.addNotification(
           'Proposal Veto Rejected',
           `Editor-in-Chief has vetoed and rejected proposal "${proposal.title}".`,
-          'Editorial Board',
+          'EditorialBoard',
           'error'
         )
       }
@@ -138,7 +138,7 @@ export default function EditorInChiefDashboard() {
       notificationStore.addNotification(
         'Serialization Terminated',
         `Serialization for "${title}" has been cancelled by the Editor-in-Chief.`,
-        'Editorial Board',
+        'EditorialBoard',
         'error'
       )
       
@@ -151,7 +151,7 @@ export default function EditorInChiefDashboard() {
   if (!mounted) return null
 
   // Editor-in-Chief Access Guard
-  if (role !== 'Editor-in-Chief') {
+  if (role !== 'EditorInChief') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">

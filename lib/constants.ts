@@ -59,9 +59,9 @@ export const MANUSCRIPT_STATUS = {
 export const ROLE_NAMES = {
   MANGAKA: 'Mangaka',
   ASSISTANT: 'Assistant',
-  TANTOU_EDITOR: 'Tantou Editor',
-  EDITORIAL_BOARD: 'Editorial Board',
-  EDITOR_IN_CHIEF: 'Editor-in-Chief',
+  TANTOU_EDITOR: 'TantouEditor',
+  EDITORIAL_BOARD: 'EditorialBoard',
+  EDITOR_IN_CHIEF: 'EditorInChief',
 } as const
 
 // Business Constants

@@ -106,9 +106,9 @@ export function DashboardHeader() {
   const roleBadges: Record<string, string> = {
     Mangaka: 'bg-primary/10 text-primary border-primary/20',
     Assistant: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20',
-    'Tantou Editor': 'bg-sky-500/10 text-sky-600 border-sky-500/20',
-    'Editorial Board': 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
-    'Editor-in-Chief': 'bg-red-500/10 text-red-600 border-red-500/20',
+    TantouEditor: 'bg-sky-500/10 text-sky-600 border-sky-500/20',
+    EditorialBoard: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+    EditorInChief: 'bg-red-500/10 text-red-600 border-red-500/20',
     Admin: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   }
 

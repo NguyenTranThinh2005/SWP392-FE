@@ -116,8 +116,8 @@ export function assignEditorToMangaka(mangakaId: string, editorId: string): bool
   // Validate editorId exists and is an Editor
   if (editorId) {
     const editor = users.find(u => u.id === editorId)
-    if (!editor || editor.role !== 'Tantou Editor') {
-      throw new Error('Tài khoản editor được gán không hợp lệ hoặc không phải là Tantou Editor.')
+    if (!editor || editor.role !== 'TantouEditor') {
+      throw new Error('Tài khoản editor được gán không hợp lệ hoặc không phải là TantouEditor.')
     }
   }
 

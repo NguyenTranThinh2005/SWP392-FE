@@ -30,7 +30,7 @@ function SidebarInner() {
   const [isOpen, setIsOpen] = useState(false)
   const [showRoleSelector, setShowRoleSelector] = useState(false)
 
-  const roles = ['Mangaka', 'Assistant', 'Tantou Editor', 'Editorial Board', 'Editor-in-Chief', 'Admin'] as const
+  const roles = ['Mangaka', 'Assistant', 'TantouEditor', 'EditorialBoard', 'EditorInChief', 'Admin'] as const
 
   const menuItems = {
     Mangaka: [
@@ -47,21 +47,21 @@ function SidebarInner() {
       { label: 'My Tasks', href: '/dashboard/chapters', icon: ClipboardList },
       { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
     ],
-    'Tantou Editor': [
+    TantouEditor: [
       { label: 'Dashboard', href: '/dashboard/tantou-editor?tab=dashboard', icon: LayoutDashboard },
       { label: 'Series', href: '/dashboard/tantou-editor?tab=series', icon: BookOpen },
       { label: 'Proposal Review', href: '/dashboard/tantou-editor?tab=proposals', icon: ClipboardList },
       { label: 'Manuscripts', href: '/dashboard/tantou-editor?tab=manuscripts', icon: Layers },
       { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
     ],
-    'Editorial Board': [
+    EditorialBoard: [
       { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
       { label: 'Review Proposals', href: '/dashboard/reviews', icon: PencilLine },
       { label: 'Reader Analytics', href: '/dashboard/analytics', icon: BarChart3 },
       { label: 'Create Account', href: '/signup', icon: UserPlus },
       { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
     ],
-    'Editor-in-Chief': [
+    EditorInChief: [
       { label: 'Dashboard', href: '/dashboard/editor-in-chief', icon: LayoutDashboard },
       { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
       { label: 'Review Proposals', href: '/dashboard/reviews', icon: PencilLine },
@@ -89,13 +89,13 @@ function SidebarInner() {
       case 'Assistant':
         router.push('/dashboard/assistant')
         break
-      case 'Tantou Editor':
+      case 'TantouEditor':
         router.push('/dashboard/tantou-editor')
         break
-      case 'Editorial Board':
+      case 'EditorialBoard':
         router.push('/dashboard/manga-list')
         break
-      case 'Editor-in-Chief':
+      case 'EditorInChief':
         router.push('/dashboard/editor-in-chief')
         break
       default:

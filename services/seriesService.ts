@@ -163,7 +163,7 @@ export const seriesService = {
     }
 
     if (status === 'Rejected') {
-      if (userRole === 'Tantou Editor') {
+      if (userRole === 'TantouEditor') {
         return await fetchAPI(`/api/proposals/${id}/reject`, {
           method: 'POST',
           body: JSON.stringify({ rejectReason: rejectReason || 'Rejected by Tantou Editor.' })
@@ -175,7 +175,7 @@ export const seriesService = {
         
         if (openDecision) {
           const decisionId = openDecision.boardDecisionId || openDecision.id;
-          if (userRole === 'Editor-in-Chief') {
+          if (userRole === 'EditorInChief') {
             try {
               return await fetchAPI(`/api/board-decisions/${decisionId}/special-decision`, {
                 method: 'POST',
@@ -206,7 +206,7 @@ export const seriesService = {
     }
 
     if (status === 'Active') {
-      if (userRole === 'Editorial Board' || userRole === 'Editor-in-Chief') {
+      if (userRole === 'EditorialBoard' || userRole === 'EditorInChief') {
         const resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${id}/board-decisions`);
         const decisions = resDecisions.data || resDecisions || [];
         let openDecision = decisions.find((d: any) => d.status?.toLowerCase() === 'open') || decisions[0];
@@ -224,7 +224,7 @@ export const seriesService = {
 
         if (openDecision) {
           const decisionId = openDecision.boardDecisionId || openDecision.id;
-          if (userRole === 'Editor-in-Chief') {
+          if (userRole === 'EditorInChief') {
             try {
               const res = await fetchAPI(`/api/board-decisions/${decisionId}/special-decision`, {
                 method: 'POST',
@@ -256,7 +256,7 @@ export const seriesService = {
           
           return resVote;
         }
-      } else if (userRole === 'Tantou Editor') {
+      } else if (userRole === 'TantouEditor') {
         return await fetchAPI(`/api/proposals/${id}/activate`, {
           method: 'POST'
         });

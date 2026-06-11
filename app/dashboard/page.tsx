@@ -22,13 +22,13 @@ export default function DashboardRedirectPage() {
       case 'Assistant':
         router.replace('/dashboard/assistant')
         break
-      case 'Tantou Editor':
+      case 'TantouEditor':
         router.replace('/dashboard/tantou-editor')
         break
-      case 'Editorial Board':
+      case 'EditorialBoard':
         router.replace('/dashboard/manga-list')
         break
-      case 'Editor-in-Chief':
+      case 'EditorInChief':
         router.replace('/dashboard/editor-in-chief')
         break
       default:

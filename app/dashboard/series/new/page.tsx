@@ -98,13 +98,13 @@ export default function NewProposalPage() {
         notificationStore.addNotification(
           'New Proposal Pending Review',
           `Mangaka ${mangakaName} has submitted a new proposal "${data.title}" for review.`,
-          'Editorial Board',
+          'EditorialBoard',
           'info'
         )
         notificationStore.addNotification(
           'New Proposal Pending Review',
           `Mangaka ${mangakaName} has submitted a new proposal "${data.title}" for review.`,
-          'Editor-in-Chief',
+          'EditorInChief',
           'info'
         )
 

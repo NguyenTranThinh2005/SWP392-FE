@@ -45,8 +45,8 @@ export function SignupForm({
                 <Select id="role" name="role" required defaultValue="">
                   <option value="" disabled>Select a role...</option>
                   <option value="Mangaka">Mangaka</option>
-                  <option value="Tantou Editor">Tantou Editor</option>
-                  <option value="Editorial Board">Editorial Board</option>
+                  <option value="TantouEditor">Tantou Editor</option>
+                  <option value="EditorialBoard">Editorial Board</option>
                   <option value="Assistant">Assistant</option>
                 </Select>
               </Field>

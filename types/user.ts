@@ -1,4 +1,4 @@
-export type UserRole = 'Mangaka' | 'Assistant' | 'Tantou Editor' | 'Editorial Board'
+export type UserRole = 'Mangaka' | 'Assistant' | 'TantouEditor' | 'EditorialBoard'
 
 export interface User {
   id: string
