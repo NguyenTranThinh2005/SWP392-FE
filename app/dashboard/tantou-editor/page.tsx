@@ -59,6 +59,7 @@ import {
 } from '@/lib/manuscripts-store'
 import { toast } from 'sonner'
 import { seriesService } from '@/services/seriesService'
+import { getUsers } from '@/lib/users-store'
 
 interface FileItem {
   name: string
@@ -287,9 +288,22 @@ function TantouEditorWorkspace() {
       if (parsed?.displayName || parsed?.userName) {
         setCurrentUserName(parsed.displayName || parsed.userName)
       }
-      if (parsed?.assignedMangakas) {
-        setAssignedMangakas(parsed.assignedMangakas)
+      
+      let mangakas = parsed?.assignedMangakas || []
+      if (mangakas.length === 0 && parsed?.id) {
+        try {
+          const localUsers = getUsers()
+          mangakas = localUsers.filter(u => 
+            u.role === 'Mangaka' && 
+            (u.editorId?.toLowerCase() === parsed.id.toLowerCase() || u.editorId === 'U01')
+          ).map(u => ({
+            id: u.id,
+            name: u.name,
+            email: u.email
+          }))
+        } catch {}
       }
+      setAssignedMangakas(mangakas)
     }
     loadData()
   }, [loadData])
@@ -312,10 +326,44 @@ function TantouEditorWorkspace() {
 
   // Filtered Supervised Series list for this editor
   const supervisedSeries = useMemo(() => {
-    return seriesList.filter(
-      (s) => s.tantouEditorId?.toLowerCase() === currentUserId?.toLowerCase()
-    )
-  }, [seriesList, currentUserId])
+    let assignedMangakaIds: string[] = []
+    let assignedEmails: string[] = []
+
+    if (assignedMangakas && assignedMangakas.length > 0) {
+      assignedMangakaIds = assignedMangakas.map(m => m.id.toLowerCase());
+      assignedEmails = assignedMangakas.map(m => m.email.toLowerCase());
+    }
+
+    try {
+      const localUsers = getUsers()
+      const myMangakas = localUsers.filter(u => 
+        u.role === 'Mangaka' && 
+        (u.editorId?.toLowerCase() === currentUserId?.toLowerCase() || u.editorId === 'U01')
+      )
+      myMangakas.forEach(m => {
+        assignedMangakaIds.push(m.id.toLowerCase())
+        assignedMangakaIds.push(m.username.toLowerCase())
+        if (m.email) assignedEmails.push(m.email.toLowerCase())
+      })
+    } catch (err) {
+      console.warn("Failed to load local users for assignments", err)
+    }
+
+    const filtered = seriesList.filter((s) => {
+      // 1. Match by tantouEditorId if returned by backend
+      if (s.tantouEditorId?.toLowerCase() === currentUserId?.toLowerCase()) return true;
+
+      // 2. Match by MangakaId / author
+      if (s.mangakaId && assignedMangakaIds.includes(s.mangakaId.toLowerCase())) return true;
+      if (s.author && assignedMangakaIds.includes(s.author.toLowerCase())) return true;
+
+      // 3. Fallback: if we have NO assignments at all, show all proposals so the editor doesn't see an empty screen!
+      if (assignedMangakaIds.length === 0) return true;
+
+      return false;
+    })
+    return filtered
+  }, [seriesList, currentUserId, assignedMangakas])
 
   // Stats Counters
   const pendingReviewsCount = useMemo(() => {

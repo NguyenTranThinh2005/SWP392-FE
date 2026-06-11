@@ -358,17 +358,9 @@ export default function ReviewProposalsPage() {
                       Submitted: {formatDateShort(proposal.submittedAt ?? proposal.createdAt)}
                     </span>
 
-                    {/* Action buttons (only for pending or under-review) */}
-                    {(proposal.status === 'Pending Review' || proposal.status === 'Under Review') && (
+                    {/* Action buttons (only for under-review / BoardVoting status) */}
+                    {proposal.status === 'Under Review' && (
                       <div className="flex flex-wrap gap-2 shrink-0">
-                        {proposal.status === 'Pending Review' && (
-                          <button
-                            onClick={() => handleStatusChange(proposal.id, 'Under Review')}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
-                          >
-                            <Play className="w-3.5 h-3.5" /> Start Review
-                          </button>
-                        )}
                         <button
                           onClick={() => handleStatusChange(proposal.id, 'Approved')}
                           className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
