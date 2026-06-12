@@ -290,6 +290,29 @@ export default function ChaptersPage() {
     }
   }
 
+  // Upload thực tế qua File Input
+  const handleRealUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'storyboardFiles' | 'manuscriptFiles') => {
+    if (!e.target.files) return
+    const fileList = Array.from(e.target.files)
+    const newFiles = fileList.map(f => ({
+      name: f.name,
+      size: `${(f.size / (1024 * 1024)).toFixed(2)} MB`,
+      type: f.name.split('.').pop() || '',
+      fileObject: f
+    }))
+
+    if (field === 'storyboardFiles') {
+      setNewChapterStoryboardFiles(prev => [...prev, ...newFiles])
+    } else {
+      setNewChapterManuscriptFiles(prev => [...prev, ...newFiles])
+      setErrors(prev => {
+        const copy = { ...prev }
+        delete copy.manuscriptFiles
+        return copy
+      })
+    }
+  }
+
   // Xóa file giả lập
   const removeFile = (field: 'storyboardFiles' | 'manuscriptFiles', index: number) => {
     if (field === 'storyboardFiles') {
@@ -1349,9 +1372,17 @@ export default function ChaptersPage() {
                 <div className="p-5 border-2 border-dashed border-violet-500/20 hover:border-violet-500/40 bg-violet-500/5 rounded-2xl text-center transition-colors">
                   <ScrollText className="w-8 h-8 mx-auto mb-2 text-violet-400 opacity-60" />
                   <p className="text-xs text-muted-foreground">Kéo thả hoặc</p>
+                  <input
+                    type="file"
+                    id="storyboard-file-input"
+                    className="hidden"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleRealUpload(e, 'storyboardFiles')}
+                  />
                   <button
                     type="button"
-                    onClick={() => handleMockUpload('storyboardFiles')}
+                    onClick={() => document.getElementById('storyboard-file-input')?.click()}
                     className="mt-2 inline-flex items-center justify-center gap-1.5 bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer"
                   >
                     Chọn file kịch bản / storyboard
@@ -1401,9 +1432,17 @@ export default function ChaptersPage() {
                 }`}>
                   <Upload className={`w-8 h-8 mx-auto mb-2 ${errors.manuscriptFiles ? 'text-red-400' : 'text-primary'} opacity-65`} />
                   <p className="text-xs text-muted-foreground">Kéo thả bản thảo vào đây hoặc</p>
+                  <input
+                    type="file"
+                    id="manuscript-file-input"
+                    className="hidden"
+                    multiple
+                    accept=".zip,.pdf,.jpg,.jpeg,.png,.tif,.tiff"
+                    onChange={(e) => handleRealUpload(e, 'manuscriptFiles')}
+                  />
                   <button
                     type="button"
-                    onClick={() => handleMockUpload('manuscriptFiles')}
+                    onClick={() => document.getElementById('manuscript-file-input')?.click()}
                     className="mt-2 inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer"
                   >
                     Chọn File (Browse)
