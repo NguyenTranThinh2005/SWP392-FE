@@ -338,79 +338,16 @@ function TantouEditorWorkspace() {
     }
   }, [lightboxOpen, detailedProposal])
 
-  // Load Data function
   const loadData = useCallback(async (editorId?: string) => {
     const targetEditorId = editorId || currentUserId
     let list: any[] = []
+
     try {
       list = await seriesService.listSeries()
+      setSeriesList(list)
     } catch (e) {
       console.error('Failed to load series from backend:', e)
     }
-
-    // Fallback: If list is empty, load from localStorage or default seeds
-    if (!list || list.length === 0) {
-      if (typeof window !== 'undefined') {
-        const rawProposals = localStorage.getItem('mangaflow_proposals')
-        if (rawProposals) {
-          try {
-            const parsed = JSON.parse(rawProposals)
-            list = parsed.map((p: any) => ({
-              id: p.id,
-              title: p.title,
-              author: p.author || 'Tanaka Yuki',
-              genre: Array.isArray(p.genre) ? p.genre : (p.genre ? p.genre.split(', ') : ['Fantasy']),
-              type: p.type || 'Weekly',
-              status: p.status,
-              description: p.description || p.synopsis || '',
-              mangakaId: p.mangakaId || 'U01',
-              tantouEditorId: p.tantouEditorId || 'U06',
-              tantouEditorName: p.tantouEditorName || 'Nakamura Takeshi',
-              rating: p.rating || 4.8
-            }))
-          } catch {}
-        }
-      }
-    }
-
-    // If still empty (e.g. first run), load default Sakura Knights seed
-    if (!list || list.length === 0) {
-      list = [
-        {
-          id: 'S01',
-          title: 'Sakura Knights',
-          author: 'Tanaka Yuki',
-          genre: ['Action', 'Fantasy'],
-          type: 'Weekly',
-          status: 'Active',
-          description: 'In feudal Japan reimagined with magitech armor...',
-          mangakaId: 'U01',
-          tantouEditorId: 'U06',
-          tantouEditorName: 'Nakamura Takeshi',
-          rating: 4.8
-        }
-      ]
-    } else {
-      // Ensure mock series 'S01' is always in the list to enable testing mock manuscripts
-      const hasS01 = list.some(s => s.id === 'S01');
-      if (!hasS01) {
-        list.push({
-          id: 'S01',
-          title: 'Sakura Knights',
-          author: 'Tanaka Yuki',
-          genre: ['Action', 'Fantasy'],
-          type: 'Weekly',
-          status: 'Active',
-          description: 'In feudal Japan reimagined with magitech armor...',
-          mangakaId: 'U01',
-          tantouEditorId: 'U06',
-          tantouEditorName: 'Nakamura Takeshi',
-          rating: 4.8
-        });
-      }
-    }
-
-    setSeriesList(list)
 
     if (targetEditorId) {
       try {
@@ -449,24 +386,12 @@ function TantouEditorWorkspace() {
           } catch {}
         }
 
-        // Dynamic fallback if still empty: assign all system mangakas as fallback
-        if (assigned.length === 0) {
-          try {
-            const localUsers = getUsers()
-            const localMangakas = localUsers.filter(u => u.role === 'Mangaka')
-            assigned = localMangakas.map(u => ({
-              id: u.id,
-              name: u.name,
-              email: u.email
-            }))
-          } catch {}
-        }
-
         setAssignedMangakas(assigned)
       } catch (e) {
         console.error('Failed to process assigned mangakas:', e)
       }
     }
+
     setChapters(getChapters())
     setTasks(getTasks())
     setManuscripts(getManuscripts())
@@ -531,52 +456,11 @@ function TantouEditorWorkspace() {
 
   // Filtered Supervised Series list for this editor
   const supervisedSeries = useMemo(() => {
-    let assignedMangakaIds: string[] = []
-    let assignedEmails: string[] = []
-
-    if (assignedMangakas && assignedMangakas.length > 0) {
-      assignedMangakaIds = assignedMangakas.map(m => m.id.toLowerCase());
-      assignedEmails = assignedMangakas.map(m => m.email.toLowerCase());
-    }
-
-    try {
-      const localUsers = getUsers()
-      const myMangakas = localUsers.filter(u => 
-        u.role === 'Mangaka' && 
-        (u.editorId?.toLowerCase() === currentUserId?.toLowerCase() || u.editorId === 'U01')
-      )
-      myMangakas.forEach(m => {
-        assignedMangakaIds.push(m.id.toLowerCase())
-        assignedMangakaIds.push(m.username.toLowerCase())
-        if (m.email) assignedEmails.push(m.email.toLowerCase())
-      })
-    } catch (err) {
-      console.warn("Failed to load local users for assignments", err)
-    }
-
-    const filtered = seriesList.filter((s) => {
-      // 1. Match by tantouEditorId if returned by backend
-      if (s.tantouEditorId?.toLowerCase() === currentUserId?.toLowerCase()) return true;
-
-      // 2. Match by MangakaId / author
-      if (s.mangakaId && assignedMangakaIds.includes(s.mangakaId.toLowerCase())) return true;
-      if (s.author && assignedMangakaIds.includes(s.author.toLowerCase())) return true;
-
-      // 3. Fallback: if we have NO assignments at all, show all proposals so the editor doesn't see an empty screen!
-      if (assignedMangakaIds.length === 0) return true;
-
-      return false;
-    })
-    // Always include S01 (Sakura Knights) to allow testing mock manuscripts
-    const hasS01 = filtered.some(s => s.id === 'S01')
-    if (!hasS01) {
-      const s01 = seriesList.find(s => s.id === 'S01')
-      if (s01) {
-        filtered.push(s01)
-      }
-    }
-    return filtered
-  }, [seriesList, currentUserId, assignedMangakas])
+    const assignedIds = new Set(assignedMangakas.map(m => m.id.toLowerCase()))
+    return seriesList.filter(
+      (s) => s.mangakaId && assignedIds.has(s.mangakaId.toLowerCase())
+    )
+  }, [seriesList, assignedMangakas])
 
   // Stats Counters
   const pendingReviewsCount = useMemo(() => {

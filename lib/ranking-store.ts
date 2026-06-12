@@ -39,9 +39,7 @@ function loadVotes(): VoteRecord[] {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_VOTES))
       return SEED_VOTES
     }
-    const parsed = JSON.parse(raw) as VoteRecord[]
-    // Filter out any mock vote records based on seriesId length
-    return parsed.filter(v => v.seriesId.length >= 3)
+    return JSON.parse(raw) as VoteRecord[]
   } catch {
     return SEED_VOTES
   }

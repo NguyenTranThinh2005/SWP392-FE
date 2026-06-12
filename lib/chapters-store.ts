@@ -111,9 +111,7 @@ function loadChapters(): Chapter[] {
       localStorage.setItem(STORAGE_CHAPTERS_KEY, JSON.stringify(SEED_CHAPTERS))
       return SEED_CHAPTERS
     }
-    const parsed = JSON.parse(raw) as Chapter[]
-    // Filter out mock chapters based on seriesId length
-    return parsed.filter(c => c.seriesId.length >= 3)
+    return JSON.parse(raw) as Chapter[]
   } catch {
     return SEED_CHAPTERS
   }
@@ -132,9 +130,7 @@ function loadTasks(): Task[] {
       localStorage.setItem(STORAGE_TASKS_KEY, JSON.stringify(SEED_TASKS))
       return SEED_TASKS
     }
-    const parsed = JSON.parse(raw) as Task[]
-    // Filter out mock tasks based on assistantId length or assignment state
-    return parsed.filter(t => t.assistantId.length >= 3 || t.assistantId === 'Unassigned')
+    return JSON.parse(raw) as Task[]
   } catch {
     return SEED_TASKS
   }
