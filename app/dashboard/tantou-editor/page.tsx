@@ -60,7 +60,6 @@ import {
 } from '@/lib/manuscripts-store'
 import { toast } from 'sonner'
 import { seriesService, type SeriesProposal } from '@/services/seriesService'
-import { getUsers } from '@/lib/users-store'
 import { userService } from '@/services/userService'
 import { API_BASE_URL } from '@/lib/constants'
 
@@ -338,6 +337,7 @@ function TantouEditorWorkspace() {
     }
   }, [lightboxOpen, detailedProposal])
 
+  // Load Data function
   const loadData = useCallback(async (editorId?: string) => {
     const targetEditorId = editorId || currentUserId
     let list: any[] = []
@@ -414,24 +414,12 @@ function TantouEditorWorkspace() {
         editorId = parsed.id
         setCurrentUserId(parsed.id)
       }
-      if (parsed?.name || parsed?.displayName || parsed?.userName || parsed?.username) {
-        setCurrentUserName(parsed.name || parsed.displayName || parsed.username || parsed.userName)
+      if (parsed?.displayName || parsed?.userName) {
+        setCurrentUserName(parsed.displayName || parsed.userName)
       }
-      let mangakas = parsed?.assignedMangakas || []
-      if (mangakas.length === 0 && parsed?.id) {
-        try {
-          const localUsers = getUsers()
-          mangakas = localUsers.filter(u => 
-            u.role === 'Mangaka' && 
-            (u.editorId?.toLowerCase() === parsed.id.toLowerCase() || u.editorId === 'U01')
-          ).map(u => ({
-            id: u.id,
-            name: u.name,
-            email: u.email
-          }))
-        } catch {}
+      if (parsed?.assignedMangakas) {
+        setAssignedMangakas(parsed.assignedMangakas)
       }
-      setAssignedMangakas(mangakas)
     }
     if (editorId) {
       loadData(editorId)
@@ -1834,6 +1822,9 @@ function TantouEditorWorkspace() {
                               <h3 className="font-extrabold text-base text-foreground">
                                 {m.seriesTitle} — Ch.{m.chapterNumber} "{m.chapterTitle}"
                               </h3>
+                              <span className="text-[10px] font-mono bg-muted border border-border/80 text-muted-foreground px-1.5 py-0.5 rounded">
+                                {m.id}
+                              </span>
                             </div>
                             <p className="text-[10px] text-muted-foreground mt-1 font-semibold">
                               Latest Version: <span className="text-foreground">{m.latestVersion}</span> • Cycles: {m.history?.length || 1}
