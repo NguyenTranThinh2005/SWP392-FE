@@ -5,6 +5,7 @@
 
 import { fetchAPI } from '@/services/api'
 import { getUsers } from './users-store'
+import { chapterService } from '@/services/chapterService'
 
 export type ChapterStatus = 'Draft' | 'In Progress' | 'Ready for Editor' | 'Published'
 
@@ -215,6 +216,25 @@ export function createChapter(data: Omit<Chapter, 'id' | 'createdAt'>): Chapter 
 
   chapters.push(newChapter)
   saveChapters(chapters)
+
+  // Background API call to backend C# API
+  if (typeof window !== 'undefined') {
+    chapterService.createChapter(newChapter).then((res: any) => {
+      const createdData = res.data || res
+      if (createdData) {
+        const currentChapters = loadChapters()
+        const foundIdx = currentChapters.findIndex(c => c.id === newChapter.id)
+        if (foundIdx !== -1) {
+          // Update local mock ID with the actual database UUID/ID
+          currentChapters[foundIdx].id = createdData.chapterId || createdData.id
+          saveChapters(currentChapters)
+        }
+      }
+    }).catch(err => {
+      console.warn("Failed to create chapter on backend, using offline local storage fallback:", err)
+    })
+  }
+
   return newChapter
 }
 
@@ -224,6 +244,16 @@ export function updateChapterStatus(id: string, status: ChapterStatus): boolean 
   if (idx === -1) return false
   chapters[idx].status = status
   saveChapters(chapters)
+
+  // Background API call to backend C# API
+  if (typeof window !== 'undefined') {
+    chapterService.updateChapter(id, { status }).then((res: any) => {
+      console.log("Updated chapter status on backend successfully", res)
+    }).catch(err => {
+      console.warn("Failed to update chapter status on backend:", err)
+    })
+  }
+
   return true
 }
 
@@ -554,4 +584,33 @@ export async function syncSeriesFromBackend(mangakaId: string): Promise<Series[]
   }
   return getSeriesByMangaka(mangakaId)
 }
+
+export async function syncChaptersFromBackend(seriesId?: string): Promise<Chapter[]> {
+  try {
+    const list = seriesId 
+      ? await chapterService.getChaptersBySeries(seriesId)
+      : await chapterService.listChapters()
+    
+    if (Array.isArray(list)) {
+      const localChapters = loadChapters()
+      const merged = [...localChapters]
+      
+      list.forEach(bc => {
+        const idx = merged.findIndex(lc => lc.id === bc.id)
+        if (idx !== -1) {
+          merged[idx] = { ...merged[idx], ...bc }
+        } else {
+          merged.push(bc)
+        }
+      })
+      
+      saveChapters(merged)
+      return seriesId ? merged.filter(c => c.seriesId === seriesId) : merged
+    }
+  } catch (error) {
+    console.warn("syncChaptersFromBackend failed, using offline data:", error)
+  }
+  return getChapters(seriesId)
+}
+
 

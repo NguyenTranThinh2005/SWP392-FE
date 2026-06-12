@@ -1,4 +1,4 @@
-import { fetchWithFallback } from "./api";
+import { fetchAPI, fetchWithFallback } from "./api";
 
 export interface RankingItem {
   id: string;
@@ -9,6 +9,7 @@ export interface RankingItem {
   score: number;
   status: string;
   rank: number;
+  period?: string;
 }
 
 export const MOCK_RANKING: RankingItem[] = [
@@ -25,5 +26,30 @@ export const rankingService = {
   },
   confirmRanking: async (quarter: string) => {
     return fetchWithFallback<any>("/api/ranking/confirm", { success: true, quarter });
+  },
+
+  // Real backend APIs integration
+  getRankingSnapshots: async (period?: string): Promise<any> => {
+    const url = period ? `/api/rankings?period=${encodeURIComponent(period)}` : "/api/rankings";
+    return fetchAPI<any>(url);
+  },
+
+  createVoteRecord: async (data: any): Promise<any> => {
+    const payload = {
+      seriesId: data.seriesId,
+      voteCount: Number(data.voteCount || 0),
+      readerCount: Number(data.readerCount || 0),
+      period: data.period
+    };
+    return fetchAPI<any>("/api/vote-records", {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  confirmVoteRecord: async (id: string): Promise<any> => {
+    return fetchAPI<any>(`/api/vote-records/${id}/confirm`, {
+      method: 'PUT'
+    });
   }
 };

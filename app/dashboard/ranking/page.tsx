@@ -42,6 +42,7 @@ import {
   getRankingsForPeriod,
   confirmVoteRecord,
   createVoteRecord,
+  syncRankingsFromBackend,
   type VoteRecord,
   type RankingRow
 } from '@/lib/ranking-store'
@@ -80,6 +81,12 @@ export default function RankingPage() {
   const refreshData = () => {
     setPendingVotes(getPendingVotes())
     setRankings(getRankingsForPeriod(selectedPeriod))
+
+    // Background sync rankings from backend
+    syncRankingsFromBackend(selectedPeriod).then((syncedVotes) => {
+      setPendingVotes(syncedVotes.filter(v => !v.confirmed))
+      setRankings(getRankingsForPeriod(selectedPeriod))
+    }).catch(err => console.warn("Background ranking sync failed:", err))
   }
 
   // Generate dynamic list of available series (active + seeded ones)

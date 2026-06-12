@@ -47,6 +47,7 @@ import {
   getSeriesByMangaka,
   syncTasksFromBackend,
   syncSeriesFromBackend,
+  syncChaptersFromBackend,
   TASK_TYPE_SUGGESTIONS,
   type Chapter,
   type Task,
@@ -200,6 +201,20 @@ export default function ChaptersPage() {
         setSelectedChapter(null)
         setChapterTasks([])
       }
+
+      // Background sync chapters from Backend
+      syncChaptersFromBackend(currentSeriesId).then((syncedChaps) => {
+        setChapters(syncedChaps)
+        let activeChapterId = selectedChapterId
+        if (!activeChapterId && syncedChaps.length > 0) {
+          activeChapterId = syncedChaps[0].id
+          setSelectedChapterId(activeChapterId)
+        }
+        if (activeChapterId) {
+          const chap = syncedChaps.find(c => c.id === activeChapterId)
+          setSelectedChapter(chap || null)
+        }
+      })
     }
 
     // 3. Load assistant dropdown / info

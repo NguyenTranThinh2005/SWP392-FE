@@ -1,4 +1,5 @@
 import { calculateVoteScore } from './business-logic'
+import { rankingService } from '@/services/rankingService'
 
 export interface VoteRecord {
   id: string
@@ -80,6 +81,24 @@ export function createVoteRecord(data: Omit<VoteRecord, 'id' | 'score' | 'confir
 
   votes.push(newRecord)
   saveVotes(votes)
+
+  // Background API call to backend C# API
+  if (typeof window !== 'undefined') {
+    rankingService.createVoteRecord(newRecord).then((res: any) => {
+      const createdData = res.data || res
+      if (createdData) {
+        const currentVotes = loadVotes()
+        const foundIdx = currentVotes.findIndex(v => v.id === newRecord.id)
+        if (foundIdx !== -1) {
+          currentVotes[foundIdx].id = createdData.voteRecordId || createdData.id
+          saveVotes(currentVotes)
+        }
+      }
+    }).catch(err => {
+      console.warn("Failed to create vote record on backend, using offline local storage fallback:", err)
+    })
+  }
+
   return newRecord
 }
 
@@ -96,6 +115,16 @@ export function confirmVoteRecord(id: string): boolean {
   votes[idx].score = Math.round(calculatedScore * 100) / 100
   
   saveVotes(votes)
+
+  // Background API call to backend C# API
+  if (typeof window !== 'undefined') {
+    rankingService.confirmVoteRecord(id).then((res: any) => {
+      console.log("Confirmed vote record on backend successfully", res)
+    }).catch(err => {
+      console.warn("Failed to confirm vote record on backend:", err)
+    })
+  }
+
   return true
 }
 
@@ -139,3 +168,50 @@ export function getRankingsForPeriod(period: string): RankingRow[] {
     }
   })
 }
+
+export async function syncRankingsFromBackend(period?: string): Promise<VoteRecord[]> {
+  try {
+    const res = await rankingService.getRankingSnapshots(period)
+    const list = res.data || res || []
+    
+    if (Array.isArray(list)) {
+      const localVotes = loadVotes()
+      const merged = [...localVotes]
+      
+      list.forEach((br: any) => {
+        const recordId = br.voteRecordId || br.id
+        const score = br.voteScore || br.score || calculateVoteScore(br.voteCount, br.readerCount)
+        
+        const voteItem: VoteRecord = {
+          id: recordId,
+          seriesId: br.seriesId || '',
+          seriesTitle: br.seriesTitle || br.title || '',
+          genre: br.genre || '',
+          chapterId: br.chapterId || '',
+          chapterTitle: br.chapterTitle || '',
+          period: br.period || '',
+          readerCount: br.readerCount || 0,
+          voteCount: br.voteCount || 0,
+          score: Math.round(score * 100) / 100,
+          confirmed: br.isConfirmed || br.confirmed || (br.status === 'Confirmed'),
+          createdAt: br.createdAt || new Date().toISOString(),
+          confirmedAt: br.confirmedAt || undefined
+        }
+        
+        const idx = merged.findIndex(v => v.id === voteItem.id || (v.seriesId === voteItem.seriesId && v.period === voteItem.period))
+        if (idx !== -1) {
+          merged[idx] = { ...merged[idx], ...voteItem }
+        } else {
+          merged.push(voteItem)
+        }
+      })
+      
+      saveVotes(merged)
+      return period ? merged.filter(v => v.period === period) : merged
+    }
+  } catch (error) {
+    console.warn("syncRankingsFromBackend failed, using offline data:", error)
+  }
+  return getVoteRecords()
+}
+
