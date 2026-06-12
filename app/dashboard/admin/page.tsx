@@ -201,7 +201,7 @@ export default function AdminPage() {
   }
 
   const handleOpenAssignTaskModal = (assistantUser: User) => {
-    const series = getSeriesByMangaka('U01') // Mock current mangaka ID
+    const series = getSeries() // Load all active series instead of mock mangaka U01
     setTaskSeriesList(series)
 
     const initialSeriesId = series.length > 0 ? series[0].id : ''
@@ -255,11 +255,6 @@ export default function AdminPage() {
       return
     }
 
-    const targetEmail = selectedAssistant.email?.toLowerCase() || ''
-    let assistantId = 'A01'
-    if (targetEmail.includes('suzuki')) assistantId = 'A02'
-    else if (targetEmail.includes('watanabe')) assistantId = 'A03'
-
     createTask({
       chapterId: selectedChapterId,
       type: newTaskType.trim(),
@@ -267,7 +262,7 @@ export default function AdminPage() {
       pageStart: newTaskPageStart,
       pageEnd: newTaskPageEnd,
       description: newTaskDesc,
-      assistantId: assistantId,
+      assistantId: selectedAssistant.id,
       dueDate: newTaskDueDate || undefined
     })
 
