@@ -1,4 +1,5 @@
 import { fetchAPI } from "./api";
+import { CreateSeriesRequest, UpdateSeriesRequest, BaseResponse } from "@/types/dto";
 
 export interface ProposalPageResponse {
   proposalPageId: string;
@@ -40,7 +41,7 @@ export interface SeriesProposal {
 
 const mapGenreNamesToGuids = async (genreString: string): Promise<string[]> => {
   try {
-    const genresResponse = await fetchAPI<{ data: any[] }>("/api/genres");
+    const genresResponse = await fetchAPI<{ data: any[] }>("/api/genres", { suppressGlobalError: true } as any);
     const dbGenres = genresResponse.data || [];
     const inputNames = genreString.split(',').map(s => s.trim().toLowerCase());
     
@@ -134,12 +135,12 @@ const mapSeriesResponse = (s: any): SeriesProposal => {
 
 export const seriesService = {
   listSeries: async (): Promise<SeriesProposal[]> => {
-    const res = await fetchAPI<{ data: any[] }>("/api/series");
+    const res = await fetchAPI<{ data: any[] }>("/api/series", { suppressGlobalError: true } as any);
     return (res.data || res || []).map(mapSeriesResponse);
   },
 
   getSeriesById: async (id: string): Promise<SeriesProposal> => {
-    const res = await fetchAPI<{ data: any }>(`/api/series/${id}`);
+    const res = await fetchAPI<{ data: any }>(`/api/series/${id}`, { suppressGlobalError: true } as any);
     const proposal = mapSeriesResponse(res.data || res);
 
     // Parse legacy sampleFileUrl to proposalPages if empty
@@ -160,7 +161,7 @@ export const seriesService = {
         proposal.proposalPages.map(async (page) => {
           if (!page.url && page.previewFileAssetId && !page.previewFileAssetId.startsWith('http')) {
             try {
-              const fileRes = await fetchAPI<{ data: any }>(`/api/files/${page.previewFileAssetId}`);
+              const fileRes = await fetchAPI<{ data: any }>(`/api/files/${page.previewFileAssetId}`, { suppressGlobalError: true } as any);
               const fileAsset = fileRes.data || fileRes;
               return {
                 ...page,
@@ -178,7 +179,7 @@ export const seriesService = {
     // Resolve public URL for source ZIP asset if missing
     if (!proposal.sourceZipPublicUrl && proposal.sourceZipFileAssetId) {
       try {
-        const fileRes = await fetchAPI<{ data: any }>(`/api/files/${proposal.sourceZipFileAssetId}`);
+        const fileRes = await fetchAPI<{ data: any }>(`/api/files/${proposal.sourceZipFileAssetId}`, { suppressGlobalError: true } as any);
         const fileAsset = fileRes.data || fileRes;
         proposal.sourceZipPublicUrl = fileAsset.publicUrl || fileAsset.PublicUrl || null;
       } catch (err) {
@@ -189,7 +190,7 @@ export const seriesService = {
     return proposal;
   },
 
-  submitProposal: async (proposal: any): Promise<SeriesProposal> => {
+  submitProposal: async (proposal: Omit<CreateSeriesRequest, 'genreIds'> & { genre: string; sampleFileUrl?: string; description?: string; status?: string; coverImageUrl?: string; mangakaId?: string }): Promise<SeriesProposal> => {
     const genreIds = await mapGenreNamesToGuids(proposal.genre);
     
     // Map sampleFileUrl back to its comma-separated file asset IDs
@@ -367,12 +368,12 @@ export const seriesService = {
   },
 
   getBoardDecisions: async (seriesId: string): Promise<any[]> => {
-    const res = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
+    const res = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`, { suppressGlobalError: true } as any);
     return res.data || res || [];
   },
 
   getBoardVotes: async (boardDecisionId: string): Promise<any[]> => {
-    const res = await fetchAPI<{ data: any[] }>(`/api/board-decisions/${boardDecisionId}/votes`);
+    const res = await fetchAPI<{ data: any[] }>(`/api/board-decisions/${boardDecisionId}/votes`, { suppressGlobalError: true } as any);
     return res.data || res || [];
   },
 

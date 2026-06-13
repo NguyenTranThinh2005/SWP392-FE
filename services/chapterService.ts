@@ -14,7 +14,7 @@ export interface Chapter {
 
 export const chapterService = {
   listChapters: async (): Promise<Chapter[]> => {
-    const res = await fetchAPI<{ data: any[] }>("/api/chapters");
+    const res = await fetchAPI<{ data: any[] }>("/api/chapters", { suppressGlobalError: true } as any);
     const list = res.data || res || [];
     return list.map((c: any) => ({
       id: c.chapterId || c.id,
@@ -30,7 +30,7 @@ export const chapterService = {
   },
 
   getChaptersBySeries: async (seriesId: string): Promise<Chapter[]> => {
-    const res = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/chapters`);
+    const res = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/chapters`, { suppressGlobalError: true } as any);
     const list = res.data || res || [];
     return list.map((c: any) => ({
       id: c.chapterId || c.id,

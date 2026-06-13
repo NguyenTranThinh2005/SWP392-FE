@@ -66,7 +66,7 @@ export function createUser(data: Omit<User, 'id' | 'status' | 'avatarUrl'>): Use
   saveUsers(users)
 
   if (typeof window !== 'undefined') {
-    fetchAPI<{ data: any[] }>('/api/roles').then(res => {
+    fetchAPI<{ data: any[] }>('/api/roles', { suppressGlobalError: true } as any).then(res => {
       const roles = res.data || []
       const matchedRole = roles.find(r => r.roleName?.toLowerCase() === data.role?.toLowerCase()) || roles[0]
       
@@ -81,8 +81,9 @@ export function createUser(data: Omit<User, 'id' | 'status' | 'avatarUrl'>): Use
         
         fetchAPI<any>('/api/auth/register', {
           method: 'POST',
+          suppressGlobalError: true,
           body: JSON.stringify(payload)
-        }).then((resRegister: any) => {
+        } as any).then((resRegister: any) => {
           const registered = resRegister.data || resRegister
           if (registered) {
             const currentUsers = loadUsers()
@@ -159,7 +160,7 @@ const mapBackendUser = (u: any): User => {
 
 export async function syncUsersFromBackend(): Promise<User[]> {
   try {
-    const res = await userService.getUsers()
+    const res = await userService.getUsers(true)
     if (res && res.data) {
       const mapped = res.data.map(mapBackendUser)
       saveUsers(mapped)

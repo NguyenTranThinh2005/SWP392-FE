@@ -26,8 +26,8 @@ export interface UserProfileResponse {
 }
 
 export const userService = {
-  getUsers: async () => {
-    const res = await fetchAPI<{ data: UserProfileResponse[]; message: string }>("/api/users");
+  getUsers: async (suppressGlobalError = false) => {
+    const res = await fetchAPI<{ data: UserProfileResponse[]; message: string }>("/api/users", { suppressGlobalError } as any);
     const users = res.data || [];
     
     // Merge editor assignment overrides from local storage
@@ -72,9 +72,9 @@ export const userService = {
     return { message: "Assignment updated successfully." };
   },
 
-  getMyMangakas: async () => {
+  getMyMangakas: async (suppressGlobalError = false) => {
     // Call the existing backend UserAssignments to-me endpoint
-    const res = await fetchAPI<{ data: any[]; message: string }>("/api/user-assignments/to-me");
+    const res = await fetchAPI<{ data: any[]; message: string }>("/api/user-assignments/to-me", { suppressGlobalError } as any);
     
     // Map UserAssignmentResponse structure to UserProfileResponse structure
     const mappedData = (res.data || []).map(item => ({

@@ -141,3 +141,44 @@ export function determineSeriesStatus(
 
   return 'Rejected'
 }
+
+/**
+ * Calculate unique approved pages from a list of tasks.
+ * Each task has a `pages` string like "1-3" or "5".
+ * Only tasks with status 'Approved' are counted.
+ * Returns the count of unique page numbers covered by approved tasks.
+ */
+export function countUniqueApprovedPages(tasks: { status: string; pages: string }[]): number {
+  const pageSet = new Set<number>()
+  tasks
+    .filter(t => t.status === 'Approved')
+    .forEach(t => {
+      const parts = t.pages.split('-')
+      const start = parseInt(parts[0]) || 1
+      const end = parts.length === 2 ? parseInt(parts[1]) : start
+      for (let p = start; p <= end; p++) {
+        pageSet.add(p)
+      }
+    })
+  return pageSet.size
+}
+
+/**
+ * Check if a new task's page range overlaps with existing tasks of the same type.
+ * Returns the conflicting task if found, otherwise null.
+ */
+export function findOverlappingTask(
+  existingTasks: { type: string; pages: string; pageStart?: number; pageEnd?: number }[],
+  newType: string,
+  newPageStart: number,
+  newPageEnd: number
+): { type: string; pages: string } | null {
+  for (const existing of existingTasks.filter(t => t.type === newType)) {
+    const exStart = existing.pageStart || parseInt(existing.pages.split('-')[0]) || 1
+    const exEnd = existing.pageEnd || parseInt(existing.pages.split('-')[1]) || exStart
+    if (newPageStart <= exEnd && newPageEnd >= exStart) {
+      return existing
+    }
+  }
+  return null
+}

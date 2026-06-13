@@ -15,7 +15,7 @@ export interface RankingItem {
 export const rankingService = {
   getRankingSnapshots: async (period?: string): Promise<any> => {
     const url = period ? `/api/rankings?period=${encodeURIComponent(period)}` : "/api/rankings";
-    return fetchAPI<any>(url);
+    return fetchAPI<any>(url, { suppressGlobalError: true } as any);
   },
 
   createVoteRecord: async (data: any): Promise<any> => {

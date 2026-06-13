@@ -14,7 +14,7 @@ export interface GenreResponse {
 export const systemService = {
   // Roles CRUD
   getRoles: async (): Promise<RoleResponse[]> => {
-    const res = await fetchAPI<{ data: RoleResponse[]; message: string }>("/api/roles");
+    const res = await fetchAPI<{ data: RoleResponse[]; message: string }>("/api/roles", { suppressGlobalError: true } as any);
     return res.data || [];
   },
 
@@ -42,7 +42,7 @@ export const systemService = {
 
   // Genres CRUD
   getGenres: async (): Promise<GenreResponse[]> => {
-    const res = await fetchAPI<{ data: GenreResponse[]; message: string }>("/api/genres");
+    const res = await fetchAPI<{ data: GenreResponse[]; message: string }>("/api/genres", { suppressGlobalError: true } as any);
     return res.data || [];
   },
 

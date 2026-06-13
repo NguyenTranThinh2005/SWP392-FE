@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   description: "Collaborative workspace for Mangakas, Assistants, and Editors.",
 };
 
+import { GlobalUIProvider } from "@/context/GlobalUIContext";
+import GlobalOverlay from "@/components/common/GlobalOverlay";
+import UIInitializer from "@/components/common/UIInitializer";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,8 +37,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        {children}
-        <Toaster />
+        <GlobalUIProvider>
+          <UIInitializer />
+          {children}
+          <GlobalOverlay />
+          <Toaster />
+        </GlobalUIProvider>
       </body>
     </html>
   );

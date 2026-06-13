@@ -60,6 +60,7 @@ import { authService } from '@/services/authService'
 import { userService } from '@/services/userService'
 import { systemService, type RoleResponse, type GenreResponse } from '@/services/systemService'
 import {
+  getSeries,
   getSeriesByMangaka,
   getChapters,
   getTasks,

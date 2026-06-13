@@ -1,5 +1,7 @@
 import { fetchAPI } from "./api";
 import { loadUsers, createUser } from "@/lib/users-store";
+import { LoginRequest, RegisterRequest, RegisterInput, BaseResponse } from "@/types/dto";
+import { systemService } from "./systemService";
 
 export interface User {
   id: string;
@@ -14,7 +16,7 @@ export interface User {
 }
 
 export const authService = {
-  login: async (credentials?: any) => {
+  login: async (credentials?: LoginRequest) => {
     try {
       const response = await fetchAPI<{ data: { token: string; refreshToken: string; user: User }; message: string }>('/api/auth/login', {
         method: 'POST',
@@ -52,21 +54,52 @@ export const authService = {
     }
   },
 
-  register: async (userData: any) => {
+  register: async (userData: RegisterRequest | RegisterInput) => {
     try {
+      const isInput = 'username' in userData;
+      const userNameVal = isInput ? (userData as RegisterInput).username : (userData as RegisterRequest).userName;
+      const displayNameVal = isInput ? (userData as RegisterInput).name : (userData as RegisterRequest).displayName;
+      const roleIdVal = isInput ? '' : (userData as RegisterRequest).roleId;
+
+      const payload: RegisterRequest = {
+        userName: userNameVal,
+        email: userData.email,
+        displayName: displayNameVal,
+        password: userData.password,
+        roleId: roleIdVal,
+        assignedFromUserId: !isInput ? (userData as RegisterRequest).assignedFromUserId : undefined
+      };
+
+      if (isInput && (userData as RegisterInput).role) {
+        try {
+          const roles = await systemService.getRoles();
+          const matchedRole = roles.find(r => r.roleName.toLowerCase() === (userData as RegisterInput).role.toLowerCase());
+          if (matchedRole) {
+            payload.roleId = matchedRole.roleId;
+          }
+        } catch (e) {
+          console.warn("Failed to dynamically resolve role ID for registration", e);
+        }
+      }
+
       return await fetchAPI<any>('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify(userData),
+        body: JSON.stringify(payload),
       });
     } catch (error) {
       console.warn("Backend register failed, attempting offline fallback...", error);
       if (typeof window !== 'undefined') {
         try {
+          const isInput = 'username' in userData;
+          const uName = isInput ? (userData as RegisterInput).username : (userData as RegisterRequest).userName;
+          const dName = isInput ? (userData as RegisterInput).name : (userData as RegisterRequest).displayName;
+          const uRole = isInput ? (userData as RegisterInput).role : 'Mangaka';
+
           const newUser = createUser({
-            username: userData.username || userData.email.split('@')[0],
-            name: userData.name,
+            username: uName || userData.email.split('@')[0],
+            name: dName,
             email: userData.email,
-            role: userData.role
+            role: uRole as any
           });
           return { data: newUser, message: "Registered offline successfully" };
         } catch (err: any) {
@@ -83,7 +116,7 @@ export const authService = {
     localStorage.removeItem('user-role');
     localStorage.removeItem('user-info');
     try {
-      await fetchAPI<any>('/api/auth/logout', { method: 'POST' });
+      await fetchAPI<any>('/api/auth/logout', { method: 'POST', suppressGlobalError: true } as any);
     } catch (err) {
       console.warn("Logout endpoint failed on backend, local session cleared", err);
     }
@@ -91,7 +124,7 @@ export const authService = {
 
 
   getCurrentUser: async () => {
-    const response = await fetchAPI<{ data: User; message: string }>('/api/auth/me');
+    const response = await fetchAPI<{ data: User; message: string }>('/api/auth/me', { suppressGlobalError: true } as any);
     if (response.data && !response.data.avatarUrl) {
       const id = response.data.id || "default";
       const code = id.charCodeAt(id.length - 1) || 0;

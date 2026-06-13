@@ -62,10 +62,20 @@ export default function ManuscriptsPage() {
     return manuscripts.find(m => m.id === activeManuscriptId)
   }, [manuscripts, activeManuscriptId])
 
+  // Is authorized editor (Tantou Editor)
+  const isTantouEditor = useMemo(() => {
+    return role === 'TantouEditor'
+  }, [role])
+
   const filteredManuscripts = useMemo(() => {
-    if (activeTab === 'ALL') return manuscripts
-    return manuscripts.filter(m => m.status === activeTab)
-  }, [manuscripts, activeTab])
+    let result = manuscripts;
+    // Hide placeholders (local-ms-) from Mangaka, since they haven't been approved by Tantou Editor yet
+    if (!isTantouEditor) {
+      result = result.filter(m => !m.id.startsWith('local-ms-'));
+    }
+    if (activeTab === 'ALL') return result
+    return result.filter(m => m.status === activeTab)
+  }, [manuscripts, activeTab, isTantouEditor])
 
   useEffect(() => {
     if (activeManuscript) {
@@ -77,11 +87,6 @@ export default function ManuscriptsPage() {
       })
     }
   }, [activeManuscript])
-
-  // Is authorized editor (Tantou Editor)
-  const isTantouEditor = useMemo(() => {
-    return role === 'TantouEditor'
-  }, [role])
 
   const handleOpenReview = (id: string) => {
     setActiveManuscriptId(id)
@@ -340,129 +345,145 @@ export default function ManuscriptsPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-6">
-            {filteredManuscripts.map((m) => {
-              const isSpecialHistoryCard = m.id === 'M04'
-              const latestVer = m.history[0]
+            {filteredManuscripts.length === 0 ? (
+              <Card className="border border-dashed border-border/80 bg-card/40 p-12 text-center rounded-2xl shadow-sm">
+                <div className="flex flex-col items-center justify-center space-y-4 max-w-md mx-auto">
+                  <div className="p-4 bg-muted/60 text-muted-foreground/80 rounded-2xl border border-border/40">
+                    <Layers className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="font-extrabold text-base text-foreground">Không có bản thảo nào</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Hiện tại chưa có bản thảo nào được gửi lên từ Mangaka trong danh mục này hoặc toàn bộ chương chưa hoàn thành vẽ thô.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              filteredManuscripts.map((m) => {
+                const isSpecialHistoryCard = m.id === 'M04'
+                const latestVer = m.history[0]
 
-              // Status colors styling
-              const getBadgeColor = (status: string) => {
-                switch (status) {
-                  case 'APPROVED': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20'
-                  case 'SUBMITTED': return 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-500 border-indigo-500/20'
-                  case 'REVISION REQUIRED': return 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20'
-                  default: return 'bg-muted text-muted-foreground border-border'
+                // Status colors styling
+                const getBadgeColor = (status: string) => {
+                  switch (status) {
+                    case 'APPROVED': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20'
+                    case 'SUBMITTED': return 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-500 border-indigo-500/20'
+                    case 'REVISION REQUIRED': return 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20'
+                    default: return 'bg-muted text-muted-foreground border-border'
+                  }
                 }
-              }
 
-              return (
-                <Card
-                  key={m.id}
-                  className={`border border-border bg-card rounded-2xl overflow-hidden hover:border-primary/20 transition-all ${isSpecialHistoryCard ? 'border-amber-500/15' : ''
-                    }`}
-                >
-                  <div className="p-6 space-y-4">
-                    {/* Header line */}
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-extrabold text-base text-foreground">
-                            {m.seriesTitle} — Ch. {m.chapterNumber} "{m.chapterTitle}"
-                          </h3>
+                return (
+                  <Card
+                    key={m.id}
+                    className={`border border-border bg-card rounded-2xl overflow-hidden hover:border-primary/20 transition-all ${isSpecialHistoryCard ? 'border-amber-500/15' : ''
+                      }`}
+                  >
+                    <div className="p-6 space-y-4">
+                      {/* Header line */}
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-extrabold text-base text-foreground">
+                              {m.seriesTitle} — Ch. {m.chapterNumber} "{m.chapterTitle}"
+                            </h3>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Latest Version: <span className="font-semibold text-foreground">{m.latestVersion}</span> • Total versions: {m.history.length}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Latest Version: <span className="font-semibold text-foreground">{m.latestVersion}</span> • Total versions: {m.history.length}
-                        </p>
+
+                        <div className="flex items-center gap-2 self-end sm:self-start">
+                          <span className={`text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full border ${getBadgeColor(m.status)}`}>
+                            {m.status}
+                          </span>
+
+                          {/* Review action button: show to everyone but toggle view-only status internally */}
+                          {m.status === 'SUBMITTED' && (
+                            <Button
+                              onClick={() => handleOpenReview(m.id)}
+                              className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs px-4 py-1.5 h-8 rounded-xl cursor-pointer transition-colors"
+                            >
+                              <FileCheck className="w-3.5 h-3.5 mr-1" /> Review
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-end sm:self-start">
-                        <span className={`text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full border ${getBadgeColor(m.status)}`}>
-                          {m.status}
-                        </span>
+                      {/* Body content */}
+                      {isSpecialHistoryCard ? (
+                        /* Special Detailed Revision History Card (Card 1 in screenshot) */
+                        <div className="space-y-3 pt-2 border-t border-border/40">
+                          <div className="space-y-2">
+                            {m.history.map((h, hIdx) => (
+                              <div
+                                key={hIdx}
+                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-muted/40 border border-border/30 p-3 rounded-xl hover:bg-muted/65 transition-all"
+                              >
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-bold text-foreground text-xs">{h.version}</span>
+                                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${getBadgeColor(h.status)}`}>
+                                    {h.status}
+                                  </span>
+                                  <span className="text-muted-foreground text-[10px]">
+                                    Submitted: {formatDateShort(h.submittedAt)}
+                                  </span>
+                                  {h.reviewedAt && (
+                                    <span className="text-muted-foreground text-[10px]">
+                                      Reviewed: {formatDateShort(h.reviewedAt)}
+                                    </span>
+                                  )}
+                                </div>
 
-                        {/* Review action button: show to everyone but toggle view-only status internally */}
-                        {m.status === 'SUBMITTED' && (
-                          <Button
-                            onClick={() => handleOpenReview(m.id)}
-                            className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs px-4 py-1.5 h-8 rounded-xl cursor-pointer transition-colors"
-                          >
-                            <FileCheck className="w-3.5 h-3.5 mr-1" /> Review
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                                {h.revisionNumber && (
+                                  <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-500 border border-amber-500/20 font-bold text-[9px] rounded px-1.5 py-0.5 w-fit">
+                                    REV #{h.revisionNumber}/3 (BR-83)
+                                  </Badge>
+                                )}
+                              </div>
+                            ))}
+                          </div>
 
-                    {/* Body content */}
-                    {isSpecialHistoryCard ? (
-                      /* Special Detailed Revision History Card (Card 1 in screenshot) */
-                      <div className="space-y-3 pt-2 border-t border-border/40">
-                        <div className="space-y-2">
+                          {/* Editor feedback box */}
+                          {latestVer.feedback && (
+                            <div className="bg-muted/45 p-4 rounded-xl border border-border/50 space-y-1 text-xs">
+                              <p className="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Editor Feedback:</p>
+                              <p className="text-muted-foreground leading-relaxed italic">
+                                "{latestVer.feedback}"
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* Simple card list layouts (Cards 2 & 3 in screenshot) */
+                        <div className="space-y-2 pt-2 border-t border-border/40 text-xs">
                           {m.history.map((h, hIdx) => (
                             <div
                               key={hIdx}
-                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-muted/40 border border-border/30 p-3 rounded-xl hover:bg-muted/65 transition-all"
+                              className="flex flex-wrap items-center gap-3 bg-muted/20 border border-border/20 p-2.5 rounded-xl"
                             >
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-bold text-foreground text-xs">{h.version}</span>
-                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${getBadgeColor(h.status)}`}>
-                                  {h.status}
-                                </span>
+                              <span className="font-bold text-foreground">{h.version}</span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border ${getBadgeColor(h.status)}`}>
+                                {h.status}
+                              </span>
+                              <span className="text-muted-foreground text-[10px]">
+                                Submitted: {formatDateShort(h.submittedAt)}
+                              </span>
+                              {h.reviewedAt && (
                                 <span className="text-muted-foreground text-[10px]">
-                                  Submitted: {formatDateShort(h.submittedAt)}
+                                  Reviewed: {formatDateShort(h.reviewedAt)}
                                 </span>
-                                {h.reviewedAt && (
-                                  <span className="text-muted-foreground text-[10px]">
-                                    Reviewed: {formatDateShort(h.reviewedAt)}
-                                  </span>
-                                )}
-                              </div>
-
-                              {h.revisionNumber && (
-                                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-500 border border-amber-500/20 font-bold text-[9px] rounded px-1.5 py-0.5 w-fit">
-                                  REV #{h.revisionNumber}/3 (BR-83)
-                                </Badge>
                               )}
                             </div>
                           ))}
                         </div>
-
-                        {/* Editor feedback box */}
-                        {latestVer.feedback && (
-                          <div className="bg-muted/45 p-4 rounded-xl border border-border/50 space-y-1 text-xs">
-                            <p className="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Editor Feedback:</p>
-                            <p className="text-muted-foreground leading-relaxed italic">
-                              "{latestVer.feedback}"
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      /* Simple card list layouts (Cards 2 & 3 in screenshot) */
-                      <div className="space-y-2 pt-2 border-t border-border/40 text-xs">
-                        {m.history.map((h, hIdx) => (
-                          <div
-                            key={hIdx}
-                            className="flex flex-wrap items-center gap-3 bg-muted/20 border border-border/20 p-2.5 rounded-xl"
-                          >
-                            <span className="font-bold text-foreground">{h.version}</span>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border ${getBadgeColor(h.status)}`}>
-                              {h.status}
-                            </span>
-                            <span className="text-muted-foreground text-[10px]">
-                              Submitted: {formatDateShort(h.submittedAt)}
-                            </span>
-                            {h.reviewedAt && (
-                              <span className="text-muted-foreground text-[10px]">
-                                Reviewed: {formatDateShort(h.reviewedAt)}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              )
-            })}
+                      )}
+                    </div>
+                  </Card>
+                )
+              })
+            )}
           </div>
         </div>
       )}

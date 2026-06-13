@@ -44,6 +44,7 @@ import {
   getChapters,
   getTasks,
   updateChapterStatus,
+  syncChaptersFromBackend,
   type Chapter,
   type Task,
   type ChapterStatus,
@@ -235,6 +236,7 @@ function TantouEditorWorkspace() {
   const [assignedMangakas, setAssignedMangakas] = useState<{ id: string; name: string; email: string }[]>([])
 
   // Data states
+  const [isLoading, setIsLoading] = useState(true)
   const [seriesList, setSeriesList] = useState<any[]>([])
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
@@ -337,9 +339,10 @@ function TantouEditorWorkspace() {
     }
   }, [lightboxOpen, detailedProposal])
 
-  // Load Data function
+  // Load Data function — API only, no local/mock fallback
   const loadData = useCallback(async (editorId?: string) => {
     const targetEditorId = editorId || currentUserId
+    setIsLoading(true)
     let list: any[] = []
 
     try {
@@ -365,25 +368,23 @@ function TantouEditorWorkspace() {
           console.warn('Failed to load assigned mangakas from backend:', e)
         }
 
-        // Merge local storage overrides if any
-        if (typeof window !== 'undefined') {
-          try {
-            const overrides = JSON.parse(localStorage.getItem('editor_assignments_override') || '{}')
-            for (const [mangakaId, editorId] of Object.entries(overrides)) {
-              if (typeof editorId === 'string' && editorId.toLowerCase() === targetEditorId.toLowerCase()) {
-                const alreadyAdded = assigned.some(m => m.id.toLowerCase() === mangakaId.toLowerCase())
-                if (!alreadyAdded) {
-                  const seriesObj = list.find(s => s.mangakaId?.toLowerCase() === mangakaId.toLowerCase())
-                  const name = seriesObj ? seriesObj.author : 'Assigned Mangaka'
-                  assigned.push({
-                    id: mangakaId,
-                    name: name,
-                    email: `${name.toLowerCase().replace(/\s+/g, '')}@example.com`
-                  })
-                }
+        // Fallback: Populate assigned mangakas from series list where tantouEditorId matches
+        if (Array.isArray(list)) {
+          const matchingSeries = list.filter(
+            (s) => s.tantouEditorId && s.tantouEditorId.toLowerCase() === targetEditorId.toLowerCase()
+          )
+          matchingSeries.forEach((s) => {
+            if (s.mangakaId) {
+              const alreadyAdded = assigned.some((m) => m.id.toLowerCase() === s.mangakaId.toLowerCase())
+              if (!alreadyAdded) {
+                assigned.push({
+                  id: s.mangakaId,
+                  name: s.author || 'Assigned Mangaka',
+                  email: `${(s.author || 'mangaka').toLowerCase().replace(/\s+/g, '')}@example.com`,
+                })
               }
             }
-          } catch {}
+          })
         }
 
         setAssignedMangakas(assigned)
@@ -392,18 +393,27 @@ function TantouEditorWorkspace() {
       }
     }
 
-    setChapters(getChapters())
-    setTasks(getTasks())
-    setManuscripts(getManuscripts())
+    // Load chapters from API only
+    try {
+      const syncedChapters = await syncChaptersFromBackend()
+      setChapters(syncedChapters)
+    } catch (e) {
+      console.warn('Failed to sync chapters from backend:', e)
+      setChapters([])
+    }
 
-    // Background sync manuscripts
+    // Load manuscripts from API only
     try {
       const synced = await syncManuscriptsFromBackend()
-      if (synced) setManuscripts(synced)
+      setManuscripts(synced)
     } catch (e) {
       console.warn('Failed to sync manuscripts from backend:', e)
+      setManuscripts([])
     }
+
+    setIsLoading(false)
   }, [currentUserId])
+
 
   useEffect(() => {
     let editorId = currentUserId
@@ -446,21 +456,25 @@ function TantouEditorWorkspace() {
   const supervisedSeries = useMemo(() => {
     const assignedIds = new Set(assignedMangakas.map(m => m.id.toLowerCase()))
     return seriesList.filter(
-      (s) => s.mangakaId && assignedIds.has(s.mangakaId.toLowerCase())
+      (s) =>
+        (s.mangakaId && assignedIds.has(s.mangakaId.toLowerCase())) ||
+        (s.tantouEditorId && currentUserId && s.tantouEditorId.toLowerCase() === currentUserId.toLowerCase()) ||
+        (s.mangakaId && currentUserId && s.mangakaId.toLowerCase() === currentUserId.toLowerCase()) ||
+        (!s.tantouEditorId) // Allow Tantou Editor to see unassigned series for testing/demo purposes
     )
-  }, [seriesList, assignedMangakas])
+  }, [seriesList, assignedMangakas, currentUserId])
 
   // Stats Counters
   const pendingReviewsCount = useMemo(() => {
     const manuscriptsSubmitted = manuscripts.filter(
       (m) =>
         m.status === 'SUBMITTED' &&
-        supervisedSeries.some((s) => s.id === m.seriesId)
+        supervisedSeries.some((s) => s.id.toLowerCase() === (m.seriesId || '').toLowerCase())
     ).length
     const chaptersReadyForReview = chapters.filter(
       (c) =>
         c.status === 'Ready for Editor' &&
-        supervisedSeries.some((s) => s.id === c.seriesId)
+        supervisedSeries.some((s) => s.id.toLowerCase() === (c.seriesId || '').toLowerCase())
     ).length
     return manuscriptsSubmitted + chaptersReadyForReview
   }, [manuscripts, chapters, supervisedSeries])
@@ -493,6 +507,16 @@ function TantouEditorWorkspace() {
         >
           Go to Manga List
         </Link>
+      </div>
+    )
+  }
+
+  // Loading state — waiting for API data
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground font-medium">Loading data from server...</p>
       </div>
     )
   }
@@ -539,18 +563,33 @@ function TantouEditorWorkspace() {
       status,
       feedbackText.trim()
     )
-    if (success) {
-      if (status === 'APPROVED') {
-        toast.success(`Manuscript for "${activeManuscript.seriesTitle}" approved and locked (BR-80)!`)
-      } else {
-        toast.warning(
-          `Revision requested for "${activeManuscript.seriesTitle}". Status updated.`
-        )
-      }
-      handleBackToManuscripts()
-    } else {
+
+    if (!success) {
       toast.error('Failed to update manuscript review status.')
+      return
     }
+
+    if (status === 'APPROVED') {
+      // Update linked chapter to Published
+      if (activeManuscript.chapterId) {
+        updateChapterStatus(activeManuscript.chapterId, 'Published')
+      }
+
+      toast.success(
+        `Manuscript approved! Chapter "${activeManuscript.chapterTitle}" đã được xuất bản.`
+      )
+    } else {
+      // Revert linked chapter back to In Progress
+      if (activeManuscript.chapterId) {
+        updateChapterStatus(activeManuscript.chapterId, 'In Progress')
+      }
+
+      toast.warning(
+        `Revision requested. Chapter "${activeManuscript.chapterTitle}" đã trả về "In Progress".`
+      )
+    }
+
+    handleBackToManuscripts()
   }
 
   return (
@@ -594,18 +633,23 @@ function TantouEditorWorkspace() {
 
             <Link
               href="/dashboard/tantou-editor?tab=manuscripts"
-              className="bg-card border border-border hover:border-primary/20 p-6 rounded-2xl flex items-center gap-4 transition-all shadow-sm group cursor-pointer"
+              className="bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 p-6 rounded-2xl flex items-center justify-between transition-all shadow-sm group cursor-pointer dark:bg-amber-950/20 dark:border-amber-900/30 dark:hover:bg-amber-900/30"
             >
-              <div className="text-amber-600 group-hover:scale-105 transition-transform">
-                <FileCheck className="w-6 h-6" />
+              <div className="flex items-center gap-4">
+                <div className="text-amber-600 group-hover:scale-110 transition-transform bg-amber-100 p-3 rounded-xl dark:bg-amber-900/50">
+                  <FileCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs text-amber-700/80 font-bold uppercase tracking-wider dark:text-amber-500/80">
+                    Action Required
+                  </p>
+                  <p className="text-lg font-black text-amber-900 leading-tight mt-0.5 dark:text-amber-400">
+                    {stats.pendingCount} Pending Reviews
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-semibold font-sans">
-                  Pending Reviews
-                </p>
-                <p className="text-2xl font-black text-foreground leading-none mt-1">
-                  {stats.pendingCount}
-                </p>
+              <div className="text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-sm font-bold">
+                Review Now <ChevronRight className="w-4 h-4" />
               </div>
             </Link>
           </div>
@@ -1801,9 +1845,24 @@ function TantouEditorWorkspace() {
               </div>
 
               <div className="grid grid-cols-1 gap-6">
-                {manuscripts
-                  .filter((m) => supervisedSeries.some((s) => s.id === m.seriesId))
-                  .map((m) => {
+                {(() => {
+                  const filteredManuscripts = manuscripts.filter((m) => supervisedSeries.some((s) => s.id.toLowerCase() === (m.seriesId || '').toLowerCase()))
+                  
+                  if (filteredManuscripts.length === 0) {
+                    return (
+                      <div className="bg-card border border-border rounded-2xl p-16 text-center space-y-4 shadow-sm">
+                        <Clock className="w-12 h-12 text-muted-foreground/30 mx-auto" />
+                        <div>
+                          <h3 className="font-bold text-lg text-foreground">No manuscripts pending</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            There are currently no chapters ready for your editorial review.
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return filteredManuscripts.map((m) => {
                     const latestVer = m.history?.[0] || {
                       version: m.latestVersion,
                       status: m.status,
@@ -1846,9 +1905,9 @@ function TantouEditorWorkspace() {
                             {m.status === 'SUBMITTED' && (
                               <button
                                 onClick={() => handleOpenReview(m.id)}
-                                className="bg-primary hover:bg-primary/95 text-primary-foreground font-black text-[10px] uppercase tracking-wide px-3.5 py-1.5 rounded-xl cursor-pointer transition-colors shadow-sm"
+                                className="bg-primary hover:bg-primary/95 text-primary-foreground font-black text-[10px] uppercase tracking-wide px-3.5 py-1.5 rounded-xl cursor-pointer transition-colors shadow-sm flex items-center gap-1.5"
                               >
-                                Review
+                                Review & Approve <ChevronRight className="w-3.5 h-3.5 -mr-1" />
                               </button>
                             )}
                           </div>
@@ -1905,7 +1964,8 @@ function TantouEditorWorkspace() {
                         </div>
                       </div>
                     )
-                  })}
+                  })
+                })()}
               </div>
             </div>
           )}

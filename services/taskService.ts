@@ -12,11 +12,11 @@ export interface TaskItem {
 
 export const taskService = {
   getMangakaTasks: async (): Promise<any> => {
-    return fetchAPI<any>("/api/page-tasks/mangaka");
+    return fetchAPI<any>("/api/page-tasks/mangaka", { suppressGlobalError: true } as any);
   },
   
   getAssistantTasks: async (): Promise<any> => {
-    return fetchAPI<any>("/api/page-tasks/assistant");
+    return fetchAPI<any>("/api/page-tasks/assistant", { suppressGlobalError: true } as any);
   },
   
   assignTask: async (data: any): Promise<any> => {
@@ -38,26 +38,29 @@ export const taskService = {
   
   submitWork: async (pageTaskId: string, data: any): Promise<any> => {
     const payload = {
-      pageTaskId,
-      versionNo: Number(data.versionNo || 1),
       submittedFileAssetId: data.submittedFileAssetId || '88888888-8888-8888-8888-888888888888',
       note: data.note || data.submitDescription || 'Nộp trang vẽ'
     };
-    return fetchAPI<any>("/api/submissions", {
+    return fetchAPI<any>(`/api/page-tasks/${pageTaskId}/submissions`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
   },
   
   updateSubmission: async (submissionId: string, status: string, rejectReason?: string): Promise<any> => {
-    const payload = {
-      status,
-      rejectReason: rejectReason || null
-    };
-    return fetchAPI<any>(`/api/submissions/${submissionId}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload)
-    });
+    if (status === 'Approved') {
+      return fetchAPI<any>(`/api/page-tasks/submissions/${submissionId}/approve`, {
+        method: 'POST'
+      });
+    } else {
+      const payload = {
+        rejectReason: rejectReason || 'Cần vẽ lại chi tiết hơn.'
+      };
+      return fetchAPI<any>(`/api/page-tasks/submissions/${submissionId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+    }
   }
 };
 

@@ -29,7 +29,8 @@ import {
   Hash,
   AlertCircle,
   Info,
-  Layers
+  Layers,
+  Download
 } from 'lucide-react'
 import {
   getSeries,
@@ -56,7 +57,21 @@ import {
   type ChapterStatus,
   type TaskStatus
 } from '@/lib/chapters-store'
-import { calculateChapterDeadline, calculateChapterProgress } from '@/lib/business-logic'
+import { calculateChapterDeadline, calculateChapterProgress, countUniqueApprovedPages } from '@/lib/business-logic'
+import { syncUsersFromBackend } from '@/lib/users-store'
+
+const triggerMockDownload = (fileName: string) => {
+  if (typeof window === 'undefined') return
+  const blob = new Blob(["Mock file content for " + fileName], { type: "application/octet-stream" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 
 export default function ChaptersPage() {
   const { role } = useRole()
@@ -219,6 +234,9 @@ export default function ChaptersPage() {
 
     // 3. Load assistant dropdown / info
     setAssistants(getAssistants())
+    syncUsersFromBackend().then(() => {
+      setAssistants(getAssistants())
+    })
 
     // 4. Load tasks for selected assistant
     if (selectedAssistantId) {
@@ -427,7 +445,7 @@ export default function ChaptersPage() {
   }
 
   // 1. Tạo Chapter mới
-  const handleCreateChapter = (e: React.FormEvent) => {
+  const handleCreateChapter = async (e: React.FormEvent) => {
     e.preventDefault()
     const errs: Record<string, string> = {}
 
@@ -462,7 +480,7 @@ export default function ChaptersPage() {
     pubDateObj.setDate(pubDateObj.getDate() - 14)
     const deadlineString = pubDateObj.toISOString().split('T')[0]
 
-    const newChap = createChapter({
+    const newChap = await createChapter({
       seriesId: newChapterSeriesId,
       number: parseInt(newChapterNo) || 0,
       title: newChapterTitle,
@@ -496,7 +514,7 @@ export default function ChaptersPage() {
   }
 
   // 2. Tạo Task & Giao việc cho Assistant
-  const handleCreateTask = (e: React.FormEvent) => {
+  const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTaskType.trim()) {
       showToast('Vui lòng nhập hoặc chọn loại task!', 'error')
@@ -510,33 +528,41 @@ export default function ChaptersPage() {
       showToast('Vui lòng nhập mô tả công việc!', 'error')
       return
     }
+    if (newTaskAssistantId === 'Unassigned') {
+      showToast('Vui lòng chọn trợ lý vẽ để giao việc!', 'error')
+      return
+    }
 
-    createTask({
-      chapterId: selectedChapterId,
-      type: newTaskType.trim(),
-      pages: `${newTaskPageStart}-${newTaskPageEnd}`,
-      pageStart: newTaskPageStart,
-      pageEnd: newTaskPageEnd,
-      description: newTaskDesc,
-      assistantId: newTaskAssistantId,
-      dueDate: newTaskDueDate || undefined,
-      attachments: newTaskAttachments.length > 0 ? newTaskAttachments : undefined
-    })
+    try {
+      await createTask({
+        chapterId: selectedChapterId,
+        type: newTaskType.trim(),
+        pages: `${newTaskPageStart}-${newTaskPageEnd}`,
+        pageStart: newTaskPageStart,
+        pageEnd: newTaskPageEnd,
+        description: newTaskDesc,
+        assistantId: newTaskAssistantId,
+        dueDate: newTaskDueDate || undefined,
+        attachments: newTaskAttachments.length > 0 ? newTaskAttachments : undefined
+      })
 
-    showToast(`Đã tạo task và giao việc thành công!`)
-    setIsTaskModalOpen(false)
-    setNewTaskDesc('')
-    setNewTaskType('Line Art')
-    setNewTaskPageStart(1)
-    setNewTaskPageEnd(3)
-    setNewTaskDueDate('')
-    setNewTaskAttachments([])
-    refreshData()
-
-    // Cập nhật trạng thái chapter sang "In Progress" nếu đang là "Draft"
-    if (selectedChapter && selectedChapter.status === 'Draft') {
-      updateChapterStatus(selectedChapterId, 'In Progress')
+      showToast(`Đã tạo task và giao việc thành công!`)
+      setIsTaskModalOpen(false)
+      setNewTaskDesc('')
+      setNewTaskType('Line Art')
+      setNewTaskPageStart(1)
+      setNewTaskPageEnd(3)
+      setNewTaskDueDate('')
+      setNewTaskAttachments([])
       refreshData()
+
+      // Cập nhật trạng thái chapter sang "In Progress" nếu đang là "Draft"
+      if (selectedChapter && selectedChapter.status === 'Draft') {
+        updateChapterStatus(selectedChapterId, 'In Progress')
+        refreshData()
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi giao nhiệm vụ vẽ trang trên hệ thống.', 'error')
     }
   }
 
@@ -620,16 +646,9 @@ export default function ChaptersPage() {
     }
   }
 
-  // Tính phần trăm tiến độ của chapter hiện tại
+  // Tính phần trăm tiến độ của chapter hiện tại (đếm UNIQUE pages đã approved)
   const approvedPages = selectedChapter
-    ? chapterTasks.filter(t => t.status === 'Approved').reduce((acc, t) => {
-        // Tách số trang từ chuỗi (ví dụ: "1-3" -> 3 trang, "5" -> 1 trang)
-        const parts = t.pages.split('-')
-        if (parts.length === 2) {
-          return acc + (parseInt(parts[1]) - parseInt(parts[0]) + 1)
-        }
-        return acc + 1
-      }, 0)
+    ? countUniqueApprovedPages(chapterTasks)
     : 0
   const progressPercent = selectedChapter
     ? Math.min(100, calculateChapterProgress(approvedPages, selectedChapter.totalPages))
@@ -865,16 +884,10 @@ export default function ChaptersPage() {
                           </button>
                         )}
                         {selectedChapter.status === 'Ready for Editor' && (
-                          <button
-                            onClick={() => {
-                              updateChapterStatus(selectedChapterId, 'Published')
-                              refreshData()
-                              showToast('Chapter successfully Published!')
-                            }}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                          >
-                            Mark as Published
-                          </button>
+                          <div className="flex items-center gap-2 text-xs text-purple-700 bg-purple-500/10 border border-purple-500/20 px-3 py-2 rounded-xl font-semibold dark:text-purple-400">
+                            <Clock className="w-3.5 h-3.5 shrink-0" />
+                            Chờ Tantou Editor phê duyệt để xuất bản
+                          </div>
                         )}
                       </div>
                     </div>
@@ -934,13 +947,23 @@ export default function ChaptersPage() {
 
                             {/* Actions on Task (For Mangaka) */}
                             <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                              <button
+                                onClick={() => {
+                                  setActiveTaskToView(task)
+                                  setIsViewDetailModalOpen(true)
+                                }}
+                                className="inline-flex items-center gap-1 bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-border transition-all cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> View Details
+                              </button>
+
                               {task.status === 'Submitted' && (
                                 <button
                                   onClick={() => {
                                     setActiveTaskToReview(task)
                                     setIsReviewModalOpen(true)
                                   }}
-                                  className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                                 >
                                   <Eye className="w-3.5 h-3.5" /> Review Submission
                                 </button>
@@ -1135,9 +1158,10 @@ export default function ChaptersPage() {
             <div className="border border-border rounded-xl divide-y divide-border overflow-hidden">
               {getChapters().map(c => {
                 const tasksList = getTasks(c.id)
-                const appPages = tasksList.filter(t => t.status === 'Approved').length
-                const totPages = c.totalPages
-                const progress = Math.round((appPages / (tasksList.length || 1)) * 100)
+                const uniqueApproved = countUniqueApprovedPages(tasksList)
+                const progress = c.totalPages > 0
+                  ? Math.min(100, Math.round((uniqueApproved / c.totalPages) * 100))
+                  : 0
 
                 return (
                   <div key={c.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -2023,8 +2047,20 @@ export default function ChaptersPage() {
                   <div className="space-y-1.5">
                     {activeTaskToView.attachments.map((file, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2.5 bg-muted/60 rounded-xl border border-border text-xs">
-                        <span className="font-medium text-foreground truncate max-w-[340px]">📄 {file.name}</span>
-                        <span className="text-muted-foreground shrink-0 text-[10px] bg-muted px-1.5 py-0.5 rounded">{file.size}</span>
+                        <span className="font-medium text-foreground truncate max-w-[260px]">📄 {file.name}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-muted-foreground text-[10px] bg-muted px-1.5 py-0.5 rounded">{file.size}</span>
+                          <button
+                            onClick={() => {
+                              triggerMockDownload(file.name)
+                              showToast(`Đang tải xuống tệp: ${file.name}`)
+                            }}
+                            className="p-1 hover:bg-muted text-primary hover:text-primary/80 rounded-md cursor-pointer transition-all border border-border/40"
+                            title="Tải xuống tệp"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -2048,8 +2084,20 @@ export default function ChaptersPage() {
                   <p className="text-xs font-bold text-muted-foreground">Submitted Work Files</p>
                   {activeTaskToView.submittedFiles.map((file, idx) => (
                     <div key={idx} className="flex items-center justify-between p-2 bg-emerald-500/5 rounded-xl border border-emerald-500/10 text-xs">
-                      <span className="font-medium text-emerald-800 dark:text-emerald-400 truncate max-w-[340px]">🖼️ {file.name}</span>
-                      <span className="text-muted-foreground text-[10px] bg-muted px-1.5 py-0.5 rounded">{file.size}</span>
+                      <span className="font-medium text-emerald-800 dark:text-emerald-400 truncate max-w-[260px]">🖼️ {file.name}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-muted-foreground text-[10px] bg-muted px-1.5 py-0.5 rounded">{file.size}</span>
+                        <button
+                          onClick={() => {
+                            triggerMockDownload(file.name)
+                            showToast(`Đang tải xuống tệp: ${file.name}`)
+                          }}
+                          className="p-1 hover:bg-muted text-emerald-600 hover:text-emerald-500 rounded-md cursor-pointer transition-all border border-border/40"
+                          title="Tải xuống tệp"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

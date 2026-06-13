@@ -10,7 +10,7 @@ export interface Notification {
 
 export const notificationService = {
   listNotifications: async (): Promise<any> => {
-    return fetchAPI<any>("/api/notifications/my");
+    return fetchAPI<any>("/api/notifications/my", { suppressGlobalError: true } as any);
   },
   
   markAsRead: async (id: string): Promise<any> => {

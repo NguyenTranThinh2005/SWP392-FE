@@ -6,6 +6,7 @@
 import { fetchAPI } from '@/services/api'
 import { getUsers } from './users-store'
 import { chapterService } from '@/services/chapterService'
+import { findOverlappingTask } from './business-logic'
 
 export type ChapterStatus = 'Draft' | 'In Progress' | 'Ready for Editor' | 'Published'
 
@@ -192,7 +193,7 @@ export function getChapterById(id: string): Chapter | undefined {
   return loadChapters().find(c => c.id === id)
 }
 
-export function createChapter(data: Omit<Chapter, 'id' | 'createdAt'>): Chapter {
+export async function createChapter(data: Omit<Chapter, 'id' | 'createdAt'>): Promise<Chapter> {
   const chapters = loadChapters()
   
   // Enforce sequential numbering unless manually set to a valid positive number
@@ -210,26 +211,22 @@ export function createChapter(data: Omit<Chapter, 'id' | 'createdAt'>): Chapter 
     createdAt: new Date().toISOString()
   }
 
-  chapters.push(newChapter)
-  saveChapters(chapters)
-
-  // Background API call to backend C# API
+  // API call to backend C# API
   if (typeof window !== 'undefined') {
-    chapterService.createChapter(newChapter).then((res: any) => {
+    try {
+      const res: any = await chapterService.createChapter(newChapter)
       const createdData = res.data || res
       if (createdData) {
-        const currentChapters = loadChapters()
-        const foundIdx = currentChapters.findIndex(c => c.id === newChapter.id)
-        if (foundIdx !== -1) {
-          // Update local mock ID with the actual database UUID/ID
-          currentChapters[foundIdx].id = createdData.chapterId || createdData.id
-          saveChapters(currentChapters)
-        }
+        const chapterId = createdData.chapterId || createdData.id
+        newChapter.id = chapterId
       }
-    }).catch(err => {
+    } catch (err) {
       console.warn("Failed to create chapter on backend, using offline local storage fallback:", err)
-    })
+    }
   }
+
+  chapters.push(newChapter)
+  saveChapters(chapters)
 
   return newChapter
 }
@@ -238,7 +235,8 @@ export function updateChapterStatus(id: string, status: ChapterStatus): boolean 
   const chapters = loadChapters()
   const idx = chapters.findIndex(c => c.id === id)
   if (idx === -1) return false
-  chapters[idx].status = status
+  const chapter = chapters[idx]
+  chapter.status = status
   saveChapters(chapters)
 
   // Background API call to backend C# API
@@ -269,7 +267,20 @@ export function getTasksByAssistant(assistantId: string): Task[] {
   return loadTasks().filter(t => t.assistantId === assistantId)
 }
 
-export function createTask(data: Omit<Task, 'id' | 'status' | 'assistantName'>): Task {
+export async function createTask(data: Omit<Task, 'id' | 'status' | 'assistantName'>): Promise<Task> {
+  if (data.assistantId === 'Unassigned') {
+    throw new Error('Vui lòng chọn Trợ lý để giao việc.');
+  }
+
+  // Validate: chống tạo task trùng trang cùng loại
+  const existingChapterTasks = loadTasks().filter(t => t.chapterId === data.chapterId)
+  const newStart = data.pageStart || parseInt(data.pages.split('-')[0]) || 1
+  const newEnd = data.pageEnd || parseInt(data.pages.split('-')[1]) || newStart
+  const overlap = findOverlappingTask(existingChapterTasks, data.type, newStart, newEnd)
+  if (overlap) {
+    throw new Error(`Đã có task "${overlap.type}" cho trang ${overlap.pages}. Không thể tạo trùng lặp.`)
+  }
+
   const tasks = loadTasks()
   const assistants = getAssistants()
   const assistant = assistants.find(a => a.id === data.assistantId)
@@ -279,21 +290,18 @@ export function createTask(data: Omit<Task, 'id' | 'status' | 'assistantName'>):
     ...data,
     id: `T${String(tasks.length + 1).padStart(2, '0')}`,
     assistantName,
-    status: data.assistantId === 'Unassigned' ? 'Unassigned' : 'Pending',
-    assignedAt: data.assistantId === 'Unassigned' ? undefined : new Date().toISOString()
+    status: 'Pending',
+    assignedAt: new Date().toISOString()
   }
 
-  tasks.push(newTask)
-  saveTasks(tasks)
+  // API call to backend — only if both chapterId and assistantId are valid GUIDs
+  const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const isValidGuid = (value: string) => GUID_REGEX.test(value)
 
-  // Background API call to backend
-  if (typeof window !== 'undefined') {
-    const defaultManuscriptId = '77777777-7777-7777-7777-777777777777' // Seeded manuscript ID
-    
+  if (typeof window !== 'undefined' && isValidGuid(data.chapterId) && isValidGuid(data.assistantId)) {
     const payload = {
       chapterId: data.chapterId,
-      manuscriptId: defaultManuscriptId,
-      assistantId: data.assistantId === 'Unassigned' ? '00000000-0000-0000-0000-000000000000' : data.assistantId,
+      assistantId: data.assistantId,
       pageStart: data.pageStart || 1,
       pageEnd: data.pageEnd || 3,
       taskType: data.type,
@@ -301,27 +309,29 @@ export function createTask(data: Omit<Task, 'id' | 'status' | 'assistantName'>):
       dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null
     }
 
-    fetchAPI<{ data: any }>('/api/page-tasks', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    }).then((res: any) => {
+    try {
+      const res = await fetchAPI<{ data: any }>('/api/page-tasks', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
       if (res && res.data) {
-        const currentTasks = loadTasks()
-        const foundIdx = currentTasks.findIndex(t => t.id === newTask.id)
-        if (foundIdx !== -1) {
-          currentTasks[foundIdx].id = res.data.pageTaskId || res.data.id
-          saveTasks(currentTasks)
-        }
+        newTask.id = res.data.pageTaskId || res.data.id
       }
-    }).catch(err => {
-      console.warn("Failed to create task on backend:", err)
-    })
+    } catch (err: any) {
+      console.error("Failed to create task on backend:", err)
+      throw err
+    }
+  } else if (typeof window !== 'undefined') {
+    console.warn(
+      `createTask: skipping backend API call — chapterId ("${data.chapterId}") or assistantId ("${data.assistantId}") is not a valid GUID. Task saved locally only.`
+    )
   }
 
+  tasks.push(newTask)
+  saveTasks(tasks)
+
   // Update assistant active task count
-  if (data.assistantId !== 'Unassigned') {
-    updateAssistantTaskCount(data.assistantId, 1)
-  }
+  updateAssistantTaskCount(data.assistantId, 1)
 
   return newTask
 }
@@ -364,12 +374,10 @@ export function updateTaskStatus(
     // 1. Assistant submits task work
     if (status === 'Submitted' && oldStatus !== 'Submitted') {
       const payload = {
-        pageTaskId: taskId,
-        versionNo: 1,
         submittedFileAssetId: '88888888-8888-8888-8888-888888888888', // Default file asset ID
         note: submitDescription || 'Nộp trang vẽ'
       }
-      fetchAPI<any>('/api/submissions', {
+      fetchAPI<any>(`/api/page-tasks/${taskId}/submissions`, { suppressGlobalError: true,
         method: 'POST',
         body: JSON.stringify(payload)
       }).then(res => {
@@ -378,7 +386,11 @@ export function updateTaskStatus(
           const currentTasks = loadTasks()
           const foundIdx = currentTasks.findIndex(t => t.id === taskId)
           if (foundIdx !== -1) {
-            currentTasks[foundIdx].submissionId = data.submissionId || data.id
+            const submissions = data.submissions || [];
+            const latestSub = submissions.length > 0
+              ? [...submissions].sort((a: any, b: any) => (b.versionNo || 0) - (a.versionNo || 0))[0]
+              : null;
+            currentTasks[foundIdx].submissionId = latestSub ? (latestSub.submissionId || latestSub.id) : (data.submissionId || data.id);
             saveTasks(currentTasks)
           }
         }
@@ -388,12 +400,8 @@ export function updateTaskStatus(
     }
     // 2. Mangaka approves drawing task submission
     else if (status === 'Approved' && oldTask.submissionId) {
-      const payload = {
-        status: 'Approved'
-      }
-      fetchAPI<any>(`/api/submissions/${oldTask.submissionId}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload)
+      fetchAPI<any>(`/api/page-tasks/submissions/${oldTask.submissionId}/approve`, { suppressGlobalError: true,
+        method: 'POST'
       }).then(res => {
         console.log("Approved submission on backend successfully", res)
       }).catch(err => {
@@ -403,11 +411,10 @@ export function updateTaskStatus(
     // 3. Mangaka rejects drawing task submission
     else if (status === 'Rejected' && oldTask.submissionId) {
       const payload = {
-        status: 'Rejected',
         rejectReason: feedback || 'Cần vẽ lại chi tiết hơn.'
       }
-      fetchAPI<any>(`/api/submissions/${oldTask.submissionId}`, {
-        method: 'PUT',
+      fetchAPI<any>(`/api/page-tasks/submissions/${oldTask.submissionId}/reject`, { suppressGlobalError: true,
+        method: 'POST',
         body: JSON.stringify(payload)
       }).then(res => {
         console.log("Rejected submission on backend successfully", res)
@@ -498,6 +505,14 @@ function updateAssistantTaskCount(assistantId: string, diff: number) {
 
 // ---------- Async Backend Synchronizers ----------
 
+const mapBackendTaskStatus = (statusVal: any): TaskStatus => {
+  if (statusVal === 0 || statusVal === '0' || statusVal === 'Assigned') return 'Pending'
+  if (statusVal === 1 || statusVal === '1' || statusVal === 'InProgress') return 'In-Progress'
+  if (statusVal === 2 || statusVal === '2' || statusVal === 'Completed') return 'Submitted'
+  if (statusVal === 3 || statusVal === '3' || statusVal === 'Approved') return 'Approved'
+  return 'Pending'
+}
+
 export async function syncTasksFromBackend(chapterId?: string): Promise<Task[]> {
   try {
     const role = typeof window !== 'undefined' ? localStorage.getItem('user-role') : null
@@ -505,7 +520,7 @@ export async function syncTasksFromBackend(chapterId?: string): Promise<Task[]> 
     if (role === 'Assistant') {
       endpoint = '/api/page-tasks/assistant'
     }
-    const response = await fetchAPI<{ data: any[] }>(endpoint)
+    const response = await fetchAPI<{ data: any[] }>(endpoint, { suppressGlobalError: true } as any)
     if (response && response.data) {
       const backendTasks: Task[] = response.data.map(t => {
         const assistants = getAssistants()
@@ -520,7 +535,7 @@ export async function syncTasksFromBackend(chapterId?: string): Promise<Task[]> 
           description: t.description || '',
           assistantId: t.assistantId || 'Unassigned',
           assistantName,
-          status: t.status as TaskStatus,
+          status: mapBackendTaskStatus(t.status),
           dueDate: t.dueDate || undefined,
           pageStart: t.pageStart,
           pageEnd: t.pageEnd,
@@ -534,10 +549,27 @@ export async function syncTasksFromBackend(chapterId?: string): Promise<Task[]> 
 
       const localTasks = loadTasks()
       const merged = [...localTasks]
+      
+      const STATUS_PRIORITY: Record<string, number> = {
+        'Unassigned': 0,
+        'Pending': 1,
+        'In-Progress': 2,
+        'Rejected': 2,
+        'Submitted': 3,
+        'Approved': 4
+      }
+
       backendTasks.forEach(bt => {
         const idx = merged.findIndex(lt => lt.id === bt.id)
         if (idx !== -1) {
-          merged[idx] = { ...merged[idx], ...bt }
+          const localStatus = merged[idx].status || 'Pending'
+          const localPriority = STATUS_PRIORITY[localStatus] || 1
+          const backendPriority = STATUS_PRIORITY[bt.status] || 1
+          
+          // Keep local status if it is further along than backend status
+          const finalStatus = localPriority > backendPriority ? localStatus : bt.status
+          
+          merged[idx] = { ...merged[idx], ...bt, status: finalStatus }
         } else {
           merged.push(bt)
         }
@@ -553,7 +585,7 @@ export async function syncTasksFromBackend(chapterId?: string): Promise<Task[]> 
 
 export async function syncSeriesFromBackend(mangakaId: string): Promise<Series[]> {
   try {
-    const response = await fetchAPI<{ data: any[] } | any[]>('/api/series')
+    const response = await fetchAPI<{ data: any[] } | any[]>('/api/series', { suppressGlobalError: true } as any)
     const dataList = (response as any).data || response
     if (Array.isArray(dataList)) {
       const proposals = dataList.map((s: any) => {
@@ -583,30 +615,19 @@ export async function syncSeriesFromBackend(mangakaId: string): Promise<Series[]
 
 export async function syncChaptersFromBackend(seriesId?: string): Promise<Chapter[]> {
   try {
-    const list = seriesId 
+    const list = seriesId
       ? await chapterService.getChaptersBySeries(seriesId)
       : await chapterService.listChapters()
-    
+
     if (Array.isArray(list)) {
-      const localChapters = loadChapters()
-      const merged = [...localChapters]
-      
-      list.forEach(bc => {
-        const idx = merged.findIndex(lc => lc.id === bc.id)
-        if (idx !== -1) {
-          merged[idx] = { ...merged[idx], ...bc }
-        } else {
-          merged.push(bc)
-        }
-      })
-      
-      saveChapters(merged)
-      return seriesId ? merged.filter(c => c.seriesId === seriesId) : merged
+      saveChapters(list)
+      return seriesId ? list.filter(c => c.seriesId === seriesId) : list
     }
   } catch (error) {
-    console.warn("syncChaptersFromBackend failed, using offline data:", error)
+    console.warn("syncChaptersFromBackend failed:", error)
   }
-  return getChapters(seriesId)
+  // Return empty array instead of stale local data
+  return []
 }
 
 
