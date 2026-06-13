@@ -1,4 +1,4 @@
-import { fetchWithFallback } from "./api";
+import { fetchAPI } from "./api";
 
 export interface RankingItem {
   id: string;
@@ -21,9 +21,20 @@ export const MOCK_RANKING: RankingItem[] = [
 
 export const rankingService = {
   getRankingList: async () => {
-    return fetchWithFallback<RankingItem[]>("/api/ranking", MOCK_RANKING);
+    try {
+      return await fetchAPI<RankingItem[]>("/api/ranking");
+    } catch {
+      return MOCK_RANKING;
+    }
   },
   confirmRanking: async (quarter: string) => {
-    return fetchWithFallback<any>("/api/ranking/confirm", { success: true, quarter });
+    try {
+      return await fetchAPI<any>("/api/ranking/confirm", {
+        method: 'POST',
+        body: JSON.stringify({ quarter })
+      });
+    } catch {
+      return { success: true, quarter };
+    }
   }
 };

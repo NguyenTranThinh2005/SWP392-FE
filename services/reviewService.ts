@@ -1,4 +1,4 @@
-import { fetchWithFallback } from "./api";
+import { fetchAPI } from "./api";
 
 export interface ProposalReview {
   id: string;
@@ -15,9 +15,20 @@ export const MOCK_REVIEWS: ProposalReview[] = [
 
 export const reviewService = {
   listReviews: async () => {
-    return fetchWithFallback<ProposalReview[]>("/api/reviews", MOCK_REVIEWS);
+    try {
+      return await fetchAPI<ProposalReview[]>("/api/reviews");
+    } catch {
+      return MOCK_REVIEWS;
+    }
   },
   submitReview: async (id: string, decision: 'APPROVED' | 'REJECTED', feedback: string) => {
-    return fetchWithFallback<any>(`/api/reviews/${id}/decision`, { success: true, id, decision, feedback });
+    try {
+      return await fetchAPI<any>(`/api/reviews/${id}/decision`, {
+        method: 'POST',
+        body: JSON.stringify({ decision, feedback })
+      });
+    } catch {
+      return { success: true, id, decision, feedback };
+    }
   }
 };

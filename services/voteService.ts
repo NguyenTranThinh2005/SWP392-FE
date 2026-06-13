@@ -1,4 +1,4 @@
-import { fetchWithFallback } from "./api";
+import { fetchAPI } from "./api";
 
 export interface VoteRecord {
   id: string;
@@ -8,6 +8,13 @@ export interface VoteRecord {
 
 export const voteService = {
   submitVote: async (seriesId: string) => {
-    return fetchWithFallback<any>(`/api/votes/submit`, { success: true, seriesId });
+    try {
+      return await fetchAPI<any>(`/api/votes/submit`, {
+        method: 'POST',
+        body: JSON.stringify({ seriesId })
+      });
+    } catch {
+      return { success: true, seriesId };
+    }
   }
 };

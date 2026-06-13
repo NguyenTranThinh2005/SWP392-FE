@@ -1,4 +1,4 @@
-import { fetchWithFallback } from "./api";
+import { fetchAPI } from "./api";
 
 export interface Notification {
   id: string;
@@ -27,9 +27,17 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
 
 export const notificationService = {
   listNotifications: async () => {
-    return fetchWithFallback<Notification[]>("/api/notifications", MOCK_NOTIFICATIONS);
+    try {
+      return await fetchAPI<Notification[]>("/api/notifications");
+    } catch {
+      return MOCK_NOTIFICATIONS;
+    }
   },
   markAsRead: async (id: string) => {
-    return fetchWithFallback<any>(`/api/notifications/${id}/read`, { success: true });
+    try {
+      return await fetchAPI<any>(`/api/notifications/${id}/read`, { method: 'POST' });
+    } catch {
+      return { success: true };
+    }
   }
 };

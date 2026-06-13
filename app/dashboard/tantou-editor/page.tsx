@@ -80,27 +80,27 @@ const getProposalFileTree = (proposal: SeriesProposal | null): FileItem[] => {
 
   const pagesList: FileItem[] = (proposal.proposalPages && proposal.proposalPages.length > 0)
     ? proposal.proposalPages.map((p) => {
-        return {
-          name: `page_${p.pageNo.toString().padStart(2, '0')}.png`,
-          path: `root/drafts/page_${p.pageNo.toString().padStart(2, '0')}.png`,
-          type: 'file' as const,
-          size: 'Image Page',
-          previewType: 'image' as const,
-          pageNo: p.pageNo,
-          content: `${API_BASE_URL}/api/files/${p.previewFileAssetId}`,
-        }
-      })
+      return {
+        name: `page_${p.pageNo.toString().padStart(2, '0')}.png`,
+        path: `root/drafts/page_${p.pageNo.toString().padStart(2, '0')}.png`,
+        type: 'file' as const,
+        size: 'Image Page',
+        previewType: 'image' as const,
+        pageNo: p.pageNo,
+        content: `${API_BASE_URL}/api/files/${p.previewFileAssetId}`,
+      }
+    })
     : Array.from({ length: 5 }).map((_, idx) => {
-        const pageNum = idx + 1
-        return {
-          name: `page_${pageNum.toString().padStart(2, '0')}.png`,
-          path: `root/drafts/page_${pageNum.toString().padStart(2, '0')}.png`,
-          type: 'file' as const,
-          size: `${(1.5 + idx * 0.1).toFixed(1)} MB`,
-          previewType: 'image' as const,
-          pageNo: pageNum,
-        }
-      })
+      const pageNum = idx + 1
+      return {
+        name: `page_${pageNum.toString().padStart(2, '0')}.png`,
+        path: `root/drafts/page_${pageNum.toString().padStart(2, '0')}.png`,
+        type: 'file' as const,
+        size: `${(1.5 + idx * 0.1).toFixed(1)} MB`,
+        previewType: 'image' as const,
+        pageNo: pageNum,
+      }
+    })
 
   return [
     {
@@ -381,7 +381,7 @@ function TantouEditorWorkspace() {
                 }
               }
             }
-          } catch {}
+          } catch { }
         }
 
         setAssignedMangakas(assigned)
@@ -1153,7 +1153,7 @@ function TantouEditorWorkspace() {
                                 {deadlineStr}
                               </span>
                             </div>
-                            {proposal.sourceZipFileAssetId ? (
+                            {/* {proposal.sourceZipFileAssetId ? (
                               <div className="py-2.5">
                                 <a
                                   href={`${API_BASE_URL}/api/files/${proposal.sourceZipFileAssetId}`}
@@ -1177,7 +1177,7 @@ function TantouEditorWorkspace() {
                                   </a>
                                 </div>
                               )
-                            )}
+                            )} */}
                           </div>
                         </div>
                       </div>
@@ -1200,17 +1200,17 @@ function TantouEditorWorkspace() {
                             const zipDownloadUrl = proposal.sourceZipPublicUrl
                               || proposal.sourceZipFile?.url
                               || (proposal.sourceZipFileAssetId
-                                    ? `${API_BASE_URL}/api/files/${proposal.sourceZipFileAssetId}`
-                                    : proposal.sampleFileUrl?.startsWith('http')
-                                      ? proposal.sampleFileUrl
-                                      : proposal.sampleFileUrl
-                                        ? `${API_BASE_URL}/api/files/${proposal.sampleFileUrl}`
-                                        : '');
+                                ? `${API_BASE_URL}/api/files/${proposal.sourceZipFileAssetId}`
+                                : proposal.sampleFileUrl?.startsWith('http')
+                                  ? proposal.sampleFileUrl
+                                  : proposal.sampleFileUrl
+                                    ? `${API_BASE_URL}/api/files/${proposal.sampleFileUrl}`
+                                    : '');
 
                             const zipFileName = proposal.sourceZipFile?.fileName
                               || (proposal.sourceZipFileAssetId || proposal.sourceZipPublicUrl
-                                    ? `source_manuscript_${proposal.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.zip`
-                                    : `sample_pages_${proposal.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.zip`);
+                                ? `source_manuscript_${proposal.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.zip`
+                                : `sample_pages_${proposal.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.zip`);
 
                             const isLegacy = !proposal.sourceZipPublicUrl && !proposal.sourceZipFile && !proposal.sourceZipFileAssetId && !!proposal.sampleFileUrl;
 
@@ -1271,13 +1271,13 @@ function TantouEditorWorkspace() {
                           const previewPages = proposal.proposalPages && proposal.proposalPages.length > 0
                             ? proposal.proposalPages
                             : (proposal.sampleFileUrl || '')
-                                .split(',')
-                                .filter(Boolean)
-                                .map((id: string, idx: number) => ({
-                                  pageNo: idx + 1,
-                                  previewFileAssetId: id.trim(),
-                                  url: undefined as string | undefined,
-                                }));
+                              .split(',')
+                              .filter(Boolean)
+                              .map((id: string, idx: number) => ({
+                                pageNo: idx + 1,
+                                previewFileAssetId: id.trim(),
+                                url: undefined as string | undefined,
+                              }));
 
                           if (previewPages.length === 0) return null;
 
@@ -1299,10 +1299,10 @@ function TantouEditorWorkspace() {
 
                               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                 {previewPages.map((page: any, idx: number) => {
-                                  const imgUrl = page.url 
+                                  const imgUrl = page.url
                                     || (page.previewFileAssetId?.startsWith('http')
-                                          ? page.previewFileAssetId
-                                          : `${API_BASE_URL}/api/files/${page.previewFileAssetId}`);
+                                      ? page.previewFileAssetId
+                                      : `${API_BASE_URL}/api/files/${page.previewFileAssetId}`);
                                   return (
                                     <div
                                       key={page.proposalPageId || idx}
@@ -1327,7 +1327,7 @@ function TantouEditorWorkspace() {
                                           <ZoomIn className="w-3.5 h-3.5" /> Inspect
                                         </div>
                                       </div>
-                                      
+
                                       {/* Page Number Label */}
                                       <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md">
                                         Page {page.pageNo || idx + 1}
@@ -1928,21 +1928,21 @@ function TantouEditorWorkspace() {
           const previewPages = detailedProposal.proposalPages && detailedProposal.proposalPages.length > 0
             ? detailedProposal.proposalPages
             : (detailedProposal.sampleFileUrl || '')
-                .split(',')
-                .filter(Boolean)
-                .map((id: string, idx: number) => ({
-                  pageNo: idx + 1,
-                  previewFileAssetId: id.trim(),
-                  url: undefined as string | undefined,
-                }));
+              .split(',')
+              .filter(Boolean)
+              .map((id: string, idx: number) => ({
+                pageNo: idx + 1,
+                previewFileAssetId: id.trim(),
+                url: undefined as string | undefined,
+              }));
 
           const activePage = previewPages[lightboxActiveIndex];
           if (!activePage) return null;
 
-          const imgUrl = activePage.url 
+          const imgUrl = activePage.url
             || (activePage.previewFileAssetId?.startsWith('http')
-                  ? activePage.previewFileAssetId
-                  : `${API_BASE_URL}/api/files/${activePage.previewFileAssetId}`);
+              ? activePage.previewFileAssetId
+              : `${API_BASE_URL}/api/files/${activePage.previewFileAssetId}`);
 
           const handlePrev = (e?: React.MouseEvent) => {
             e?.stopPropagation();

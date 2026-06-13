@@ -86,11 +86,22 @@ Contains service client files using Axios. Communicates directly with the ASP.NE
 
 ---
 
-### 5. `lib/` (Helpers & Data Store Layer)
-* **`validation.ts`**: Enforces strict client-side validation rules (e.g., password criteria, length limits) using the `zod` library, which integrates directly with `react-hook-form`.
+### 5. `lib/` (Core Business Logic & Store Layer)
+This directory acts as the central repository for client-side business logic, validations, and state stores.
+
+* **`business-logic.ts`**: **The Core Calculations Engine**. Implements formulas and functions for mathematical/temporal business rules:
+  * `calculateVoteScore`: Ranking score logic resolving divide-by-zero checks (**BR-90**).
+  * `calculateChapterProgress`: Computes chapter completion percentages based on approved page tasks (**BR-61**, **BR-63**).
+  * `calculateChapterDeadline`: Calculates chapter submission deadlines (**BR-42**).
+* **`validation.ts`**: **Definitional Rules Guard**. Enforces input criteria using `zod` schemas (e.g., `seriesProposalSchema` validating title and synopsis length requirements for **BR-15**).
+* **`*-store.ts`** (e.g., `ranking-store.ts`, `proposals-store.ts`, `manuscripts-store.ts`, `chapters-store.ts`): **State & Behavioral Rules Controllers**:
+  * `proposals-store.ts`: Enforces active proposal limits (**BR-19**) and title uniqueness check helpers (**BR-17**).
+  * `ranking-store.ts`: Implements cờ cảnh báo bottom 20% review (**BR-94**).
+  * `manuscripts-store.ts`: Directs annotation draft binding (**BR-78**), lock status triggers (**BR-80**), and completion progress validation checks before approval (**BR-84**).
+  * `chapters-store.ts`: Enforces page range definitions and due date validation bounds (**BR-54**).
 * **`utils.ts`**: Small utility helper functions (e.g., tailwind merging tools, class joining).
 * **`constants.ts`**: Constant values (e.g., Status Badge theme colors, UI labels).
-* **`*-store.ts`** (e.g., `proposals-store.ts`, `users-store.ts`): Client-side stores (often Zustand or local state managers) holding mock data collections used for local fallbacks when backend databases are disconnected.
+
 
 ---
 

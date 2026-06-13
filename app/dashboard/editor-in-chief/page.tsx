@@ -33,6 +33,7 @@ import { useRole } from '@/context/RoleContext'
 import { Progress } from '@/components/ui/progress'
 import { notificationStore } from '@/store/notificationStore'
 import { toast } from 'sonner'
+import { seriesService } from '@/services/seriesService'
 
 // Config for mock series metrics (popularity, rating, chapters)
 const INITIAL_METRICS: Record<string, { rating: number; popularity: number; chapterCount: number }> = {
@@ -54,10 +55,39 @@ export default function EditorInChiefDashboard() {
   const [activeTab, setActiveTab] = useState<'override' | 'supervision'>('override')
   const [mounted, setMounted] = useState(false)
   const [warnings, setWarnings] = useState<Record<string, boolean>>({})
+  const [proposalVotes, setProposalVotes] = useState<Record<string, { approve: number; reject: number }>>({})
 
   const loadProposals = useCallback(async () => {
     const list = await getProposals()
     setProposals(list)
+
+    const pendingList = list.filter(
+      (p) => p.status === 'Pending Review' || p.status === 'Under Review'
+    )
+
+    const votesMap: Record<string, { approve: number; reject: number }> = {}
+    await Promise.all(
+      pendingList.map(async (proposal) => {
+        try {
+          const decisions = await seriesService.getBoardDecisions(proposal.id)
+          if (decisions && decisions.length > 0) {
+            const sorted = [...decisions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            const latest = sorted[0]
+            const votes = await seriesService.getBoardVotes(latest.boardDecisionId)
+            if (votes) {
+              const approve = votes.filter((v: any) => v.voteValue).length
+              const reject = votes.filter((v: any) => !v.voteValue).length
+              votesMap[proposal.id] = { approve, reject }
+              return
+            }
+          }
+        } catch (err) {
+          console.error(`Failed to fetch votes for ${proposal.id}:`, err)
+        }
+        votesMap[proposal.id] = { approve: 0, reject: 0 }
+      })
+    )
+    setProposalVotes(votesMap)
   }, [])
 
   useEffect(() => {
@@ -109,11 +139,11 @@ export default function EditorInChiefDashboard() {
     }
   }
 
-  // Performance Supervision Actions
+  // Performance Supervision Actions BR3
   const handleIssueWarning = (id: string, title: string) => {
     setWarnings(prev => ({ ...prev, [id]: true }))
     toast.warning(`Official performance warning issued to Mangaka for "${title}"! (BR-03)`)
-    
+
     // Dispatch notifications
     notificationStore.addNotification(
       'Serialization Performance Warning',
@@ -127,7 +157,7 @@ export default function EditorInChiefDashboard() {
     const success = await updateProposalStatus(id, 'Rejected')
     if (success) {
       toast.error(`Series "${title}" has been deactivated and serialization cancelled.`)
-      
+
       // Dispatch notifications
       notificationStore.addNotification(
         'Serialization Terminated',
@@ -141,7 +171,7 @@ export default function EditorInChiefDashboard() {
         'EditorialBoard',
         'error'
       )
-      
+
       await loadProposals()
     } else {
       toast.error('Failed to deactivate series.')
@@ -160,9 +190,6 @@ export default function EditorInChiefDashboard() {
         <h2 className="text-xl font-bold">Access Denied</h2>
         <p className="text-muted-foreground text-sm max-w-md">
           Only the <strong>Editor-in-Chief</strong> is authorized to view this control panel.
-        </p>
-        <p className="text-xs text-muted-foreground bg-muted p-3 rounded-lg border border-border">
-          💡 <strong>Tip:</strong> Use the role switcher in the bottom left of the sidebar to change your active role to <strong>Editor-in-Chief</strong>.
         </p>
         <Link
           href="/dashboard/mangaka"
@@ -184,8 +211,7 @@ export default function EditorInChiefDashboard() {
   return (
     <div className="space-y-8">
       {/* Top Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-red-950/20 via-primary/5 to-transparent border border-red-500/10 rounded-3xl p-8 shadow-inner">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-red-500/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
+      <div className="relative overflow-hidden border-red-500/10 rounded-3xl p-8">
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-red-500 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
@@ -218,22 +244,20 @@ export default function EditorInChiefDashboard() {
       <div className="flex border-b border-border">
         <button
           onClick={() => setActiveTab('override')}
-          className={`px-6 py-3 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'override'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
+          className={`px-6 py-3 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${activeTab === 'override'
+            ? 'border-primary text-primary'
+            : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
         >
           <PencilLine className="w-4 h-4" />
           Veto Override Panel ({pendingOverrideProposals.length})
         </button>
         <button
           onClick={() => setActiveTab('supervision')}
-          className={`px-6 py-3 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'supervision'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
+          className={`px-6 py-3 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${activeTab === 'supervision'
+            ? 'border-primary text-primary'
+            : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
         >
           <Eye className="w-4 h-4" />
           Active Series Supervision ({activeSeries.length})
@@ -256,11 +280,11 @@ export default function EditorInChiefDashboard() {
             {pendingOverrideProposals.length > 0 ? (
               <div className="grid grid-cols-1 gap-6">
                 {pendingOverrideProposals.map((proposal) => {
-                  // Mock votes for UI visualization
-                  const approveVotes = proposal.id === 'PR02' ? 2 : 1
-                  const rejectVotes = proposal.id === 'PR02' ? 0 : 1
+                  const votes = proposalVotes[proposal.id] || { approve: 0, reject: 0 }
+                  const approveVotes = votes.approve
+                  const rejectVotes = votes.reject
                   const totalVotes = approveVotes + rejectVotes
-                  const quorumProgress = (totalVotes / 3) * 100
+                  const quorumProgress = Math.min((totalVotes / 3) * 100, 100)
 
                   return (
                     <div
@@ -380,11 +404,10 @@ export default function EditorInChiefDashboard() {
                   return (
                     <div
                       key={series.id}
-                      className={`bg-card border rounded-2xl p-6 transition-all space-y-4 flex flex-col justify-between ${
-                        isBottomPercentile
-                          ? 'border-amber-500/30 hover:border-amber-500/50 bg-gradient-to-br from-card via-card to-amber-500/5'
-                          : 'border-border hover:border-primary/25'
-                      }`}
+                      className={`bg-card border rounded-2xl p-6 transition-all space-y-4 flex flex-col justify-between ${isBottomPercentile
+                        ? 'border-amber-500/30 hover:border-amber-500/50 bg-gradient-to-br from-card via-card to-amber-500/5'
+                        : 'border-border hover:border-primary/25'
+                        }`}
                     >
                       {/* Title & warning banner */}
                       <div className="space-y-2">
@@ -397,7 +420,7 @@ export default function EditorInChiefDashboard() {
                               by Mangaka ID: <span className="font-semibold text-foreground">{series.mangakaId}</span>
                             </p>
                           </div>
-                          
+
                           <span className="text-[10px] bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-bold px-2 py-0.5 rounded">
                             Active
                           </span>
@@ -441,11 +464,10 @@ export default function EditorInChiefDashboard() {
                             <button
                               onClick={() => handleIssueWarning(series.id, series.title)}
                               disabled={warningSent}
-                              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
-                                warningSent
-                                  ? 'bg-muted border-border text-muted-foreground cursor-not-allowed'
-                                  : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 text-amber-600'
-                              }`}
+                              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${warningSent
+                                ? 'bg-muted border-border text-muted-foreground cursor-not-allowed'
+                                : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 text-amber-600'
+                                }`}
                             >
                               <MailWarning className="w-3.5 h-3.5" />
                               {warningSent ? 'Warning Issued' : 'Issue Warning'}

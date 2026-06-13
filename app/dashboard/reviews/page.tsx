@@ -144,7 +144,7 @@ export default function ReviewProposalsPage() {
         const sorted = [...decisions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         const latest = sorted[0]
         setBoardDecision(latest)
-        
+
         const votes = await seriesService.getBoardVotes(latest.boardDecisionId)
         setVotesList(votes || [])
       } else {
@@ -238,7 +238,7 @@ export default function ReviewProposalsPage() {
     const success = await updateProposalStatus(id, newStatus, rejectReason)
     if (success) {
       showNotification(`Proposal status updated to "${newStatus}"!`)
-      
+
       if (proposal) {
         if (newStatus === 'Under Review') {
           notificationStore.addNotification(
@@ -269,7 +269,7 @@ export default function ReviewProposalsPage() {
           )
         }
       }
-      
+
       await loadProposals()
     } else {
       showNotification(`Failed to update proposal status.`, 'error')
@@ -329,7 +329,7 @@ export default function ReviewProposalsPage() {
 
   if (!mounted) return null
 
-  // Editorial Board or Editor-in-Chief check
+  // Editorial Board or Editor-in-Chief check (BR-03 / 04: Permission Gate & Guards)
   if (role !== 'EditorialBoard' && role !== 'EditorInChief') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
@@ -356,7 +356,7 @@ export default function ReviewProposalsPage() {
   // Detailed Proposal Review View
   if (selectedProposalId) {
     const baseProposal = proposals.find((p) => p.id === selectedProposalId)
-    
+
     // Fallback if not found
     if (!baseProposal) {
       return (
@@ -394,13 +394,13 @@ export default function ReviewProposalsPage() {
     const previewPages = proposal.proposalPages && proposal.proposalPages.length > 0
       ? proposal.proposalPages
       : (proposal.sampleFileUrl || '')
-          .split(',')
-          .filter(Boolean)
-          .map((id: string, idx: number) => ({
-            pageNo: idx + 1,
-            previewFileAssetId: id.trim(),
-            url: undefined as string | undefined,
-          }))
+        .split(',')
+        .filter(Boolean)
+        .map((id: string, idx: number) => ({
+          pageNo: idx + 1,
+          previewFileAssetId: id.trim(),
+          url: undefined as string | undefined,
+        }))
 
     return (
       <div className="space-y-6 animate-in fade-in duration-200">
@@ -596,10 +596,10 @@ export default function ReviewProposalsPage() {
 
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                     {previewPages.map((page: any, idx: number) => {
-                      const imgUrl = page.url 
+                      const imgUrl = page.url
                         || (page.previewFileAssetId?.startsWith('http')
-                              ? page.previewFileAssetId
-                              : `${API_BASE_URL}/api/files/${page.previewFileAssetId}`);
+                          ? page.previewFileAssetId
+                          : `${API_BASE_URL}/api/files/${page.previewFileAssetId}`);
                       return (
                         <div
                           key={page.proposalPageId || idx}
@@ -623,7 +623,7 @@ export default function ReviewProposalsPage() {
                               <ZoomIn className="w-3.5 h-3.5" /> Inspect
                             </div>
                           </div>
-                          
+
                           <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md">
                             Page {page.pageNo || idx + 1}
                           </div>
@@ -642,11 +642,10 @@ export default function ReviewProposalsPage() {
                     Editorial Board Voting & Decision
                   </h3>
                   {boardDecision && (
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
-                      boardDecision.status === 'Open'
-                        ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                        : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                    }`}>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${boardDecision.status === 'Open'
+                      ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                      : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                      }`}>
                       {boardDecision.status} Decision
                     </span>
                   )}
@@ -675,17 +674,17 @@ export default function ReviewProposalsPage() {
                           <span>{votesList.length} / 3</span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-350 ${
-                              votesList.length >= 3 ? 'bg-emerald-500' : 'bg-amber-500'
-                            }`}
+                          <div
+                            className={`h-full rounded-full transition-all duration-350 ${votesList.length >= 3 ? 'bg-emerald-500' : 'bg-amber-500'
+                              }`}
                             style={{ width: `${Math.min((votesList.length / 3) * 100, 100)}%` }}
                           />
                         </div>
+                        {/* BR-29: Quorum Requirement Validation */}
                         <p className="text-[10px] text-muted-foreground/80 mt-1 font-medium">
-                          {votesList.length >= 3 
-                            ? '✅ Quorum requirement met.' 
-                            : '⚠️ Minimum 3 valid votes required for a decision.'}
+                          {votesList.length >= 3
+                            ? 'Quorum requirement met.'
+                            : 'Minimum 3 valid votes required for a decision.'}
                         </p>
                       </div>
 
@@ -726,8 +725,8 @@ export default function ReviewProposalsPage() {
                       </div>
                       {boardDecision.status === 'Open' && (
                         <span className={new Date() > new Date(boardDecision.votingDeadline) ? 'text-destructive font-bold animate-pulse' : 'text-primary'}>
-                          {new Date() > new Date(boardDecision.votingDeadline) 
-                            ? 'Deadline Passed' 
+                          {new Date() > new Date(boardDecision.votingDeadline)
+                            ? 'Deadline Passed'
                             : `Time remaining: ${Math.max(0, Math.ceil((new Date(boardDecision.votingDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days`}
                         </span>
                       )}
@@ -742,13 +741,14 @@ export default function ReviewProposalsPage() {
                           try {
                             const parsed = JSON.parse(userStr)
                             currentUserId = parsed.id || parsed.userId || ''
-                          } catch {}
+                          } catch { }
                         }
                       }
 
-                      const hasConflict = 
-                        proposal.mangakaId === currentUserId || 
-                        proposal.tantouEditorId === currentUserId || 
+                      // BR-27 / 28: Conflict of Interest Guard
+                      const hasConflict =
+                        proposal.mangakaId === currentUserId ||
+                        proposal.tantouEditorId === currentUserId ||
                         boardDecision.createdBy === currentUserId
 
                       const alreadyVoted = votesList.some(v => v.voterId === currentUserId)
@@ -829,6 +829,7 @@ export default function ReviewProposalsPage() {
                                 </button>
                                 <button
                                   onClick={async () => {
+                                    // BR-35: Reject Reason Requirement (minimum 50 characters)
                                     if (rejectReasonText.trim().length < 50) {
                                       showNotification('Rejection comment must be at least 50 characters.', 'error')
                                       return
@@ -914,12 +915,11 @@ export default function ReviewProposalsPage() {
                           {votesList.map((v) => (
                             <div key={v.boardVoteId} className="pt-2.5 first:pt-0 space-y-1">
                               <div className="flex justify-between items-center text-xs">
-                                <span className="font-bold text-foreground">{v.voterName || `Voter ID: ${v.voterId.substring(0,8)}`}</span>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold border uppercase ${
-                                  v.voteValue 
-                                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' 
-                                    : 'bg-red-500/10 text-red-600 border-red-500/20'
-                                }`}>
+                                <span className="font-bold text-foreground">{v.voterName || `Voter ID: ${v.voterId.substring(0, 8)}`}</span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold border uppercase ${v.voteValue
+                                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                  : 'bg-red-500/10 text-red-600 border-red-500/20'
+                                  }`}>
                                   {v.voteValue ? 'Approve' : 'Reject'}
                                 </span>
                               </div>
@@ -971,10 +971,10 @@ export default function ReviewProposalsPage() {
           const activePage = previewPages[lightboxActiveIndex];
           if (!activePage) return null;
 
-          const imgUrl = activePage.url 
+          const imgUrl = activePage.url
             || (activePage.previewFileAssetId?.startsWith('http')
-                  ? activePage.previewFileAssetId
-                  : `${API_BASE_URL}/api/files/${activePage.previewFileAssetId}`);
+              ? activePage.previewFileAssetId
+              : `${API_BASE_URL}/api/files/${activePage.previewFileAssetId}`);
 
           const handlePrev = (e?: React.MouseEvent) => {
             e?.stopPropagation();
@@ -1061,7 +1061,7 @@ export default function ReviewProposalsPage() {
               <p className="text-xs text-muted-foreground font-medium">
                 Extend the voting deadline for this board decision. You can only extend this once per decision.
               </p>
-              
+
               <div className="space-y-3">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase">New Deadline</label>
@@ -1072,7 +1072,7 @@ export default function ReviewProposalsPage() {
                     className="w-full p-2.5 bg-muted border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20"
                   />
                 </div>
-                
+
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase">Extension Reason</label>
                   <textarea
@@ -1116,34 +1116,32 @@ export default function ReviewProposalsPage() {
               <p className="text-xs text-muted-foreground font-medium">
                 Issue a direct Chief Editor veto override to Approve or Reject this series proposal. This bypasses normal voting.
               </p>
-              
+
               <div className="space-y-3">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase">Override Decision</label>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setOverrideChoice('Approved')}
-                      className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${
-                        overrideChoice === 'Approved'
-                          ? 'bg-emerald-600 border-emerald-600 text-white'
-                          : 'border-border hover:bg-muted text-foreground'
-                      }`}
+                      className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${overrideChoice === 'Approved'
+                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                        : 'border-border hover:bg-muted text-foreground'
+                        }`}
                     >
                       Approve Proposal
                     </button>
                     <button
                       onClick={() => setOverrideChoice('Rejected')}
-                      className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${
-                        overrideChoice === 'Rejected'
-                          ? 'bg-destructive border-destructive text-white'
-                          : 'border-border hover:bg-muted text-foreground'
-                      }`}
+                      className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${overrideChoice === 'Rejected'
+                        ? 'bg-destructive border-destructive text-white'
+                        : 'border-border hover:bg-muted text-foreground'
+                        }`}
                     >
                       Reject Proposal
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase">Justification / Reason</label>
                   <textarea
@@ -1210,11 +1208,10 @@ export default function ReviewProposalsPage() {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm border shadow-lg animate-in fade-in slide-in-from-bottom-5 duration-200 ${
-            notification.type === 'success'
-              ? 'bg-emerald-500/10 text-slate-900 dark:text-slate-100 border-emerald-500/30'
-              : 'bg-destructive/10 text-slate-900 dark:text-slate-100 border-destructive/30'
-          }`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm border shadow-lg animate-in fade-in slide-in-from-bottom-5 duration-200 ${notification.type === 'success'
+            ? 'bg-emerald-500/10 text-slate-900 dark:text-slate-100 border-emerald-500/30'
+            : 'bg-destructive/10 text-slate-900 dark:text-slate-100 border-destructive/30'
+            }`}
         >
           {notification.type === 'success' ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
@@ -1228,18 +1225,18 @@ export default function ReviewProposalsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
-          { label: 'Total Submitted', value: counts.total, icon: BookOpen, color: 'text-foreground', bg: 'bg-primary/8' },
-          { label: 'Pending Review', value: counts.pending, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-500/8' },
-          { label: 'Under Review', value: counts.underReview, icon: Eye, color: 'text-blue-600', bg: 'bg-blue-500/8' },
-          { label: 'Approved', value: counts.approved, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-500/8' },
-          { label: 'Rejected', value: counts.rejected, icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/8' },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
+          { label: 'Total Submitted', value: counts.total, icon: BookOpen, color: 'text-foreground' },
+          { label: 'Pending Review', value: counts.pending, icon: Clock, color: 'text-amber-600' },
+          { label: 'Under Review', value: counts.underReview, icon: Eye, color: 'text-blue-600' },
+          { label: 'Approved', value: counts.approved, icon: CheckCircle2, color: 'text-emerald-600' },
+          { label: 'Rejected', value: counts.rejected, icon: XCircle, color: 'text-red-500' },
+        ].map(({ label, value, icon: Icon, color }) => (
           <div
             key={label}
             className="bg-card border border-border rounded-2xl p-4 flex flex-col justify-between space-y-3"
           >
-            <div className={`w-9 h-9 ${bg} ${color} rounded-xl flex items-center justify-center shrink-0`}>
-              <Icon className="w-4.5 h-4.5" />
+            <div className={`w-9 h-9 ${color} rounded-xl flex items-center justify-center shrink-0`}>
+              <Icon className="w-6.5 h-6.5" />
             </div>
             <div>
               <p className="text-2xl font-extrabold text-foreground leading-none">{value}</p>
@@ -1258,15 +1255,15 @@ export default function ReviewProposalsPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                filter === f
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === f
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80'
+                }`}
             >
               {f} <span className="opacity-70 ml-1">({count})</span>
             </button>
-          )}
+          )
+        }
         )}
       </div>
 
@@ -1284,15 +1281,14 @@ export default function ReviewProposalsPage() {
               >
                 {/* Visual Header */}
                 <div
-                  className={`h-1.5 w-full ${
-                    proposal.status === 'Approved'
-                      ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
-                      : proposal.status === 'Rejected'
+                  className={`h-1.5 w-full ${proposal.status === 'Approved'
+                    ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
+                    : proposal.status === 'Rejected'
                       ? 'bg-gradient-to-r from-red-400 to-rose-500'
                       : proposal.status === 'Under Review'
-                      ? 'bg-gradient-to-r from-blue-400 to-indigo-500'
-                      : 'bg-gradient-to-r from-amber-400 to-orange-500'
-                  }`}
+                        ? 'bg-gradient-to-r from-blue-400 to-indigo-500'
+                        : 'bg-gradient-to-r from-amber-400 to-orange-500'
+                    }`}
                 />
 
                 <div className="p-6 flex flex-col flex-1 gap-4">

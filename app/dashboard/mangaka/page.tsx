@@ -68,9 +68,9 @@ export default function MangakaDashboardPage() {
             email: parsed.assignedEditorEmail || ''
           })
         }
-      } catch {}
+      } catch { }
     }
-    
+
     getProposalsByMangaka(currentId).then((list) => {
       setProposals(list)
       hasPendingProposal(currentId).then((blocked) => {
@@ -98,13 +98,10 @@ export default function MangakaDashboardPage() {
     <div className="space-y-8">
 
       {/* Welcome header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 rounded-3xl p-7">
+      <div className="relative overflow-hidden border-primary/15 rounded-3xl p-7">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-              <Sparkles className="w-3 h-3" /> Mangaka Portal
-            </div>
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
               Welcome back, {mangakaName}
             </h1>
@@ -139,14 +136,14 @@ export default function MangakaDashboardPage() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total Proposals', value: counts.total, icon: PencilLine, color: 'text-foreground', bg: 'bg-primary/8' },
-          { label: 'In Review', value: counts.pending, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-500/8' },
-          { label: 'Approved', value: counts.approved, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-500/8' },
-          { label: 'Rejected', value: counts.rejected, icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/8' },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
+          { label: 'Total Proposals', value: counts.total, icon: PencilLine, color: 'text-foreground' },
+          { label: 'In Review', value: counts.pending, icon: Clock, color: 'text-amber-600' },
+          { label: 'Approved', value: counts.approved, icon: CheckCircle2, color: 'text-emerald-600' },
+          { label: 'Rejected', value: counts.rejected, icon: XCircle, color: 'text-red-500', },
+        ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-card border border-border rounded-2xl p-5 space-y-3">
-            <div className={`w-9 h-9 ${bg} ${color} rounded-xl flex items-center justify-center`}>
-              <Icon className="w-4.5 h-4.5" />
+            <div className={`w-9 h-9 ${color} rounded-xl flex items-center justify-center`}>
+              <Icon className="w-6.5 h-6.5" />
             </div>
             <div>
               <p className="text-2xl font-extrabold text-foreground leading-none">{value}</p>

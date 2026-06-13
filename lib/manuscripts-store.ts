@@ -41,10 +41,12 @@ export function getManuscriptById(id: string): ManuscriptItem | undefined {
   return memoryManuscripts.find(m => m.id === id)
 }
 
+// BR-78: Annotation Version Binding (annotations must bind to a specific version draft)
 export function getAnnotations(manuscriptId: string, versionName: string): Annotation[] {
   return memoryAnnotations.filter(a => a.manuscriptId === manuscriptId && a.versionName === versionName)
 }
 
+// BR-80: Manuscript Approval Lock / Status Transitions
 export async function updateManuscriptStatus(
   id: string,
   newStatus: 'APPROVED' | 'REVISION REQUIRED',
@@ -72,6 +74,7 @@ export async function updateManuscriptStatus(
   }
 }
 
+// BR-78: Annotation Version Binding (adding an annotation linked to manuscript version draft)
 export async function addAnnotation(manuscriptId: string, versionName: string, text: string): Promise<Annotation> {
   const versionNoStr = versionName.replace('v', '')
   const versionNo = parseInt(versionNoStr) || 1
@@ -82,6 +85,7 @@ export async function addAnnotation(manuscriptId: string, versionName: string, t
     positionY: 50.00,
     content: text
   }
+
 
   try {
     const res = await fetchAPI<{ id: string; annotationId: string }>(`/api/manuscripts/${manuscriptId}/annotations`, {
@@ -117,10 +121,36 @@ const mapBackendManuscriptStatus = (status: string): 'SUBMITTED' | 'APPROVED' | 
 
 export async function syncManuscriptsFromBackend(): Promise<ManuscriptItem[]> {
   try {
-    const response = await fetchAPI<{ data: any[] } | any[]>('/api/manuscripts')
-    const dataList = (response as any).data || response
-    if (Array.isArray(dataList)) {
-      const backendManuscripts: ManuscriptItem[] = dataList.map(m => {
+    const chaptersRes = await fetchAPI<{ data: any[] } | any[]>('/api/chapters')
+    const chaptersList = (chaptersRes as any).data || chaptersRes || []
+
+    if (Array.isArray(chaptersList)) {
+      const allManuscripts: any[] = []
+
+      await Promise.all(
+        chaptersList.map(async (ch: any) => {
+          try {
+            const chId = ch.chapterId || ch.id
+            const mRes = await fetchAPI<{ data: any[] } | any[]>(`/api/chapters/${chId}/manuscripts`)
+            const mList = (mRes as any).data || mRes || []
+            if (Array.isArray(mList)) {
+              mList.forEach((m: any) => {
+                allManuscripts.push({
+                  ...m,
+                  chapterId: chId,
+                  chapterNumber: ch.chapterNo || ch.number || 1,
+                  chapterTitle: ch.title || 'Chương mới',
+                  seriesId: ch.seriesId || 'S01'
+                })
+              })
+            }
+          } catch (e) {
+            console.warn(`Failed to fetch manuscripts for chapter ${ch.id || ch.chapterId}:`, e)
+          }
+        })
+      )
+
+      const backendManuscripts: ManuscriptItem[] = allManuscripts.map(m => {
         const historyList: ManuscriptVersion[] = (m.history || []).map((h: any) => ({
           version: h.versionLabel || `v${h.versionNo}`,
           status: mapBackendManuscriptStatus(h.status),

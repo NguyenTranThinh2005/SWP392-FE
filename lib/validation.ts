@@ -24,6 +24,7 @@ export const seriesProposalSchema = z.object({
 
 export type SeriesProposalInput = z.infer<typeof seriesProposalSchema>
 
+// BR-54: Chapter task deadline validation rules
 export const chapterTaskSchema = z.object({
   chapterId: z.string().min(1, 'Chapter is required'),
   pageStart: z.number().min(1, 'Page start must be at least 1'),
@@ -42,6 +43,7 @@ export const manuscriptSchema = z.object({
 
 export type ManuscriptInput = z.infer<typeof manuscriptSchema>
 
+// BR-89: VoteRecord Validation constraints (readerCount >= voteCount >= 0)
 export const voteEntrySchema = z
   .object({
     seriesId: z.string().min(1, 'Series is required'),
@@ -56,6 +58,7 @@ export const voteEntrySchema = z
 
 export type VoteEntryInput = z.infer<typeof voteEntrySchema>
 
+// BR-59: Mandatory fields for page tasks
 export const pageTaskSchema = z.object({
   chapterId: z.string().min(1, 'Chapter is required'),
   pageNumber: z.number().min(1, 'Page number must be at least 1'),
@@ -63,6 +66,7 @@ export const pageTaskSchema = z.object({
   assignedToId: z.string().optional(),
   rejectionReason: z.string().max(500, 'Reason must be less than 500 characters').optional(),
 })
+
 
 export type PageTaskInput = z.infer<typeof pageTaskSchema>
 

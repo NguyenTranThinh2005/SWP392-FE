@@ -283,22 +283,6 @@ export function DashboardHeader() {
               {/* Actions list */}
               <div className="pt-1.5 space-y-0.5">
                 <button
-                  onClick={() => {
-                    if (confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu lưu tạm (localStorage) để bắt đầu nhập liệu sạch từ đầu không?")) {
-                      Object.keys(localStorage).forEach(key => {
-                        if (key.startsWith('mangaflow_')) {
-                          localStorage.removeItem(key)
-                        }
-                      })
-                      window.location.reload()
-                    }
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-amber-600 hover:bg-amber-500/5 rounded-xl transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Reset App Data
-                </button>
-                <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-all"
                 >
