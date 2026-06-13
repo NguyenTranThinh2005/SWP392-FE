@@ -22,7 +22,6 @@ export const taskService = {
   assignTask: async (data: any): Promise<any> => {
     const payload = {
       chapterId: data.chapterId,
-      manuscriptId: data.manuscriptId || '77777777-7777-7777-7777-777777777777',
       assistantId: data.assistantId === 'Unassigned' ? '00000000-0000-0000-0000-000000000000' : data.assistantId,
       pageStart: Number(data.pageStart || 1),
       pageEnd: Number(data.pageEnd || 3),

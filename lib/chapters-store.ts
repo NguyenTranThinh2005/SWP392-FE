@@ -267,6 +267,46 @@ export function getTasksByAssistant(assistantId: string): Task[] {
   return loadTasks().filter(t => t.assistantId === assistantId)
 }
 
+/**
+ * Helper: đảm bảo chapter đã có manuscript trước khi giao page-task.
+ * Backend yêu cầu chapter phải có ít nhất 1 manuscript mới cho phép tạo page-task.
+ * Nếu chưa có, tự động tạo manuscript placeholder.
+ */
+async function ensureManuscriptForChapter(chapterId: string): Promise<void> {
+  try {
+    // Determine seriesId. If we can find the chapter locally, we use its seriesId.
+    const chapters = loadChapters()
+    const chapter = chapters.find(c => c.id === chapterId)
+    const seriesId = chapter ? chapter.seriesId : '00000000-0000-0000-0000-000000000000'
+
+    await fetchAPI<any>(`/api/manuscripts`, {
+      method: 'POST',
+      body: JSON.stringify({
+        chapterId: chapterId,
+        seriesId: seriesId,
+        fileUrl: 'placeholder://pending-upload',
+        notes: 'Bản thảo thô — tự động tạo để khởi tạo luồng vẽ trang.'
+      }),
+      suppressGlobalError: true
+    } as any)
+    console.log(`ensureManuscriptForChapter: created placeholder manuscript for chapter ${chapterId}`)
+  } catch (err: any) {
+    // Nếu backend báo "already exists" hoặc conflict → manuscript đã tồn tại, bỏ qua
+    const msg = (err.message || '').toLowerCase()
+    if (
+      msg.includes('already exists') ||
+      msg.includes('conflict') ||
+      msg.includes('duplicate') ||
+      msg.includes('409')
+    ) {
+      console.log(`ensureManuscriptForChapter: manuscript already exists for chapter ${chapterId}, skipping.`)
+      return
+    }
+    // Lỗi khác → ném ra để caller xử lý
+    throw err
+  }
+}
+
 export async function createTask(data: Omit<Task, 'id' | 'status' | 'assistantName'>): Promise<Task> {
   if (data.assistantId === 'Unassigned') {
     throw new Error('Vui lòng chọn Trợ lý để giao việc.');
@@ -309,17 +349,50 @@ export async function createTask(data: Omit<Task, 'id' | 'status' | 'assistantNa
       dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null
     }
 
-    try {
-      const res = await fetchAPI<{ data: any }>('/api/page-tasks', {
+    const callCreatePageTask = () =>
+      fetchAPI<{ data: any }>('/api/page-tasks', {
         method: 'POST',
-        body: JSON.stringify(payload)
-      })
+        body: JSON.stringify(payload),
+        suppressGlobalError: true
+      } as any)
+
+    try {
+      const res = await callCreatePageTask()
       if (res && res.data) {
         newTask.id = res.data.pageTaskId || res.data.id
       }
     } catch (err: any) {
-      console.error("Failed to create task on backend:", err)
-      throw err
+      // Nếu backend trả 404 "Manuscript not found", tự động tạo manuscript placeholder rồi retry
+      const errMsg = (err.message || '').toLowerCase()
+      const isManuscriptMissing =
+        errMsg.includes('manuscript not found') ||
+        errMsg.includes('manuscript') ||
+        errMsg.includes('404')
+
+      if (isManuscriptMissing) {
+        console.warn(
+          `createTask: backend requires manuscript for chapter ${data.chapterId}. Auto-creating placeholder...`
+        )
+        try {
+          // Bước 1: tạo manuscript placeholder
+          await ensureManuscriptForChapter(data.chapterId)
+          // Bước 2: retry giao task
+          const retryRes = await callCreatePageTask()
+          if (retryRes && retryRes.data) {
+            newTask.id = retryRes.data.pageTaskId || retryRes.data.id
+          }
+          console.log(`createTask: retry succeeded after creating manuscript for chapter ${data.chapterId}`)
+        } catch (retryErr: any) {
+          console.error('createTask: retry failed after manuscript creation:', retryErr)
+          throw new Error(
+            `Không thể giao task. Hệ thống cũng không thể tự động tạo bản thảo cho chương này. ` +
+            `Vui lòng nộp bản thảo thủ công trước khi giao việc. (${retryErr.message || ''})`
+          )
+        }
+      } else {
+        console.error("Failed to create task on backend:", err)
+        throw err
+      }
     }
   } else if (typeof window !== 'undefined') {
     console.warn(

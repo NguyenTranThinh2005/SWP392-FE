@@ -562,7 +562,9 @@ export default function ChaptersPage() {
         refreshData()
       }
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi giao nhiệm vụ vẽ trang trên hệ thống.', 'error')
+      // Hiển thị message chi tiết thay vì generic
+      const errMsg = err.message || 'Lỗi khi giao nhiệm vụ vẽ trang trên hệ thống.'
+      showToast(errMsg, 'error')
     }
   }
 
@@ -899,12 +901,22 @@ export default function ChaptersPage() {
                       <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
                         <ClipboardList className="w-4 h-4 text-primary" /> Tasks Assigned to Assistants
                       </h3>
-                      <button
-                        onClick={() => setIsTaskModalOpen(true)}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Add Task
-                      </button>
+                      <div className="flex items-center gap-2 relative group">
+                        <button
+                          onClick={() => setIsTaskModalOpen(true)}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add Task
+                        </button>
+                        
+                        {/* Tooltip nhắc nhở tạo bản thảo tự động */}
+                        <div className="absolute right-0 top-full mt-2 w-64 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 shadow-xl pointer-events-none">
+                          <div className="font-semibold text-amber-400 mb-1 flex items-center gap-1">
+                            <Info className="w-3 h-3" /> Lưu ý:
+                          </div>
+                          Nếu chapter chưa có bản thảo (manuscript), hệ thống sẽ tự động tạo một bản thảo mẫu (placeholder) để có thể giao task.
+                        </div>
+                      </div>
                     </div>
 
                     <div className="divide-y divide-border">

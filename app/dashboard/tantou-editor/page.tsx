@@ -62,6 +62,8 @@ import {
 import { toast } from 'sonner'
 import { seriesService, type SeriesProposal } from '@/services/seriesService'
 import { userService } from '@/services/userService'
+import { manuscriptService } from '@/services/manuscriptService'
+import { chapterService } from '@/services/chapterService'
 import { API_BASE_URL } from '@/lib/constants'
 
 interface FileItem {
@@ -558,38 +560,39 @@ function TantouEditorWorkspace() {
       return
     }
 
-    const success = updateManuscriptStatus(
-      activeManuscript.id,
-      status,
-      feedbackText.trim()
-    )
+    try {
+      const isApproved = status === 'APPROVED'
+      const apiStatus = isApproved ? 'Approved' : 'Rejected'
 
-    if (!success) {
-      toast.error('Failed to update manuscript review status.')
-      return
-    }
+      // Call API directly, awaiting the response.
+      // If it fails, an error will be thrown and caught.
+      await manuscriptService.updateStatus(activeManuscript.id, apiStatus, feedbackText.trim())
 
-    if (status === 'APPROVED') {
-      // Update linked chapter to Published
-      if (activeManuscript.chapterId) {
-        updateChapterStatus(activeManuscript.chapterId, 'Published')
+      if (isApproved) {
+        if (activeManuscript.chapterId) {
+          await chapterService.updateChapter(activeManuscript.chapterId, { status: 'Published' })
+        }
+        toast.success(
+          `Manuscript approved! Chapter "${activeManuscript.chapterTitle}" đã được xuất bản.`
+        )
+      } else {
+        if (activeManuscript.chapterId) {
+          await chapterService.updateChapter(activeManuscript.chapterId, { status: 'In Progress' })
+        }
+        toast.warning(
+          `Revision requested. Chapter "${activeManuscript.chapterTitle}" đã trả về "In Progress".`
+        )
       }
 
-      toast.success(
-        `Manuscript approved! Chapter "${activeManuscript.chapterTitle}" đã được xuất bản.`
-      )
-    } else {
-      // Revert linked chapter back to In Progress
-      if (activeManuscript.chapterId) {
-        updateChapterStatus(activeManuscript.chapterId, 'In Progress')
-      }
-
-      toast.warning(
-        `Revision requested. Chapter "${activeManuscript.chapterTitle}" đã trả về "In Progress".`
-      )
+      // Refresh data from API
+      handleBackToManuscripts()
+      
+    } catch (error) {
+      console.error('Decision update failed:', error)
+      // The global error popup will be shown automatically by fetchAPI.
+      // We don't want to show a misleading success toast or change local state,
+      // so we simply abort here.
     }
-
-    handleBackToManuscripts()
   }
 
   return (

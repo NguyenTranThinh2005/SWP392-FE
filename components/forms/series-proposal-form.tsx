@@ -8,84 +8,55 @@ import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronUp, AlertCircle, BookOpen, FileText, Image as ImageIcon, Upload, X } from 'lucide-react'
 import { API_BASE_URL, GENRES } from '@/lib/constants'
 import { systemService } from '@/services/systemService'
+import { fetchAPI } from '@/services/api'
+
+const uploadFilesToBackend = async (files: File[], category: string): Promise<string[]> => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') || localStorage.getItem('token') : null;
+  const formData = new FormData();
+  formData.append('category', category);
+  files.forEach(f => formData.append('files', f));
+
+  const response = await fetch(`${API_BASE_URL}/api/files`, {
+    method: 'POST',
+    body: formData,
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    let errMsg = `Tải lên file thất bại (HTTP ${response.status}).`;
+    try {
+      const text = await response.text();
+      try {
+        const json = JSON.parse(text);
+        errMsg = json.detail || json.message || json.title || text || errMsg;
+      } catch {
+        errMsg = text || errMsg;
+      }
+    } catch {}
+    throw new Error(errMsg);
+  }
+
+  const resData = await response.json();
+  const fileAssetIds: string[] = (resData?.data?.files || resData?.data || [])
+    .map((f: any) => f.fileAssetId)
+    .filter(Boolean);
+  return fileAssetIds;
+};
 
 const uploadSampleImagesToBackend = async (files: File[]): Promise<string> => {
-  try {
-    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-    const formData = new FormData();
-    formData.append('category', '2'); // 2 is ProposalSamplePage
-
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
-
-    const response = await fetch(`${API_BASE_URL}/api/files`, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-      }
-    });
-
-    if (!response.ok) {
-      let errMsg = "Tải lên các trang mẫu thất bại.";
-      try {
-        const errRes = await response.json();
-        if (errRes.message) errMsg = errRes.message;
-      } catch {}
-      throw new Error(errMsg);
-    }
-
-    const resData = await response.json();
-    const fileAssetIds: string[] = (resData?.data?.files || []).map((f: any) => f.fileAssetId).filter(Boolean);
-    
-    if (fileAssetIds.length < 5) {
-      throw new Error("Không đủ số lượng file asset ID trả về từ backend (yêu cầu tối thiểu 5 trang).");
-    }
-    
-    return fileAssetIds.join(',');
-  } catch (error) {
-    console.warn("Backend file upload failed, using offline mock asset IDs fallback...", error);
-    return Array.from({ length: files.length }).map((_, idx) => `offline_mock_sample_asset_${idx + 1}`).join(',');
+  const ids = await uploadFilesToBackend(files, 'ProposalSamplePage');
+  if (ids.length < 5) {
+    throw new Error(`Không đủ số lượng file asset ID trả về từ backend (cần tối thiểu 5, nhận được ${ids.length}).`);
   }
+  return ids.join(',');
 };
 
 const uploadSourceZipToBackend = async (file: File): Promise<string> => {
-  try {
-    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-    const formData = new FormData();
-    formData.append('category', '1'); // 1 is ProposalSource
-    formData.append('files', file);
-
-    const response = await fetch(`${API_BASE_URL}/api/files`, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-      }
-    });
-
-    if (!response.ok) {
-      let errMsg = "Tải lên tệp tin nguồn ZIP thất bại.";
-      try {
-        const errRes = await response.json();
-        if (errRes.message) errMsg = errRes.message;
-      } catch {}
-      throw new Error(errMsg);
-    }
-
-    const resData = await response.json();
-    const fileAssetIds: string[] = (resData?.data?.files || []).map((f: any) => f.fileAssetId).filter(Boolean);
-    
-    if (fileAssetIds.length === 0) {
-      throw new Error("Không tìm thấy file asset ID trả về cho tệp tin nguồn ZIP.");
-    }
-    
-    return fileAssetIds[0];
-  } catch (error) {
-    console.warn("Backend ZIP upload failed, using offline mock ZIP asset ID fallback...", error);
-    return "offline_mock_zip_asset_id";
+  const ids = await uploadFilesToBackend([file], 'ProposalSource');
+  if (ids.length === 0) {
+    throw new Error('Không tìm thấy file asset ID trả về cho tệp tin nguồn ZIP.');
   }
+  return ids[0];
 };
 
 interface SeriesProposalFormProps {
