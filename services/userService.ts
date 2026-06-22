@@ -26,6 +26,10 @@ export interface UserProfileResponse {
 }
 
 export const userService = {
+  getAssistants: async () => {
+    const res = await fetchAPI<{ data: UserProfileResponse[]; message: string }>("/api/users/assistants");
+    return res;
+  },
   getUsers: async () => {
     const res = await fetchAPI<{ data: UserProfileResponse[]; message: string }>("/api/users");
     const users = res.data || [];

@@ -262,7 +262,7 @@ export default function ChaptersPage() {
       }
 
       // 3. Load Assistant list from backend
-      const usersRes = await userService.getUsers()
+      const usersRes = await userService.getAssistants()
       const assistantsList = (usersRes.data || []).filter(u => u.roleName?.toLowerCase() === 'assistant')
 
       // Load all tasks to calculate active tasks per assistant
@@ -542,7 +542,6 @@ export default function ChaptersPage() {
 
       const payload = {
         chapterId: selectedChapterId,
-        manuscriptId: manuscriptId,
         assistantId: newTaskAssistantId,
         pageStart: newTaskPageStart,
         pageEnd: newTaskPageEnd,
