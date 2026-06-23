@@ -120,6 +120,8 @@ export default function ChaptersPage() {
   const [isSubmitWorkModalOpen, setIsSubmitWorkModalOpen] = useState(false)
   const [activeTaskToSubmit, setActiveTaskToSubmit] = useState<Task | null>(null)
   const [submitWorkUrl, setSubmitWorkUrl] = useState('')
+  const [submitWorkFile, setSubmitWorkFile] = useState<File | null>(null)
+  const [submitWorkUploading, setSubmitWorkUploading] = useState(false)
   const [submitComment, setSubmitComment] = useState('')
   const [submittedFiles, setSubmittedFiles] = useState<{ name: string; size: string; type: string }[]>([])
 
@@ -677,31 +679,45 @@ export default function ChaptersPage() {
   }
 
   // 2. Nộp bài làm (Submit Work)
-  const handleSubmitWork = (e: React.FormEvent) => {
+  const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!activeTaskToSubmit) return
-
-    const payload = {
-      submittedFileAssetId: '88888888-8888-8888-8888-888888888888', // seeded file asset ID
-      note: submitComment || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'
+    if (!submitWorkFile) {
+      showToast('Vui lòng chọn file để nộp.', 'error')
+      return
     }
+    try {
+      setSubmitWorkUploading(true)
+      const formData = new FormData()
+      formData.append('category', 'TaskSubmission')
+      formData.append('files', submitWorkFile)
+      const uploadRes = await fetchAPI<{ data: { files: { fileAssetId: string }[] } }>('/api/files', {
+        method: 'POST',
+        body: formData
+      })
+      const fileAssetId = uploadRes.data.files[0].fileAssetId
 
-    fetchAPI(`/api/page-tasks/${activeTaskToSubmit.id}/submissions`, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    }).then(() => {
+      await fetchAPI(`/api/page-tasks/${activeTaskToSubmit.id}/submissions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          submittedFileAssetId: fileAssetId,
+          note: submitComment || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'
+        })
+      })
       showToast('Đã nộp kết quả công việc thành công! Chờ Mangaka phê duyệt.')
       setIsSubmitWorkModalOpen(false)
       setActiveTaskToSubmit(null)
       setSubmitWorkUrl('')
       setSubmitComment('')
       setSubmittedFiles([])
+      setSubmitWorkFile(null)
       refreshData()
-    }).catch((err: any) => {
+    } catch (err: any) {
       showToast(err.message || 'Failed to submit work.', 'error')
-    })
+    } finally {
+      setSubmitWorkUploading(false)
+    }
   }
-
   // Helper styles for badges
   const getChapterStatusClass = (status: ChapterStatus) => {
     switch (status) {
@@ -2058,12 +2074,11 @@ export default function ChaptersPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Work Image URL (For Preview)</label>
+                <label className="text-xs font-bold text-muted-foreground">File bài nộp</label>
                 <input
-                  type="url"
-                  placeholder="https://example.com/drawing.jpg (leave blank for sample image)"
-                  value={submitWorkUrl}
-                  onChange={(e) => setSubmitWorkUrl(e.target.value)}
+                  type="file"
+                  required
+                  onChange={(e) => setSubmitWorkFile(e.target.files?.[0] || null)}
                   className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                 />
               </div>
@@ -2093,10 +2108,11 @@ export default function ChaptersPage() {
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+                 type="submit"
+                  disabled={submitWorkUploading}
+                  className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Submit Deliverable
+                  {submitWorkUploading ? 'Đang nộp...' : 'Submit Deliverable'}
                 </button>
               </div>
             </form>
