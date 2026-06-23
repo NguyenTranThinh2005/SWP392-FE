@@ -49,6 +49,8 @@ export default function AssistantDashboardPage() {
   const [activeTaskToSubmit, setActiveTaskToSubmit] = useState<Task | null>(null)
   const [submitDescription, setSubmitDescription] = useState('')
   const [submitUrl, setSubmitUrl] = useState('')
+  const [submitFile, setSubmitFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; size: string; type: string }[]>([])
   
   // Task Detail Modal states
@@ -129,6 +131,17 @@ export default function AssistantDashboardPage() {
   }
 
   const loadData = useCallback(() => {
+    // Lấy id assistant đang đăng nhập từ localStorage (không phụ thuộc /api/users)
+    if (typeof window !== 'undefined' && !selectedAssistantId) {
+      const userInfo = localStorage.getItem('user-info')
+      if (userInfo) {
+        try {
+          const parsed = JSON.parse(userInfo)
+          const myId = parsed?.id || parsed?.userId
+          if (myId) setSelectedAssistantId(myId)
+        } catch {}
+      }
+    }
     // Load static and dynamic assistant metadata
     userService.getUsers().then((res) => {
       const list = (res.data || []).filter(u => u.roleName?.toLowerCase() === 'assistant')
@@ -239,27 +252,43 @@ export default function AssistantDashboardPage() {
     }
   }
 
-  const handleSubmitWork = (e: React.FormEvent) => {
+  const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!submittingTaskId) return
-
-    const payload = {
-      submittedFileAssetId: '88888888-8888-8888-8888-888888888888', // seeded file asset ID
-      note: submitDescription || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'
+    if (!submitFile) {
+      toast.error('Vui lòng chọn file để nộp.')
+      return
     }
+    try {
+      setUploading(true)
+      // 1) Upload file thật, lấy fileAssetId
+      const formData = new FormData()
+      formData.append('category', 'TaskSubmission')
+      formData.append('files', submitFile)
+      const uploadRes = await fetchAPI<{ data: { files: { fileAssetId: string }[] } }>('/api/files', {
+        method: 'POST',
+        body: formData
+      })
+      const fileAssetId = uploadRes.data.files[0].fileAssetId
 
-    fetchAPI(`/api/page-tasks/${submittingTaskId}/submissions`, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    }).then(() => {
+      // 2) Nộp bài với fileAssetId thật
+      await fetchAPI(`/api/page-tasks/${submittingTaskId}/submissions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          submittedFileAssetId: fileAssetId,
+          note: submitDescription || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'
+        })
+      })
       toast.success('Work submitted successfully! Mangaka notified.')
       setSubmittingTaskId(null)
+      setSubmitFile(null)
       loadData()
-    }).catch((err: any) => {
+    } catch (err: any) {
       toast.error(err.message || 'Failed to submit work.')
-    })
+    } finally {
+      setUploading(false)
+    }
   }
-
   // Task lists
   const pendingTasks = tasks.filter(t => t.status === 'Pending')
   const inProgressTasks = tasks.filter(t => t.status === 'In-Progress' || t.status === 'Rejected')
@@ -558,12 +587,11 @@ export default function AssistantDashboardPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-muted-foreground">Mock Artwork Image URL</label>
+                <label className="text-[10px] uppercase font-bold text-muted-foreground">File bài nộp</label>
                 <input
-                  type="url"
+                  type="file"
                   required
-                  value={submitUrl}
-                  onChange={(e) => setSubmitUrl(e.target.value)}
+                  onChange={(e) => setSubmitFile(e.target.files?.[0] || null)}
                   className="w-full p-2.5 bg-muted/50 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
               </div>
@@ -585,9 +613,11 @@ export default function AssistantDashboardPage() {
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all"
+                 type="submit"
+                  disabled={uploading}
+                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  {uploading ? 'Đang nộp...' : 'Submit Deliverable'}
                   Submit Deliverable
                 </button>
               </div>

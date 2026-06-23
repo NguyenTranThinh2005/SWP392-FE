@@ -89,6 +89,12 @@ export default function ChaptersPage() {
   const [newChapterNo, setNewChapterNo] = useState<string>('')
   const [newChapterTitle, setNewChapterTitle] = useState('')
   const [newChapterPages, setNewChapterPages] = useState<number>(24)
+  const [isEditChapterOpen, setIsEditChapterOpen] = useState(false)
+  const [editChapterId, setEditChapterId] = useState<string>('')
+  const [editChapterTitle, setEditChapterTitle] = useState('')
+  const [editChapterPages, setEditChapterPages] = useState<number>(0)
+  const [editChapterPubDate, setEditChapterPubDate] = useState('')
+  const [editChapterDeadline, setEditChapterDeadline] = useState('')
   const [newChapterPubDate, setNewChapterPubDate] = useState('')
   const [newChapterSynopsis, setNewChapterSynopsis] = useState('')
   const [newChapterNotes, setNewChapterNotes] = useState('')
@@ -114,6 +120,8 @@ export default function ChaptersPage() {
   const [isSubmitWorkModalOpen, setIsSubmitWorkModalOpen] = useState(false)
   const [activeTaskToSubmit, setActiveTaskToSubmit] = useState<Task | null>(null)
   const [submitWorkUrl, setSubmitWorkUrl] = useState('')
+  const [submitWorkFile, setSubmitWorkFile] = useState<File | null>(null)
+  const [submitWorkUploading, setSubmitWorkUploading] = useState(false)
   const [submitComment, setSubmitComment] = useState('')
   const [submittedFiles, setSubmittedFiles] = useState<{ name: string; size: string; type: string }[]>([])
 
@@ -262,7 +270,7 @@ export default function ChaptersPage() {
       }
 
       // 3. Load Assistant list from backend
-      const usersRes = await userService.getUsers()
+      const usersRes = await userService.getAssistants()
       const assistantsList = (usersRes.data || []).filter(u => u.roleName?.toLowerCase() === 'assistant')
 
       // Load all tasks to calculate active tasks per assistant
@@ -450,7 +458,39 @@ export default function ChaptersPage() {
     setErrors({})
     showToast('Đã điền dữ liệu mẫu (demo quy trình thực)!', 'success')
   }
+ const openEditChapter = () => {
+    const chap = chapters.find(c => c.id === selectedChapterId) as any
+    if (!chap) {
+      showToast('Chưa chọn chapter để sửa!', 'error')
+      return
+    }
+    setEditChapterId(chap.id)
+    setEditChapterTitle(chap.title || '')
+    setEditChapterPages(chap.totalPages ?? chap.pages ?? 0)
+    setEditChapterPubDate((chap.publicationDate || '').slice(0, 10))
+    setEditChapterDeadline((chap.deadline || '').slice(0, 10))
+    setIsEditChapterOpen(true)
+  }
 
+  const handleSaveEditChapter = async () => {
+    if (!editChapterTitle.trim()) {
+      showToast('Tiêu đề không được để trống!', 'error')
+      return
+    }
+    try {
+      await chapterService.updateChapter(editChapterId, {
+        title: editChapterTitle.trim(),
+        totalPages: editChapterPages,
+        publicationDate: editChapterPubDate || undefined,
+        deadline: editChapterDeadline || undefined
+      })
+      showToast('Đã cập nhật chapter!', 'success')
+      setIsEditChapterOpen(false)
+      refreshData()
+    } catch {
+      showToast('Cập nhật thất bại.', 'error')
+    }
+  }
   // 1. Tạo Chapter mới
   const handleCreateChapter = (e: React.FormEvent) => {
     e.preventDefault()
@@ -533,7 +573,10 @@ export default function ChaptersPage() {
       showToast('Vui lòng nhập mô tả công việc!', 'error')
       return
     }
-
+    if (!newTaskAssistantId || newTaskAssistantId === 'Unassigned') {
+      showToast('Vui lòng chọn một assistant để giao việc!', 'error')
+      return
+    }
     // Fetch latest manuscript for chapter
     fetchAPI<{ data: any[] } | any[]>(`/api/chapters/${selectedChapterId}/manuscripts`).then((res) => {
       const list = (res as any).data || res
@@ -542,7 +585,6 @@ export default function ChaptersPage() {
 
       const payload = {
         chapterId: selectedChapterId,
-        manuscriptId: manuscriptId,
         assistantId: newTaskAssistantId,
         pageStart: newTaskPageStart,
         pageEnd: newTaskPageEnd,
@@ -637,31 +679,45 @@ export default function ChaptersPage() {
   }
 
   // 2. Nộp bài làm (Submit Work)
-  const handleSubmitWork = (e: React.FormEvent) => {
+  const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!activeTaskToSubmit) return
-
-    const payload = {
-      submittedFileAssetId: '88888888-8888-8888-8888-888888888888', // seeded file asset ID
-      note: submitComment || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'
+    if (!submitWorkFile) {
+      showToast('Vui lòng chọn file để nộp.', 'error')
+      return
     }
+    try {
+      setSubmitWorkUploading(true)
+      const formData = new FormData()
+      formData.append('category', 'TaskSubmission')
+      formData.append('files', submitWorkFile)
+      const uploadRes = await fetchAPI<{ data: { files: { fileAssetId: string }[] } }>('/api/files', {
+        method: 'POST',
+        body: formData
+      })
+      const fileAssetId = uploadRes.data.files[0].fileAssetId
 
-    fetchAPI(`/api/page-tasks/${activeTaskToSubmit.id}/submissions`, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    }).then(() => {
+      await fetchAPI(`/api/page-tasks/${activeTaskToSubmit.id}/submissions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          submittedFileAssetId: fileAssetId,
+          note: submitComment || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'
+        })
+      })
       showToast('Đã nộp kết quả công việc thành công! Chờ Mangaka phê duyệt.')
       setIsSubmitWorkModalOpen(false)
       setActiveTaskToSubmit(null)
       setSubmitWorkUrl('')
       setSubmitComment('')
       setSubmittedFiles([])
+      setSubmitWorkFile(null)
       refreshData()
-    }).catch((err: any) => {
+    } catch (err: any) {
       showToast(err.message || 'Failed to submit work.', 'error')
-    })
+    } finally {
+      setSubmitWorkUploading(false)
+    }
   }
-
   // Helper styles for badges
   const getChapterStatusClass = (status: ChapterStatus) => {
     switch (status) {
@@ -778,6 +834,13 @@ export default function ChaptersPage() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Create Chapter
+            </button>
+            <button
+              type="button"
+              onClick={openEditChapter}
+              className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm hover:bg-secondary/80 transition-all cursor-pointer"
+            >
+              <FileEdit className="w-4 h-4" /> Edit Chapter
             </button>
           </div>
 
@@ -1234,7 +1297,80 @@ export default function ChaptersPage() {
       {/* ========================================================================= */}
       {/* MODALS                                                                    */}
       {/* ========================================================================= */}
+      {/* Edit Chapter Modal */}
+      {isEditChapterOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
+                <FileEdit className="w-5 h-5 text-primary" /> Sửa Chapter
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditChapterOpen(false)}
+                className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground">Tiêu đề chapter</label>
+              <input
+                type="text"
+                value={editChapterTitle}
+                onChange={(e) => setEditChapterTitle(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                placeholder="Nhập tiêu đề mới"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground">Tổng số trang</label>
+              <input
+                type="number"
+                value={editChapterPages}
+                onChange={(e) => setEditChapterPages(Number(e.target.value))}
+                className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground">Ngày xuất bản</label>
+              <input
+                type="date"
+                value={editChapterPubDate}
+                onChange={(e) => setEditChapterPubDate(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground">Deadline nộp</label>
+              <input
+                type="date"
+                value={editChapterDeadline}
+                onChange={(e) => setEditChapterDeadline(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsEditChapterOpen(false)}
+                className="px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground rounded-xl transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditChapter}
+                className="px-4 py-2 text-sm font-bold bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all cursor-pointer"
+              >
+                Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* A. Create Chapter Modal (Mangaka) */}
       {isChapterModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -1938,12 +2074,11 @@ export default function ChaptersPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Work Image URL (For Preview)</label>
+                <label className="text-xs font-bold text-muted-foreground">File bài nộp</label>
                 <input
-                  type="url"
-                  placeholder="https://example.com/drawing.jpg (leave blank for sample image)"
-                  value={submitWorkUrl}
-                  onChange={(e) => setSubmitWorkUrl(e.target.value)}
+                  type="file"
+                  required
+                  onChange={(e) => setSubmitWorkFile(e.target.files?.[0] || null)}
                   className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                 />
               </div>
@@ -1973,10 +2108,11 @@ export default function ChaptersPage() {
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+                 type="submit"
+                  disabled={submitWorkUploading}
+                  className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Submit Deliverable
+                  {submitWorkUploading ? 'Đang nộp...' : 'Submit Deliverable'}
                 </button>
               </div>
             </form>
