@@ -221,13 +221,13 @@ export default function NewProposalPage() {
       <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
         {/* BR info callout */}
         <div className="mb-6 p-3 bg-primary/5 border border-primary/15 rounded-xl text-xs text-muted-foreground space-y-1">
-          <p className="font-bold text-primary text-[11px] uppercase tracking-wide">Validation Rules</p>
+          <p className="font-bold text-primary text-[11px] uppercase tracking-wide">Quy tắc nộp đề xuất</p>
           <ul className="list-disc list-inside space-y-0.5">
-            <li>Title: required, max 100 characters</li>
-            <li>Genre: at least one required</li>
-            <li>Synopsis: 200–2000 characters</li>
-            <li>Sample Pages: minimum 5 pages</li>
-            <li>Title must not duplicate an existing active series</li>
+            <li>Tiêu đề truyện: bắt buộc, tối đa 100 ký tự</li>
+            <li>Thể loại: bắt buộc chọn ít nhất một thể loại</li>
+            <li>Tóm tắt nội dung: từ 200 đến 2000 ký tự</li>
+            <li>Bản thảo (ZIP): bắt buộc tải lên tệp tin ZIP khi nộp phê duyệt</li>
+            <li>Tiêu đề truyện không được trùng lặp với tác phẩm đã hoạt động</li>
           </ul>
         </div>
 

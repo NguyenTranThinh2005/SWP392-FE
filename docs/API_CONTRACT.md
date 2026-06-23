@@ -309,7 +309,7 @@ Gửi bản đề xuất series truyện mới lên Ban biên tập (chỉ dùng
   "genre": "Action, Romance",
   "publicationType": "Weekly",
   "synopsis": "In feudal Japan reimagined with magitech armor, five orphaned warriors...",
-  "samplePages": 8,
+  "sourceZipFileAssetId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "mangakaId": "U01",
   "coverImageUrl": "https://api.mangahub.vn/covers/sakura-knights.jpg"
 }
@@ -317,7 +317,7 @@ Gửi bản đề xuất series truyện mới lên Ban biên tập (chỉ dùng
 
 > **Ràng buộc kiểm tra đề xuất (BR-15 & BR-19):**
 > - `synopsis` phải từ 200 đến 2000 ký tự.
-> - Số trang vẽ thử mẫu `samplePages` phải $\ge 5$.
+> - Yêu cầu tệp bản thảo nguồn `sourceZipFileAssetId` (ZIP) khi nộp gửi phê duyệt.
 > - Mangaka không được phép gửi đề xuất mới nếu đang có đề xuất khác ở trạng thái `Pending Review` hoặc `Under Review`.
 
 **Response `201`**

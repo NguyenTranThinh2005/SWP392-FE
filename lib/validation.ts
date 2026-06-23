@@ -15,9 +15,7 @@ export const seriesProposalSchema = z.object({
     .string()
     .min(200, 'Tóm tắt cốt truyện phải ≥ 200 ký tự')
     .max(2000, 'Tóm tắt cốt truyện phải ≤ 2000 ký tự'),
-  sampleFileUrl: z
-    .string()
-    .min(1, 'File bản vẽ mẫu là bắt buộc'),
+  sampleFileUrl: z.string(),
   coverImageUrl: z.string().url('Đường dẫn hình ảnh không hợp lệ').optional().or(z.literal('')),
   sourceZipFileAssetId: z.string().optional().nullable(),
 })

@@ -180,11 +180,21 @@ All schemas are defined in `/lib/validation.ts` using Zod:
 import { z } from 'zod'
 
 export const seriesProposalSchema = z.object({
-  title: z.string().min(3).max(100),
-  genre: z.string().min(1),
-  publicationType: z.enum(['Weekly', 'Monthly', 'One-shot']),
-  description: z.string().min(10).max(1000),
-  coverImageUrl: z.string().url().optional().or(z.literal('')),
+  title: z
+    .string()
+    .min(1, 'Tiêu đề là bắt buộc')
+    .max(100, 'Tiêu đề phải ≤ 100 ký tự'),
+  genre: z.string().min(1, 'Thể loại là bắt buộc'),
+  publicationType: z.enum(['Weekly', 'Monthly', 'One-Shot'], {
+    message: 'Hình thức xuất bản là bắt buộc',
+  }),
+  synopsis: z
+    .string()
+    .min(200, 'Tóm tắt cốt truyện phải ≥ 200 ký tự')
+    .max(2000, 'Tóm tắt cốt truyện phải ≤ 2000 ký tự'),
+  sampleFileUrl: z.string(),
+  coverImageUrl: z.string().url('Đường dẫn hình ảnh không hợp lệ').optional().or(z.literal('')),
+  sourceZipFileAssetId: z.string().optional().nullable(),
 })
 ```
 
