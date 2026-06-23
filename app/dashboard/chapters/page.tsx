@@ -534,8 +534,20 @@ export default function ChaptersPage() {
       totalPages: newChapterPages,
       publicationDate: newChapterPubDate,
       deadline: deadlineString
-    }).then((res: any) => {
+    }).then(async (res: any) => {
       const created = res.data || res
+      const newChapterId = created.chapterId || created.id
+      const realFiles = [...newChapterManuscriptFiles, ...newChapterStoryboardFiles].filter((f: any) => f instanceof File)
+      if (newChapterId && realFiles.length > 0) {
+        const formData = new FormData()
+        formData.append('category', 'ChapterReference')
+        realFiles.forEach((f: File) => formData.append('files', f))
+        const uploadRes = await fetchAPI<{ data: { files: { fileAssetId: string }[] } }>('/api/files', { method: 'POST', body: formData })
+        const fileAssetIds = uploadRes.data.files.map(f => f.fileAssetId)
+        if (fileAssetIds.length > 0) {
+          await fetchAPI(`/api/chapters/${newChapterId}/reference-files`, { method: 'POST', body: JSON.stringify({ fileAssetIds }) })
+        }
+      }
       showToast(`Đã tạo thành công Chapter ${created.chapterNo || created.number || newChapterNo}: ${created.title || newChapterTitle}!`)
       setIsChapterModalOpen(false)
 
@@ -1581,13 +1593,15 @@ export default function ChaptersPage() {
                 <div className="p-5 border-2 border-dashed border-violet-500/20 hover:border-violet-500/40 bg-violet-500/5 rounded-2xl text-center transition-colors">
                   <ScrollText className="w-8 h-8 mx-auto mb-2 text-violet-400 opacity-60" />
                   <p className="text-xs text-muted-foreground">Kéo thả hoặc</p>
-                  <button
-                    type="button"
-                    onClick={() => handleMockUpload('storyboardFiles')}
-                    className="mt-2 inline-flex items-center justify-center gap-1.5 bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer"
-                  >
-                    Chọn file kịch bản / storyboard
-                  </button>
+                  <label className="mt-2 inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer">
+                    Chọn File (Browse)
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => setNewChapterStoryboardFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
+                    />
+                  </label>
                   <p className="text-[10px] text-muted-foreground/60 mt-1">PDF, JPG, PNG · Tối đa 20MB/file</p>
                 </div>
                 {newChapterStoryboardFiles.length > 0 && (
@@ -1632,13 +1646,15 @@ export default function ChaptersPage() {
                   }`}>
                   <Upload className={`w-8 h-8 mx-auto mb-2 ${errors.manuscriptFiles ? 'text-red-400' : 'text-primary'} opacity-65`} />
                   <p className="text-xs text-muted-foreground">Kéo thả bản thảo vào đây hoặc</p>
-                  <button
-                    type="button"
-                    onClick={() => handleMockUpload('manuscriptFiles')}
-                    className="mt-2 inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer"
-                  >
+                  <label className="mt-2 inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer">
                     Chọn File (Browse)
-                  </button>
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => setNewChapterManuscriptFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
+                    />
+                  </label>
                   <p className="text-[10px] text-muted-foreground/60 mt-1">ZIP, PDF, JPG, PNG, TIF · Tối đa 50MB/file</p>
                 </div>
                 {errors.manuscriptFiles && (
