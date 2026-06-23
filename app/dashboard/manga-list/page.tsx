@@ -5,7 +5,6 @@ import { Search, Filter, BookOpen, Star } from 'lucide-react'
 import { proposalService } from '@/services/proposalService'
 import type { Proposal } from '@/types/proposal'
 const { getProposals } = proposalService
-import { getUsers } from '@/lib/users-store'
 
 interface Manga {
   id: string
@@ -26,11 +25,8 @@ export default function MangaListPage() {
 
   useEffect(() => {
     getProposals().then((proposals) => {
-      const users = getUsers()
-
       const list: Manga[] = proposals.map((p) => {
-        const authorUser = users.find((u) => u.id === p.mangakaId)
-        const authorName = authorUser ? authorUser.name : 'Unknown Author'
+        const authorName = p.author || 'Unknown Author'
 
         const statusMap: Record<Proposal['status'], Manga['status']> = {
           Approved: 'Active',

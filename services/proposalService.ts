@@ -31,6 +31,7 @@ export const mapSeriesToProposal = (s: any): Proposal => {
     coverImageUrl: s.coverImageUrl,
     rawStatus: rawStatus,
     sourceZipFileAssetId: s.sourceZipFileAssetId || null,
+    author: s.author || 'Tác giả',
   };
 };
 

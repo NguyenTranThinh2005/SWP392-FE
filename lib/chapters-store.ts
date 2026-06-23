@@ -4,7 +4,6 @@
  */
 
 import { fetchAPI } from '@/services/api'
-import { getUsers } from './users-store'
 
 export type ChapterStatus = 'Draft' | 'In Progress' | 'Ready for Editor' | 'Published'
 
@@ -446,7 +445,7 @@ export function assignTask(taskId: string, assistantId: string): boolean {
 export function getAssistants(): Assistant[] {
   // We can load active task counts dynamically by looking at loadTasks()
   const tasks = loadTasks()
-  const users = getUsers().filter(u => u.role === 'Assistant')
+  const users: any[] = []
   return users.map(u => {
     const activeTasks = tasks.filter(
       t => t.assistantId === u.id && 

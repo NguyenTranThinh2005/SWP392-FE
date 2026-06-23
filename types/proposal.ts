@@ -14,4 +14,5 @@ export interface Proposal {
   coverImageUrl?: string;
   rawStatus?: string;
   sourceZipFileAssetId?: string | null;
+  author?: string;
 }
