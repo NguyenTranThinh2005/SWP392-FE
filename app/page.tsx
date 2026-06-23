@@ -22,56 +22,56 @@ export default function LandingPage() {
 
   const rolesDetails = {
     mangaka: {
-      title: 'Mangaka (Creator)',
-      subtitle: 'Bring your stories to life',
-      desc: 'Submit new series proposals, upload chapter manuscripts, and coordinate directly with your assigned Tantou Editor.',
+      title: 'Mangaka (Tác giả)',
+      subtitle: 'Đưa câu chuyện của bạn vào cuộc sống',
+      desc: 'Nộp các đề xuất tác phẩm mới, tải lên bản thảo chương và làm việc trực tiếp với Tantou Editor phụ trách của bạn.',
       features: [
-        'Pitch new series with genre, cycle, and synopsis',
-        'Submit new manuscript drafts (PDF/ZIP)',
-        'Track version history and editor feedback cycles',
-        'Collaborate with assistants on tasks'
+        'Đề xuất tác phẩm mới với thể loại, chu kỳ và tóm tắt',
+        'Nộp các bản thảo nháp mới (PDF/ZIP)',
+        'Theo dõi lịch sử phiên bản và các chu kỳ feedback từ editor',
+        'Cộng tác với các trợ lý để làm các nhiệm vụ vẽ'
       ],
       color: 'from-purple-500 to-indigo-600',
-      badge: 'Creator Portal'
+      badge: 'Cổng thông tin Tác giả'
     },
     assistant: {
-      title: 'Assistant (Artist)',
-      subtitle: 'Focus on the artwork details',
-      desc: 'Pick up page-specific drawing, inking, or background tasks assigned by editors. Submit your progress in real-time.',
+      title: 'Trợ lý (Họa sĩ trợ lý)',
+      subtitle: 'Tập trung vào chi tiết bản vẽ',
+      desc: 'Nhận các nhiệm vụ vẽ nét, đi mực, hoặc vẽ bối cảnh cho từng trang cụ thể do Mangaka giao. Nộp tiến độ công việc theo thời gian thực.',
       features: [
-        'View page-by-page task assignments',
-        'Upload completed artwork page-by-page',
-        'Track deadlines and priorities',
-        'Receive feedback and revision notes'
+        'Xem danh sách phân công công việc theo từng trang',
+        'Tải lên sản phẩm đã hoàn thành theo từng trang',
+        'Theo dõi hạn chót và độ ưu tiên công việc',
+        'Nhận feedback và ghi chú yêu cầu sửa đổi'
       ],
       color: 'from-blue-500 to-cyan-600',
-      badge: 'Artist Hub'
+      badge: 'Trung tâm Trợ lý'
     },
     editor: {
-      title: 'Tantou Editor',
-      subtitle: 'Guide series to success',
-      desc: 'Manage series schedules, review manuscripts, assign work to assistants, and recommend manuscripts for final publishing.',
+      title: 'Tantou Editor (Biên tập viên)',
+      subtitle: 'Dẫn dắt tác phẩm đi đến thành công',
+      desc: 'Quản lý lịch trình xuất bản, duyệt bản thảo chương, hỗ trợ phân phối nhiệm vụ cho trợ lý và đề xuất xuất bản bản thảo chính thức.',
       features: [
-        'Assign page tasks to specific assistants',
-        'Review and request manuscript revisions',
-        'Recommend manuscripts for publication',
-        'Maintain serialization timelines'
+        'Phân phối nhiệm vụ vẽ trang cho trợ lý cụ thể',
+        'Duyệt và yêu cầu sửa đổi bản thảo chương',
+        'Đề xuất bản thảo đủ điều kiện xuất bản',
+        'Duy trì lịch trình phát hành tác phẩm'
       ],
       color: 'from-amber-500 to-orange-600',
-      badge: 'Editorial Desk'
+      badge: 'Bàn Biên tập'
     },
     board: {
-      title: 'Editorial Board',
-      subtitle: 'Make executive decisions',
-      desc: 'Analyze reader vote rankings, evaluate serialization health, and make final decisions on publications and series continuity.',
+      title: 'Ban Biên Tập / Tổng Biên Tập',
+      subtitle: 'Đưa ra các quyết định điều hành',
+      desc: 'Phân tích xếp hạng bình chọn của độc giả, đánh giá sức khỏe của các tác phẩm đang phát hành và đưa ra quyết định cuối cùng về việc xuất bản hoặc hủy tác phẩm.',
       features: [
-        'Access reader voting analytics & scores',
-        'Review bottom-percentile series for risk',
-        'Approve or decline new series proposals',
-        'Make final publication decisions'
+        'Xem thống kê bình chọn và điểm số của độc giả',
+        'Đánh giá các tác phẩm nằm trong nhóm nguy cơ (20% cuối bảng)',
+        'Duyệt hoặc từ chối các đề xuất tác phẩm mới',
+        'Đưa ra quyết định xuất bản chính thức cuối cùng'
       ],
       color: 'from-emerald-500 to-teal-600',
-      badge: 'Executive Suite'
+      badge: 'Phòng Điều hành'
     }
   }
 
@@ -94,10 +94,10 @@ export default function LandingPage() {
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-muted-foreground">
-            <a href="#features" className="hover:text-primary transition-colors">Features</a>
-            <a href="#roles" className="hover:text-primary transition-colors">Roles & Workflow</a>
+            <a href="#features" className="hover:text-primary transition-colors">Tính năng</a>
+            <a href="#roles" className="hover:text-primary transition-colors">Vai trò & Quy trình</a>
             <Link href="/dashboard/forms-demo" className="hover:text-primary transition-colors">
-              Forms Demo
+              Demo Validation Form
             </Link>
           </nav>
 
@@ -106,7 +106,7 @@ export default function LandingPage() {
               href="/login" 
               className="bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary/95 shadow-md shadow-primary/10 transition-all"
             >
-              Sign In
+              Đăng Nhập
             </Link>
           </div>
         </div>
@@ -120,18 +120,18 @@ export default function LandingPage() {
           <div className="text-center max-w-3xl mx-auto space-y-6">
             <div className="inline-flex items-center gap-1.5 bg-accent text-accent-foreground px-3 py-1 rounded-full text-xs font-semibold tracking-wide border border-border animate-pulse">
               <Sparkles className="w-3.5 h-3.5" />
-              Manga & Comic Publishing Workspace
+              Không gian làm việc cho Xuất bản Manga & Truyện tranh
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.15]">
-              Streamline Your Manga <br className="hidden sm:inline" />
+              Tối ưu hóa quy trình <br className="hidden sm:inline" />
               <span className="bg-gradient-to-r from-primary via-indigo-600 to-primary/80 bg-clip-text text-transparent">
-                Editorial Workflow
+                Biên tập Manga của bạn
               </span>
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed font-normal">
-              A collaborative workspace connecting Mangakas, Assistants, and Editors. Manage series proposals, page-by-page tasks, manuscript drafts, and reader voting analytics.
+              Một không gian làm việc cộng tác kết nối Mangaka, Trợ lý và Biên tập viên. Quản lý đề xuất tác phẩm, phân công công việc theo từng trang, duyệt bản thảo chương và phân tích số liệu bình chọn của độc giả.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
@@ -139,14 +139,14 @@ export default function LandingPage() {
                 href="/login" 
                 className="group flex items-center justify-center gap-2 w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3.5 rounded-xl shadow-lg shadow-primary/10 transition-all"
               >
-                Start Collaborating
+                Bắt đầu Cộng tác
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link 
                 href="/dashboard/forms-demo" 
                 className="flex items-center justify-center gap-2 w-full sm:w-auto bg-card border border-border text-foreground hover:text-primary hover:border-primary/30 font-semibold px-6 py-3.5 rounded-xl hover:bg-accent/30 shadow-sm transition-all"
               >
-                Try Interactive Demo
+                Trải nghiệm Bản Demo
               </Link>
             </div>
           </div>
@@ -158,10 +158,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto space-y-3 mb-16">
             <h2 className="text-3xl font-bold tracking-tight text-foreground">
-              Built for Professional Publishing
+              Được xây dựng cho Xuất bản Chuyên nghiệp
             </h2>
             <p className="text-muted-foreground">
-              A cohesive environment matching the fast-paced nature of weekly and monthly serialization.
+              Một môi trường gắn kết phù hợp với tốc độ nhanh của việc xuất bản hàng tuần và hàng tháng.
             </p>
           </div>
 
@@ -171,9 +171,9 @@ export default function LandingPage() {
               <div className="bg-primary/10 text-primary w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <PencilLine className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold mb-2 text-foreground">Series Proposals</h3>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Đề xuất Tác phẩm</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Creators pitch new concepts, specify publication formats, upload draft artwork, and track approval processes.
+                Tác giả gửi các ý tưởng mới, chọn hình thức xuất bản, tải lên bản vẽ mẫu và theo dõi quá trình duyệt.
               </p>
             </div>
 
@@ -182,9 +182,9 @@ export default function LandingPage() {
               <div className="bg-primary/10 text-primary w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <ClipboardList className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold mb-2 text-foreground">Task Delegation</h3>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Phân công Nhiệm vụ</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Editors assign drawing, cleaning, or coloring tasks page-by-page to assistants, tracking deadlines and progress status.
+                Mangaka phân công các việc vẽ nét, làm sạch hay tô màu theo trang cho trợ lý, theo dõi hạn chót và trạng thái công việc.
               </p>
             </div>
 
@@ -193,9 +193,9 @@ export default function LandingPage() {
               <div className="bg-primary/10 text-primary w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Layers className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold mb-2 text-foreground">Manuscript Control</h3>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Kiểm soát Bản thảo</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Seamless versioning and review chains. Editors give constructive feedback, and Mangakas submit updated drafts.
+                Quản lý phiên bản và quy trình xét duyệt liền mạch. Editor phản hồi góp ý mang tính xây dựng và Mangaka nộp lại bản thảo chỉnh sửa.
               </p>
             </div>
 
@@ -204,9 +204,9 @@ export default function LandingPage() {
               <div className="bg-primary/10 text-primary w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <BarChart3 className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold mb-2 text-foreground">Reader Analytics</h3>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Phân tích Độc giả</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Track reader voting outcomes and scores per chapter. Auto-evaluate performance percentiles to identify risk factors.
+                Theo dõi kết quả bình chọn và điểm số của độc giả cho từng chương. Tự động xếp hạng phần trăm để phát hiện nguy cơ dừng phát hành.
               </p>
             </div>
           </div>
@@ -218,10 +218,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
             <h2 className="text-3xl font-bold tracking-tight text-foreground">
-              Four Roles, One Unified Pipeline
+              Bốn vai trò, Một quy trình thống nhất
             </h2>
             <p className="text-muted-foreground">
-              Select a role below to explore their dedicated features and views in the MangaFlow ecosystem.
+              Chọn một vai trò bên dưới để khám phá các tính năng và giao diện tương ứng trong hệ sinh thái MangaFlow.
             </p>
           </div>
 
@@ -238,9 +238,9 @@ export default function LandingPage() {
                 }`}
               >
                 {role === 'mangaka' && 'Mangaka'}
-                {role === 'assistant' && 'Assistant'}
+                {role === 'assistant' && 'Trợ lý'}
                 {role === 'editor' && 'Tantou Editor'}
-                {role === 'board' && 'Editorial Board'}
+                {role === 'board' && 'Ban Biên Tập'}
               </button>
             ))}
           </div>
@@ -271,7 +271,7 @@ export default function LandingPage() {
                     href="/login" 
                     className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
                   >
-                    Enter Role Dashboard <ChevronRight className="w-4 h-4" />
+                    Vào Bảng Điều Khiển <ChevronRight className="w-4 h-4" />
                   </Link>
                 </div>
               </div>
@@ -279,7 +279,7 @@ export default function LandingPage() {
               {/* Showcase list with gradient background */}
               <div className={`bg-gradient-to-br ${rolesDetails[activeRole].color} p-8 sm:p-12 text-white flex flex-col justify-center space-y-6`}>
                 <h4 className="font-bold text-lg border-b border-white/20 pb-3">
-                  Key Capabilities
+                  Năng lực cốt lõi
                 </h4>
                 <ul className="space-y-4">
                   {rolesDetails[activeRole].features.map((feat, index) => (
@@ -302,23 +302,23 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-accent/10 opacity-60" />
         <div className="max-w-4xl mx-auto px-6 text-center relative space-y-6">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground">
-            Ready to Streamline Your Publications?
+            Sẵn sàng tối ưu hóa hoạt động xuất bản của bạn?
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            Sign in now to access the workspace, organize series proposals, track manuscripts, and coordinate work across teams.
+            Đăng nhập ngay để truy cập không gian làm việc, quản lý đề xuất, theo dõi bản thảo và điều phối công việc giữa các đội ngũ.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
             <Link 
               href="/login" 
               className="bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-8 py-3.5 rounded-xl shadow-sm shadow-primary/10 transition-all w-full sm:w-auto"
             >
-              Sign In to Workspace
+              Đăng nhập vào Workspace
             </Link>
             <Link 
               href="/dashboard/forms-demo" 
               className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold px-8 py-3.5 rounded-xl transition-all w-full sm:w-auto"
             >
-              Interactive Demo
+              Trải nghiệm Demo
             </Link>
           </div>
         </div>
@@ -339,12 +339,12 @@ export default function LandingPage() {
           </div>
 
           <p className="text-xs text-muted-foreground text-center md:text-left">
-            &copy; {new Date().getFullYear()} MangaFlow. All rights reserved. Created for professional manga publishing teams.
+            &copy; {new Date().getFullYear()} MangaFlow. Bảo lưu mọi quyền. Được thiết kế cho các đội ngũ xuất bản manga chuyên nghiệp.
           </p>
 
           <div className="flex items-center gap-4 text-xs font-semibold">
             <Link href="/dashboard/forms-demo" className="hover:text-foreground transition-colors">
-              Forms Validation Demo
+              Demo Validation Form
             </Link>
           </div>
         </div>

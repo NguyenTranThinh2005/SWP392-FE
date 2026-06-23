@@ -728,6 +728,15 @@ export default function ChaptersPage() {
     }
   }
 
+  const getChapterStatusLabel = (status: ChapterStatus) => {
+    switch (status) {
+      case 'Draft': return 'Bản nháp'
+      case 'In Progress': return 'Đang thực hiện'
+      case 'Ready for Editor': return 'Chờ Biên tập viên'
+      case 'Published': return 'Đã xuất bản'
+    }
+  }
+
   const getTaskStatusClass = (status: TaskStatus) => {
     switch (status) {
       case 'Unassigned': return 'bg-slate-100 text-slate-600 dark:bg-slate-900/30 dark:text-slate-400'
@@ -736,6 +745,17 @@ export default function ChaptersPage() {
       case 'Submitted': return 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/10 dark:text-indigo-400'
       case 'Approved': return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/10 dark:text-emerald-400'
       case 'Rejected': return 'bg-red-50 text-red-700 dark:bg-red-900/10 dark:text-red-400'
+    }
+  }
+
+  const getTaskStatusLabel = (status: TaskStatus) => {
+    switch (status) {
+      case 'Unassigned': return 'Chưa phân công'
+      case 'Pending': return 'Chờ nhận việc'
+      case 'In-Progress': return 'Đang thực hiện'
+      case 'Submitted': return 'Đã nộp bài'
+      case 'Approved': return 'Đã duyệt'
+      case 'Rejected': return 'Cần sửa lại'
     }
   }
 
@@ -1124,7 +1144,7 @@ export default function ChaptersPage() {
             <div className="flex items-center gap-3">
               <Users className="w-5 h-5 text-primary shrink-0" />
               <div>
-                <label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Select Active Assistant Profile (Testing)</label>
+                <label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Chọn hồ sơ Trợ lý hoạt động (Kiểm thử)</label>
                 <select
                   value={selectedAssistantId}
                   onChange={(e) => setSelectedAssistantId(e.target.value)}
@@ -1144,10 +1164,10 @@ export default function ChaptersPage() {
           <div className="bg-card border border-border rounded-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
               <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
-                <ClipboardList className="w-4 h-4 text-primary" /> My Assigned Tasks
+                <ClipboardList className="w-4 h-4 text-primary" /> Nhiệm vụ được giao của tôi
               </h3>
               <span className="text-[10px] font-bold px-2 py-0.5 bg-primary/10 text-primary rounded-full">
-                {assistantTasks.length} Active Tasks
+                {assistantTasks.length} Nhiệm vụ đang hoạt động
               </span>
             </div>
 
@@ -1155,9 +1175,9 @@ export default function ChaptersPage() {
               {assistantTasks.length === 0 ? (
                 <div className="p-16 text-center space-y-3">
                   <ClipboardList className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-                  <h4 className="font-bold text-foreground">You don&apos;t have any tasks!</h4>
+                  <h4 className="font-bold text-foreground">Bạn chưa có nhiệm vụ nào!</h4>
                   <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                    Once the Mangaka assigns you a page drawing, inking, or coloring task, it will appear here.
+                    Khi Mangaka phân công cho bạn vẽ nét, đi mực hoặc tô màu theo trang, nhiệm vụ sẽ xuất hiện ở đây.
                   </p>
                 </div>
               ) : (
@@ -1170,10 +1190,10 @@ export default function ChaptersPage() {
                         </span>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                            {task.type} (Pages {task.pages})
+                            {task.type} (Trang {task.pages})
                           </span>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTaskStatusClass(task.status)}`}>
-                            {task.status}
+                            {getTaskStatusLabel(task.status)}
                           </span>
                           {task.dueDate && (
                             <span className="text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">
@@ -1189,7 +1209,7 @@ export default function ChaptersPage() {
 
                       {task.feedback && (
                         <div className="text-xs p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-800 dark:text-amber-400">
-                          <strong>Feedback from Mangaka:</strong> {task.feedback}
+                          <strong>Phản hồi từ Mangaka:</strong> {task.feedback}
                         </div>
                       )}
                     </div>
@@ -1203,7 +1223,7 @@ export default function ChaptersPage() {
                         }}
                         className="inline-flex items-center gap-1.5 bg-muted hover:bg-muted/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl transition-all cursor-pointer border border-border"
                       >
-                        <Eye className="w-3.5 h-3.5" /> View Details
+                        <Eye className="w-3.5 h-3.5" /> Xem chi tiết
                       </button>
 
                       {task.status === 'Pending' && (
@@ -1211,7 +1231,7 @@ export default function ChaptersPage() {
                           onClick={() => handleStartTask(task.id)}
                           className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
                         >
-                          <Play className="w-3.5 h-3.5" /> Accept & Start
+                          <Play className="w-3.5 h-3.5" /> Nhận việc & Bắt đầu
                         </button>
                       )}
 
@@ -1223,19 +1243,19 @@ export default function ChaptersPage() {
                           }}
                           className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
                         >
-                          <ImageIcon className="w-3.5 h-3.5" /> Submit Finished Work
+                          <ImageIcon className="w-3.5 h-3.5" /> Nộp sản phẩm hoàn thành
                         </button>
                       )}
 
                       {task.status === 'Submitted' && (
                         <span className="text-xs text-indigo-600 bg-indigo-500/10 border border-indigo-500/20 p-2.5 rounded-xl font-bold inline-flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" /> Awaiting Mangaka Review
+                          <Clock className="w-3.5 h-3.5" /> Đang chờ Mangaka duyệt
                         </span>
                       )}
 
                       {task.status === 'Approved' && (
                         <span className="text-xs text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl font-bold inline-flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Task Completed & Approved
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Nhiệm vụ đã hoàn thành & đã duyệt
                         </span>
                       )}
                     </div>
@@ -1254,10 +1274,10 @@ export default function ChaptersPage() {
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
             <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
-              <Eye className="w-4 h-4 text-primary" /> Serialization & Chapters Overview (Read-Only Editor Monitor)
+              <Eye className="w-4 h-4 text-primary" /> Tổng quan Chương & Phát hành (Chế độ giám sát của Editor)
             </h3>
             <p className="text-xs text-muted-foreground">
-              You are logged in as {role}. Here is the current progress of active serializations and their chapter timelines.
+              Bạn đang đăng nhập với vai trò {role}. Dưới đây là tiến độ hiện tại của các tác phẩm đang phát hành và mốc thời gian của từng chương.
             </p>
             <div className="border border-border rounded-xl divide-y divide-border overflow-hidden">
               {allChapters.map(c => {
@@ -1270,17 +1290,17 @@ export default function ChaptersPage() {
                   <div key={c.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-foreground">Chapter {c.number}: {c.title}</span>
+                        <span className="text-xs font-bold text-foreground">Chương {c.number}: {c.title}</span>
                         <span className={`px-2 py-0.5 text-[9px] font-bold border rounded-md ${getChapterStatusClass(c.status)}`}>
-                          {c.status}
+                          {getChapterStatusLabel(c.status)}
                         </span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">Deadline: {c.deadline} | Target Pub Date: {c.publicationDate}</p>
+                      <p className="text-[10px] text-muted-foreground">Hạn chót: {c.deadline} | Ngày xuất bản dự kiến: {c.publicationDate}</p>
                     </div>
                     <div className="space-y-1 text-right sm:w-48 shrink-0">
                       <div className="flex justify-between text-[10px] font-bold">
-                        <span className="text-muted-foreground">Assigned Tasks:</span>
-                        <span className="text-primary">{tasksList.length} Tasks ({progress}% done)</span>
+                        <span className="text-muted-foreground">Nhiệm vụ đã giao:</span>
+                        <span className="text-primary">{tasksList.length} Nhiệm vụ ({progress}% hoàn thành)</span>
                       </div>
                       <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                         <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
@@ -1717,7 +1737,7 @@ export default function ChaptersPage() {
           <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
-                <Plus className="w-5 h-5 text-primary" /> Assign Drawing Task
+                <Plus className="w-5 h-5 text-primary" /> Phân công nhiệm vụ vẽ
               </h3>
               <button
                 onClick={() => setIsTaskModalOpen(false)}
@@ -1730,7 +1750,7 @@ export default function ChaptersPage() {
             <form onSubmit={handleCreateTask} className="space-y-4">
               {/* Task Type with Suggestions */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground">Task Type (Loại nhiệm vụ)</label>
+                <label className="text-xs font-bold text-muted-foreground">Loại nhiệm vụ (Task Type)</label>
                 <input
                   type="text"
                   placeholder="Nhập loại task (VD: Line Art, Coloring...)"
@@ -1775,7 +1795,7 @@ export default function ChaptersPage() {
               {/* Pages Range: Start & End */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Page Start</label>
+                  <label className="text-xs font-bold text-muted-foreground">Trang bắt đầu</label>
                   <input
                     type="number"
                     min={1}
@@ -1787,7 +1807,7 @@ export default function ChaptersPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Page End</label>
+                  <label className="text-xs font-bold text-muted-foreground">Trang kết thúc</label>
                   <input
                     type="number"
                     min={newTaskPageStart}
@@ -1804,7 +1824,7 @@ export default function ChaptersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                    <CalendarDays className="w-3.5 h-3.5 text-primary" /> Due Date (Hạn nộp)
+                    <CalendarDays className="w-3.5 h-3.5 text-primary" /> Hạn nộp (Due Date)
                   </label>
                   <input
                     type="date"
@@ -1815,16 +1835,16 @@ export default function ChaptersPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Select Assistant</label>
+                  <label className="text-xs font-bold text-muted-foreground">Chọn Trợ lý</label>
                   <select
                     value={newTaskAssistantId}
                     onChange={(e) => setNewTaskAssistantId(e.target.value)}
                     className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                   >
-                    <option value="Unassigned">Leave Unassigned</option>
+                    <option value="Unassigned">Để trống (Chưa phân công)</option>
                     {assistants.map((a) => (
                       <option key={a.id} value={a.id}>
-                        {a.name} ({a.specialty}) — Active Tasks: {a.activeTasks}
+                        {a.name} ({a.specialty}) — Số task đang làm: {a.activeTasks}
                       </option>
                     ))}
                   </select>
@@ -1833,9 +1853,9 @@ export default function ChaptersPage() {
 
               {/* Instructions / Description */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Instruction & Description</label>
+                <label className="text-xs font-bold text-muted-foreground">Mô tả & Hướng dẫn chi tiết</label>
                 <textarea
-                  placeholder="Describe details: Pagoda background, light direction, character expression..."
+                  placeholder="Mô tả chi tiết: Vẽ nền chùa cổ, hướng ánh sáng từ bên phải, biểu cảm nhân vật lo lắng..."
                   value={newTaskDesc}
                   onChange={(e) => setNewTaskDesc(e.target.value)}
                   className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
@@ -1846,7 +1866,7 @@ export default function ChaptersPage() {
               {/* Attach Reference Files input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                  <Upload className="w-3.5 h-3.5 text-primary" /> Reference & Guidelines Files (Tài liệu đính kèm)
+                  <Upload className="w-3.5 h-3.5 text-primary" /> Tài liệu đính kèm (Reference Files)
                 </label>
                 <div className="p-3 border-2 border-dashed border-primary/20 hover:border-primary/45 bg-primary/5 rounded-xl text-center transition-colors">
                   <p className="text-xs text-muted-foreground">Đính kèm các file tài liệu hướng dẫn vẽ</p>
@@ -1855,7 +1875,7 @@ export default function ChaptersPage() {
                     onClick={handleTaskMockUpload}
                     className="mt-1.5 inline-flex items-center justify-center gap-1 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs px-3 py-1.5 rounded-xl transition-all cursor-pointer"
                   >
-                    <Upload className="w-3.5 h-3.5" /> Attach Mock File
+                    <Upload className="w-3.5 h-3.5" /> Đính kèm tệp mẫu (Mock File)
                   </button>
                 </div>
                 {newTaskAttachments.length > 0 && (
@@ -1882,13 +1902,13 @@ export default function ChaptersPage() {
                   onClick={() => setIsTaskModalOpen(false)}
                   className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
-                  Cancel
+                  Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
                 >
-                  Assign Task
+                  Giao nhiệm vụ
                 </button>
               </div>
             </form>
@@ -1902,7 +1922,7 @@ export default function ChaptersPage() {
           <div className="bg-card border border-border rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary" /> Review Assistant Work
+                <Eye className="w-5 h-5 text-primary" /> Duyệt bài làm của Trợ lý
               </h3>
               <button
                 onClick={() => {
@@ -1919,7 +1939,7 @@ export default function ChaptersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Left Side: Mock Image Preview */}
               <div className="space-y-3">
-                <label className="text-xs font-bold text-muted-foreground">Submitted Work Preview</label>
+                <label className="text-xs font-bold text-muted-foreground">Xem trước sản phẩm đã nộp</label>
                 <div className="relative border border-border rounded-xl overflow-hidden bg-muted aspect-4/3 flex items-center justify-center group shadow-inner">
                   {activeTaskToReview.submittedWorkUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -1936,7 +1956,7 @@ export default function ChaptersPage() {
                 {/* Submitted Files List */}
                 {activeTaskToReview.submittedFiles && activeTaskToReview.submittedFiles.length > 0 ? (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground">Submitted Files ({activeTaskToReview.submittedFiles.length})</label>
+                    <label className="text-xs font-bold text-muted-foreground">Tệp đã nộp ({activeTaskToReview.submittedFiles.length})</label>
                     <div className="space-y-1 max-h-36 overflow-y-auto">
                       {activeTaskToReview.submittedFiles.map((file, idx) => (
                         <div key={idx} className="flex items-center justify-between p-2 bg-emerald-500/5 rounded-xl border border-emerald-500/10 text-xs">
@@ -1961,7 +1981,7 @@ export default function ChaptersPage() {
                       Manga: {getMangaTitleForTask(activeTaskToReview)}
                     </span>
                     <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded inline-block">
-                      {activeTaskToReview.type} (Pages {activeTaskToReview.pages})
+                      {activeTaskToReview.type} (Trang {activeTaskToReview.pages})
                     </span>
                   </div>
 
@@ -1970,19 +1990,19 @@ export default function ChaptersPage() {
                   </p>
 
                   <p className="text-xs text-muted-foreground">
-                    Submitted by: <strong>{activeTaskToReview.assistantName}</strong>
+                    Người nộp: <strong>{activeTaskToReview.assistantName}</strong>
                   </p>
 
                   <div className="p-3 bg-muted/50 rounded-xl text-xs leading-relaxed text-foreground border border-border">
-                    <p className="font-bold text-muted-foreground mb-1 text-[10px] uppercase">Assistant Notes & Edits:</p>
+                    <p className="font-bold text-muted-foreground mb-1 text-[10px] uppercase">Ghi chú của Trợ lý:</p>
                     <p className="italic whitespace-pre-line">{activeTaskToReview.submitDescription || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'}</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground">Feedback Comments (Required for Rejection)</label>
+                  <label className="text-xs font-bold text-muted-foreground">Ý kiến phản hồi (Bắt buộc nếu Từ chối)</label>
                   <textarea
-                    placeholder="Provide feedback... Good points, details to modify..."
+                    placeholder="Nhập phản hồi... Các điểm tốt cần giữ, chi tiết cụ thể cần chỉnh sửa..."
                     value={reviewFeedback}
                     onChange={(e) => setReviewFeedback(e.target.value)}
                     className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
@@ -1994,13 +2014,13 @@ export default function ChaptersPage() {
                     onClick={() => handleRejectTask(activeTaskToReview)}
                     className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
                   >
-                    Reject (Revision Needed)
+                    Yêu cầu sửa lại
                   </button>
                   <button
                     onClick={() => handleApproveTask(activeTaskToReview)}
                     className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
                   >
-                    Approve & Sign-off
+                    Phê duyệt & Hoàn thành
                   </button>
                 </div>
               </div>
@@ -2015,7 +2035,7 @@ export default function ChaptersPage() {
           <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
-                <ImageIcon className="w-5 h-5 text-primary" /> Submit Drawing Work
+                <ImageIcon className="w-5 h-5 text-primary" /> Nộp sản phẩm vẽ
               </h3>
               <button
                 onClick={() => {
@@ -2036,14 +2056,14 @@ export default function ChaptersPage() {
                 <p className="font-extrabold uppercase tracking-wider text-muted-foreground text-[9px]">
                   Manga: {getMangaTitleForTask(activeTaskToSubmit)}
                 </p>
-                <p className="font-bold text-foreground">Task: {activeTaskToSubmit.type} (Pages {activeTaskToSubmit.pages})</p>
+                <p className="font-bold text-foreground">Nhiệm vụ: {activeTaskToSubmit.type} (Trang {activeTaskToSubmit.pages})</p>
                 <p className="text-muted-foreground mt-0.5">{activeTaskToSubmit.description}</p>
               </div>
 
               {/* Upload area for submittedFiles */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                  <Upload className="w-3.5 h-3.5 text-primary" /> Upload Work Files (Nộp file bản vẽ)
+                  <Upload className="w-3.5 h-3.5 text-primary" /> Tải lên tệp bản vẽ (Upload Work Files)
                 </label>
                 <div className="p-3 border-2 border-dashed border-primary/20 hover:border-primary/45 bg-primary/5 rounded-xl text-center transition-colors">
                   <p className="text-xs text-muted-foreground">Kéo thả file vẽ hoặc click để chọn</p>
@@ -2052,7 +2072,7 @@ export default function ChaptersPage() {
                     onClick={handleAssistantMockUpload}
                     className="mt-1.5 inline-flex items-center justify-center gap-1 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs px-3 py-1.5 rounded-xl transition-all cursor-pointer"
                   >
-                    <Upload className="w-3.5 h-3.5" /> Attach Work File
+                    <Upload className="w-3.5 h-3.5" /> Đính kèm tệp bản vẽ
                   </button>
                 </div>
                 {submittedFiles.length > 0 && (
@@ -2084,9 +2104,9 @@ export default function ChaptersPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Description & Comments for Mangaka (Mô tả chỉnh sửa)</label>
+                <label className="text-xs font-bold text-muted-foreground">Ghi chú & mô tả gửi cho Mangaka</label>
                 <textarea
-                  placeholder="Describe your edits: e.g., line art completed, shading applied, shadows adjusted..."
+                  placeholder="Mô tả nội dung chỉnh sửa của bạn: VD: Hoàn thành line art trang 1-3, tô bóng trang 4, chỉnh lại đổ bóng nhân vật..."
                   value={submitComment}
                   onChange={(e) => setSubmitComment(e.target.value)}
                   className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
@@ -2105,14 +2125,14 @@ export default function ChaptersPage() {
                   }}
                   className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
-                  Cancel
+                  Hủy
                 </button>
                 <button
                  type="submit"
                   disabled={submitWorkUploading}
                   className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitWorkUploading ? 'Đang nộp...' : 'Submit Deliverable'}
+                  {submitWorkUploading ? 'Đang nộp...' : 'Nộp sản phẩm'}
                 </button>
               </div>
             </form>
@@ -2126,7 +2146,7 @@ export default function ChaptersPage() {
           <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
-                <Info className="w-5 h-5 text-primary" /> Task Detailed Information
+                <Info className="w-5 h-5 text-primary" /> Thông tin chi tiết Nhiệm vụ
               </h3>
               <button
                 onClick={() => {
@@ -2142,7 +2162,7 @@ export default function ChaptersPage() {
             <div className="space-y-4 text-sm">
               {/* Manga & Chapter Info */}
               <div className="p-3.5 bg-muted/40 border border-border rounded-xl space-y-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Manga Series</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Bộ Manga</p>
                 <p className="font-bold text-foreground text-base">{getMangaTitleForTask(activeTaskToView)}</p>
                 <p className="text-xs text-muted-foreground font-semibold">{getChapterInfoForTask(activeTaskToView)}</p>
               </div>
@@ -2150,37 +2170,37 @@ export default function ChaptersPage() {
               {/* Task Grid Details */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground">Task Types</p>
+                  <p className="text-xs font-bold text-muted-foreground">Loại nhiệm vụ</p>
                   <p className="font-semibold text-foreground bg-primary/5 border border-primary/10 px-2.5 py-1.5 rounded-lg inline-block">
                     {activeTaskToView.type}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground">Pages Range</p>
+                  <p className="text-xs font-bold text-muted-foreground">Phạm vi trang</p>
                   <p className="font-semibold text-foreground bg-muted px-2.5 py-1.5 rounded-lg inline-block">
-                    Pages {activeTaskToView.pages}
+                    Trang {activeTaskToView.pages}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground">Due Date (Hạn nộp)</p>
+                  <p className="text-xs font-bold text-muted-foreground">Hạn nộp (Due Date)</p>
                   <p className="font-semibold text-amber-600 bg-amber-500/5 border border-amber-500/10 px-2.5 py-1.5 rounded-lg inline-block">
                     {activeTaskToView.dueDate || 'Không giới hạn'}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground">Assigned Status</p>
+                  <p className="text-xs font-bold text-muted-foreground">Trạng thái phân công</p>
                   <p className={`font-semibold px-2.5 py-1.5 rounded-lg inline-block text-xs ${getTaskStatusClass(activeTaskToView.status)}`}>
-                    {activeTaskToView.status}
+                    {getTaskStatusLabel(activeTaskToView.status)}
                   </p>
                 </div>
               </div>
 
               {/* Instructions */}
               <div className="space-y-1">
-                <p className="text-xs font-bold text-muted-foreground">Instruction & Description</p>
+                <p className="text-xs font-bold text-muted-foreground">Mô tả & Hướng dẫn chi tiết</p>
                 <div className="p-3 bg-muted/30 border border-border rounded-xl text-foreground whitespace-pre-line text-xs leading-relaxed">
                   {activeTaskToView.description}
                 </div>
@@ -2188,7 +2208,7 @@ export default function ChaptersPage() {
 
               {/* Reference Files from Mangaka */}
               <div className="space-y-1">
-                <p className="text-xs font-bold text-muted-foreground">Attached Reference Files</p>
+                <p className="text-xs font-bold text-muted-foreground">Tài liệu hướng dẫn đính kèm</p>
                 {activeTaskToView.attachments && activeTaskToView.attachments.length > 0 ? (
                   <div className="space-y-1.5">
                     {activeTaskToView.attachments.map((file, idx) => (
@@ -2206,7 +2226,7 @@ export default function ChaptersPage() {
               {/* Assistant Submission details if submitted/approved */}
               {activeTaskToView.submitDescription && (
                 <div className="space-y-2 border-t border-border pt-3">
-                  <p className="text-xs font-bold text-muted-foreground">Assistant Submission Notes</p>
+                  <p className="text-xs font-bold text-muted-foreground">Ghi chú sản phẩm nộp của Trợ lý</p>
                   <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl text-foreground text-xs leading-relaxed">
                     {activeTaskToView.submitDescription}
                   </div>
@@ -2215,7 +2235,7 @@ export default function ChaptersPage() {
 
               {activeTaskToView.submittedFiles && activeTaskToView.submittedFiles.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-bold text-muted-foreground">Submitted Work Files</p>
+                  <p className="text-xs font-bold text-muted-foreground">Tệp sản phẩm đã nộp</p>
                   {activeTaskToView.submittedFiles.map((file, idx) => (
                     <div key={idx} className="flex items-center justify-between p-2 bg-emerald-500/5 rounded-xl border border-emerald-500/10 text-xs">
                       <span className="font-medium text-emerald-800 dark:text-emerald-400 truncate max-w-[340px]">🖼️ {file.name}</span>
@@ -2235,7 +2255,7 @@ export default function ChaptersPage() {
                 }}
                 className="px-5 py-2.5 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl transition-all cursor-pointer"
               >
-                Close Details
+                Đóng chi tiết
               </button>
             </div>
           </div>

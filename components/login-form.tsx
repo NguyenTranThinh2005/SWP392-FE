@@ -53,7 +53,7 @@ export function LoginForm({
       await authService.login(data)
       router.push("/dashboard")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid credentials. Please try again.")
+      setError(err instanceof Error ? err.message : "Thông tin đăng nhập không hợp lệ. Vui lòng thử lại.")
     } finally {
       setIsLoading(false)
     }
@@ -63,7 +63,7 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome back</CardTitle>
+          <CardTitle className="text-xl">Chào mừng quay trở lại</CardTitle>
         </CardHeader>
         <CardContent>
           {error && (
@@ -88,13 +88,13 @@ export function LoginForm({
               </Field>
               <Field>
                 <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
                   <a
                     href="#"
                     className="ml-auto text-sm underline-offset-4 hover:underline"
                     onClick={(e) => e.preventDefault()}
                   >
-                    Forgot your password?
+                    Quên mật khẩu?
                   </a>
                 </div>
                 <Input
@@ -108,7 +108,7 @@ export function LoginForm({
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? "Logging in..." : "Login"}
+                  {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
                 </Button>
               </Field>
             </FieldGroup>
@@ -116,8 +116,7 @@ export function LoginForm({
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+        Bằng cách nhấp tiếp tục, bạn đồng ý với <a href="#">Điều khoản Dịch vụ</a> và <a href="#">Chính sách Bảo mật</a> của chúng tôi.
       </FieldDescription>
     </div>
   )

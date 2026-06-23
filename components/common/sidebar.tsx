@@ -34,39 +34,39 @@ function SidebarInner() {
 
   const menuItems = {
     Mangaka: [
-      { label: 'Dashboard', href: '/dashboard/mangaka', icon: LayoutDashboard },
-      { label: 'My Proposals', href: '/dashboard/series', icon: PencilLine },
-      { label: 'New Proposal', href: '/dashboard/series/new', icon: UserPlus },
-      { label: 'Manuscripts', href: '/dashboard/manuscripts', icon: Layers },
-      { label: 'Chapter&Tasks', href: '/dashboard/chapters', icon: ClipboardList },
-      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Bảng điều khiển', href: '/dashboard/mangaka', icon: LayoutDashboard },
+      { label: 'Đề xuất của tôi', href: '/dashboard/series', icon: PencilLine },
+      { label: 'Tạo đề xuất mới', href: '/dashboard/series/new', icon: UserPlus },
+      { label: 'Bản thảo', href: '/dashboard/manuscripts', icon: Layers },
+      { label: 'Chương & Nhiệm vụ', href: '/dashboard/chapters', icon: ClipboardList },
+      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
     ],
     Assistant: [
-      { label: 'Dashboard', href: '/dashboard/assistant', icon: LayoutDashboard },
-      { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
-      { label: 'My Tasks', href: '/dashboard/chapters', icon: ClipboardList },
-      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Bảng điều khiển', href: '/dashboard/assistant', icon: LayoutDashboard },
+      { label: 'Danh sách truyện', href: '/dashboard/manga-list', icon: BookOpen },
+      { label: 'Nhiệm vụ của tôi', href: '/dashboard/chapters', icon: ClipboardList },
+      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
     ],
     TantouEditor: [
-      { label: 'Dashboard', href: '/dashboard/tantou-editor?tab=dashboard', icon: LayoutDashboard },
-      { label: 'Series', href: '/dashboard/tantou-editor?tab=series', icon: BookOpen },
-      { label: 'Proposal Review', href: '/dashboard/tantou-editor?tab=proposals', icon: ClipboardList },
-      { label: 'Manuscripts', href: '/dashboard/tantou-editor?tab=manuscripts', icon: Layers },
-      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Bảng điều khiển', href: '/dashboard/tantou-editor?tab=dashboard', icon: LayoutDashboard },
+      { label: 'Tác phẩm', href: '/dashboard/tantou-editor?tab=series', icon: BookOpen },
+      { label: 'Duyệt đề xuất', href: '/dashboard/tantou-editor?tab=proposals', icon: ClipboardList },
+      { label: 'Bản thảo', href: '/dashboard/tantou-editor?tab=manuscripts', icon: Layers },
+      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
     ],
     EditorialBoard: [
-      { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
-      { label: 'Review Proposals', href: '/dashboard/reviews', icon: PencilLine },
-      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Danh sách truyện', href: '/dashboard/manga-list', icon: BookOpen },
+      { label: 'Duyệt đề xuất', href: '/dashboard/reviews', icon: PencilLine },
+      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
     ],
     EditorInChief: [
-      { label: 'Dashboard', href: '/dashboard/editor-in-chief', icon: LayoutDashboard },
-      { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
-      { label: 'Review Proposals', href: '/dashboard/reviews', icon: PencilLine },
-      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Bảng điều khiển', href: '/dashboard/editor-in-chief', icon: LayoutDashboard },
+      { label: 'Danh sách truyện', href: '/dashboard/manga-list', icon: BookOpen },
+      { label: 'Duyệt đề xuất', href: '/dashboard/reviews', icon: PencilLine },
+      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
     ],
     Admin: [
-      { label: 'Account Management', href: '/dashboard/admin', icon: Users },
+      { label: 'Quản lý tài khoản', href: '/dashboard/admin', icon: Users },
     ],
   }
 
@@ -127,7 +127,7 @@ function SidebarInner() {
         {/* Navigation Items */}
         <div className="space-y-1">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2.5 mb-2">
-            Main Features
+            Tính năng chính
           </p>
           <nav className="space-y-1">
             {currentLinks.map((item) => {

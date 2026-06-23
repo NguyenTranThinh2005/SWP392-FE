@@ -24,30 +24,30 @@ export function SignupForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Create an account</CardTitle>
+          <CardTitle className="text-xl">Tạo tài khoản</CardTitle>
           <CardDescription>
-            Enter email below to create account
+            Nhập thông tin bên dưới để tạo tài khoản
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="name">Full Name</FieldLabel>
-                <Input id="name" type="text" placeholder="John Doe" required />
+                <FieldLabel htmlFor="name">Họ và Tên</FieldLabel>
+                <Input id="name" type="text" placeholder="Nguyễn Văn A" required />
               </Field>
               <Field>
-                <FieldLabel htmlFor="display-name">Display Name</FieldLabel>
+                <FieldLabel htmlFor="display-name">Tên hiển thị</FieldLabel>
                 <Input id="display-name" type="text" placeholder="John Doe" required />
               </Field>
               <Field>
-                <FieldLabel htmlFor="role">Role</FieldLabel>
+                <FieldLabel htmlFor="role">Vai trò</FieldLabel>
                 <Select id="role" name="role" required defaultValue="">
-                  <option value="" disabled>Select a role...</option>
+                  <option value="" disabled>Chọn vai trò...</option>
                   <option value="Mangaka">Mangaka</option>
                   <option value="TantouEditor">Tantou Editor</option>
-                  <option value="EditorialBoard">Editorial Board</option>
-                  <option value="Assistant">Assistant</option>
+                  <option value="EditorialBoard">Ban Biên Tập</option>
+                  <option value="Assistant">Trợ lý</option>
                 </Select>
               </Field>
               <Field>
@@ -62,22 +62,22 @@ export function SignupForm({
               <Field>
                 <Field className="grid grid-cols-2 gap-4">
                   <Field>
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
                     <Input id="password" type="password" required />
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="confirm-password">
-                      Confirm Password
+                      Xác nhận mật khẩu
                     </FieldLabel>
                     <Input id="confirm-password" type="password" required />
                   </Field>
                 </Field>
                 <FieldDescription>
-                  Must be at least 8 characters long.
+                  Phải dài ít nhất 8 ký tự.
                 </FieldDescription>
               </Field>
               <Field>
-                <Button type="submit">Create Account</Button>
+                <Button type="submit">Tạo tài khoản</Button>
               </Field>
             </FieldGroup>
           </form>

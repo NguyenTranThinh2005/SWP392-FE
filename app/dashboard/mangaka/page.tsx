@@ -25,16 +25,16 @@ import type { Proposal, ProposalStatus } from '@/types/proposal'
 const { getProposalsByMangaka, hasPendingProposal } = proposalService
 
 const STATUS_CONFIG: Record<ProposalStatus, { label: string; className: string; icon: React.ElementType }> = {
-  Draft: { label: 'Draft', className: 'bg-slate-500/10 text-slate-500 border-slate-500/20', icon: FileEdit },
-  'Pending Review': { label: 'Pending Review', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20', icon: Clock },
-  'Under Review': { label: 'Under Review', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: Eye },
-  Approved: { label: 'Approved', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', icon: CheckCircle2 },
-  Rejected: { label: 'Rejected', className: 'bg-red-500/10 text-red-600 border-red-500/20', icon: XCircle },
-  Active: { label: 'Approved & Active', className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20', icon: CheckCircle2 },
+  Draft: { label: 'Bản thảo', className: 'bg-slate-500/10 text-slate-500 border-slate-500/20', icon: FileEdit },
+  'Pending Review': { label: 'Chờ duyệt', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20', icon: Clock },
+  'Under Review': { label: 'Đang thẩm định', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: Eye },
+  Approved: { label: 'Đã duyệt', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', icon: CheckCircle2 },
+  Rejected: { label: 'Bị từ chối', className: 'bg-red-500/10 text-red-600 border-red-500/20', icon: XCircle },
+  Active: { label: 'Đã duyệt & Đang phát hành', className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20', icon: CheckCircle2 },
 }
 
 function formatDateShort(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('vi-VN', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default function MangakaDashboardPage() {
@@ -103,15 +103,15 @@ export default function MangakaDashboardPage() {
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-              Welcome back, {mangakaName}
+              Chào mừng quay trở lại, {mangakaName}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Manage your series proposals and track their review status.
+              Quản lý các đề xuất tác phẩm mới và theo dõi trạng thái duyệt của bạn.
             </p>
             {assignedEditor && (
               <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 bg-primary/5 border border-primary/10 rounded-xl text-xs font-medium text-muted-foreground">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Assigned Editor: <strong className="text-foreground">{assignedEditor.name}</strong> {assignedEditor.email ? `(${assignedEditor.email})` : ''}</span>
+                <span>Editor phụ trách: <strong className="text-foreground">{assignedEditor.name}</strong> {assignedEditor.email ? `(${assignedEditor.email})` : ''}</span>
               </div>
             )}
           </div>
@@ -119,7 +119,7 @@ export default function MangakaDashboardPage() {
           {isBlocked ? (
             <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs font-semibold text-amber-600 shrink-0">
               <AlertTriangle className="w-4 h-4" />
-              Proposal in review — new submission blocked
+              Đang có đề xuất chờ duyệt — tạm khóa tạo đề xuất mới
             </div>
           ) : (
             <Link
@@ -127,7 +127,7 @@ export default function MangakaDashboardPage() {
               className="inline-flex items-center gap-2 shrink-0 bg-primary text-primary-foreground font-bold text-sm px-5 py-3 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all"
             >
               <Plus className="w-4 h-4" />
-              New Proposal
+              Đề xuất mới
             </Link>
           )}
         </div>
@@ -136,10 +136,10 @@ export default function MangakaDashboardPage() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total Proposals', value: counts.total, icon: PencilLine, color: 'text-foreground' },
-          { label: 'In Review', value: counts.pending, icon: Clock, color: 'text-amber-600' },
-          { label: 'Approved', value: counts.approved, icon: CheckCircle2, color: 'text-emerald-600' },
-          { label: 'Rejected', value: counts.rejected, icon: XCircle, color: 'text-red-500', },
+          { label: 'Tổng số đề xuất', value: counts.total, icon: PencilLine, color: 'text-foreground' },
+          { label: 'Đang duyệt', value: counts.pending, icon: Clock, color: 'text-amber-600' },
+          { label: 'Đã duyệt', value: counts.approved, icon: CheckCircle2, color: 'text-emerald-600' },
+          { label: 'Bị từ chối', value: counts.rejected, icon: XCircle, color: 'text-red-500', },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-card border border-border rounded-2xl p-5 space-y-3">
             <div className={`w-9 h-9 ${color} rounded-xl flex items-center justify-center`}>
@@ -160,13 +160,13 @@ export default function MangakaDashboardPage() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" />
-              <h2 className="font-bold text-sm">Recent Proposals</h2>
+              <h2 className="font-bold text-sm">Đề xuất gần đây</h2>
             </div>
             <Link
               href="/dashboard/series"
               className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors"
             >
-              View all <ChevronRight className="w-3.5 h-3.5" />
+              Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
@@ -174,12 +174,12 @@ export default function MangakaDashboardPage() {
             {recent.length === 0 ? (
               <div className="p-10 text-center space-y-2">
                 <PencilLine className="w-8 h-8 text-muted-foreground/30 mx-auto" />
-                <p className="text-sm text-muted-foreground">No proposals yet</p>
+                <p className="text-sm text-muted-foreground">Chưa có đề xuất nào</p>
                 <Link
                   href="/dashboard/series/new"
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Create your first proposal
+                  <Plus className="w-3.5 h-3.5" /> Tạo đề xuất đầu tiên của bạn
                 </Link>
               </div>
             ) : (

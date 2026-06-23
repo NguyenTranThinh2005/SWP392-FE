@@ -24,15 +24,15 @@ function formatRelativeTime(isoString: string) {
   const date = new Date(isoString)
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
 
-  if (seconds < 60) return 'just now'
+  if (seconds < 60) return 'vừa xong'
 
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
+  if (minutes < 60) return `${minutes} phút trước`
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
+  if (hours < 24) return `${hours} giờ trước`
 
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return date.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' })
 }
 
 export function DashboardHeader() {
@@ -124,7 +124,7 @@ export function DashboardHeader() {
       {/* Left section: Welcome context */}
       <div className="flex items-center gap-3">
         <span className="text-sm font-extrabold tracking-tight text-muted-foreground capitalize">
-          Dashboard
+          Bảng điều khiển
         </span>
         <span className="text-muted-foreground/30 text-xs">/</span>
         <span className={cn(
@@ -145,7 +145,7 @@ export function DashboardHeader() {
               "p-2.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all relative border border-transparent focus:outline-none",
               isOpen && "bg-muted text-foreground border-border/40"
             )}
-            aria-label="Open Notifications"
+            aria-label="Mở thông báo"
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
@@ -161,10 +161,10 @@ export function DashboardHeader() {
               {/* Header */}
               <div className="flex items-center justify-between p-3.5 border-b border-border/60">
                 <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-sm text-foreground">Alerts & Notifications</span>
+                  <span className="font-extrabold text-sm text-foreground">Thông báo & Cảnh báo</span>
                   {unreadCount > 0 && (
                     <span className="bg-red-500/10 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {unreadCount} new
+                      {unreadCount} mới
                     </span>
                   )}
                 </div>
@@ -174,16 +174,16 @@ export function DashboardHeader() {
                     <button
                       onClick={markAllRead}
                       className="p-1.5 text-[10px] font-bold text-primary hover:bg-primary/5 rounded-lg transition-colors flex items-center gap-1"
-                      title="Mark all as read"
+                      title="Đánh dấu tất cả đã đọc"
                     >
-                      <CheckCheck className="w-3.5 h-3.5" /> Read All
+                      <CheckCheck className="w-3.5 h-3.5" /> Đọc tất cả
                     </button>
                     <button
                       onClick={clearAll}
                       className="p-1.5 text-[10px] font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-lg transition-colors flex items-center gap-1"
-                      title="Clear all"
+                      title="Xóa tất cả"
                     >
-                      <Trash2 className="w-3.5 h-3.5" /> Clear
+                      <Trash2 className="w-3.5 h-3.5" /> Xóa sạch
                     </button>
                   </div>
                 )}
@@ -233,8 +233,8 @@ export function DashboardHeader() {
                       <Bell className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-foreground">All caught up!</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">No notifications for {role} at this time.</p>
+                      <p className="text-xs font-bold text-foreground">Tất cả đã hoàn tất!</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Không có thông báo mới cho {role} vào lúc này.</p>
                     </div>
                   </div>
                 )}
@@ -268,7 +268,7 @@ export function DashboardHeader() {
             <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               {/* User info details */}
               <div className="px-3 py-2 border-b border-border/60">
-                <p className="text-xs font-bold text-foreground truncate">{userInfo?.name || 'Loading...'}</p>
+                <p className="text-xs font-bold text-foreground truncate">{userInfo?.name || 'Đang tải...'}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{userInfo?.email || ''}</p>
                 <div className="mt-1.5">
                   <span className={cn(
@@ -287,7 +287,7 @@ export function DashboardHeader() {
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-all"
                 >
                   <LogOut className="w-4 h-4" />
-                  Sign Out
+                  Đăng xuất
                 </button>
               </div>
             </div>

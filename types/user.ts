@@ -13,4 +13,5 @@ export interface User {
   assignedEditorName?: string;
   assignedEditorEmail?: string;
   assignedMangakas?: { id: string; name: string; email: string }[];
+  createdAt?: string;
 }

@@ -480,7 +480,7 @@ export default function RankingPage() {
               ) : (
                 rankings.map(row => {
                   // Determine Score Text styling class
-                  let scoreClass = 'text-slate-300'
+                  let scoreClass = 'text-slate-600 dark:text-slate-400'
                   if (row.score >= 70) scoreClass = 'text-emerald-500 font-extrabold'
                   else if (row.score >= 40) scoreClass = 'text-amber-500 font-bold'
                   else scoreClass = 'text-rose-500 font-bold'
@@ -495,7 +495,7 @@ export default function RankingPage() {
                           </div>
                         ) : row.rank === 2 ? (
                           <div className="flex justify-center" title="2nd Place">
-                            <Medal className="w-5 h-5 text-slate-350" />
+                            <Medal className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                           </div>
                         ) : row.rank === 3 ? (
                           <div className="flex justify-center" title="3rd Place">
@@ -515,12 +515,12 @@ export default function RankingPage() {
                       <TableCell className="text-xs text-muted-foreground font-semibold">{row.genre}</TableCell>
 
                       {/* Votes count */}
-                      <TableCell className="text-right text-xs font-semibold text-slate-350">
+                      <TableCell className="text-right text-xs font-semibold text-slate-600 dark:text-slate-400">
                         {row.voteCount.toLocaleString()}
                       </TableCell>
 
                       {/* Readers count */}
-                      <TableCell className="text-right text-xs font-semibold text-slate-350">
+                      <TableCell className="text-right text-xs font-semibold text-slate-600 dark:text-slate-400">
                         {row.readerCount.toLocaleString()}
                       </TableCell>
 

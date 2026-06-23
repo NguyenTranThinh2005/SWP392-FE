@@ -150,7 +150,8 @@ export default function AdminPage() {
             role,
             status,
             avatarUrl: `https://xsgames.co/randomusers/assets/avatars/${code % 2 === 0 ? 'male' : 'female'}/${code % 50}.jpg`,
-            editorId: u.assignedEditorId || undefined
+            editorId: u.assignedEditorId || undefined,
+            createdAt: u.createdAt
           }
 
           return localUser
@@ -178,17 +179,23 @@ export default function AdminPage() {
 
   // Filtered Users
   const filteredUsers = useMemo(() => {
-    return usersList.filter(u => {
-      const matchSearch =
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (u.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
+    return usersList
+      .filter(u => {
+        const matchSearch =
+          u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (u.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.email.toLowerCase().includes(searchTerm.toLowerCase())
 
-      const matchRole = roleFilter === 'all' || u.role === roleFilter
-      const matchStatus = statusFilter === 'all' || u.status === statusFilter
+        const matchRole = roleFilter === 'all' || u.role === roleFilter
+        const matchStatus = statusFilter === 'all' || u.status === statusFilter
 
-      return matchSearch && matchRole && matchStatus
-    })
+        return matchSearch && matchRole && matchStatus
+      })
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return dateB - dateA
+      })
   }, [usersList, searchTerm, roleFilter, statusFilter])
 
   // Handle account status toggle (Active/Inactive)
@@ -265,7 +272,7 @@ export default function AdminPage() {
 
 
 
-      toast.success(`Tài khoản "${formName}" đã được tạo thành công trên Database (BR-01)!`)
+      toast.success(`Tài khoản "${formName}" đã được tạo thành công trên Databas!`)
 
       // Reset Form
       setFormName('')
@@ -491,6 +498,7 @@ export default function AdminPage() {
                     <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Tài khoản</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Email</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Vai trò</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Ngày tạo</TableHead>
                     {role === 'Admin' && <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Editor Phụ Trách</TableHead>}
                     <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Trạng thái</TableHead>
                     <TableHead className="w-32 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Hành động</TableHead>
@@ -499,7 +507,7 @@ export default function AdminPage() {
                 <TableBody className="divide-y divide-border">
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="p-12 text-center text-muted-foreground space-y-2">
+                      <TableCell colSpan={role === 'Admin' ? 9 : 8} className="p-12 text-center text-muted-foreground space-y-2">
                         <Users className="w-8 h-8 mx-auto text-muted-foreground/30" />
                         <p className="text-xs">Không tìm thấy tài khoản nào phù hợp với bộ lọc.</p>
                       </TableCell>
@@ -534,10 +542,10 @@ export default function AdminPage() {
                           </TableCell>
 
                           {/* Username */}
-                          <TableCell className="text-xs font-mono text-slate-350">{user.username}</TableCell>
+                          <TableCell className="text-xs font-mono text-slate-600 dark:text-slate-400">{user.username}</TableCell>
 
                           {/* Email */}
-                          <TableCell className="text-xs text-slate-350">{user.email}</TableCell>
+                          <TableCell className="text-xs text-slate-600 dark:text-slate-400">{user.email}</TableCell>
 
                           {/* Role */}
                           <TableCell>
@@ -546,9 +554,18 @@ export default function AdminPage() {
                             </Badge>
                           </TableCell>
 
+                          {/* Created At */}
+                          <TableCell className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit'
+                            }) : '—'}
+                          </TableCell>
+
                           {/* Assigned Editor */}
                           {role === 'Admin' && (
-                            <TableCell className="text-xs font-semibold text-slate-300">
+                            <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                               {user.role === 'Mangaka' ? (
                                 <div className="flex items-center gap-1.5">
                                   <span>{getEditorName(user.editorId)}</span>
@@ -737,7 +754,7 @@ export default function AdminPage() {
               type="submit"
               className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl mt-4 cursor-pointer transition-all"
             >
-              Tạo tài khoản mới (BR-01)
+              Tạo tài khoản mới
             </Button>
           </form>
         </Card>
@@ -1080,14 +1097,6 @@ export default function AdminPage() {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Rules Footnote */}
-      <div className="flex items-start gap-2.5 p-4 bg-muted/30 border border-border/40 rounded-2xl text-[11px] text-muted-foreground leading-relaxed">
-        <Info className="w-4 h-4 text-muted-foreground/60 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-bold text-foreground">Quy tắc nghiệp vụ (BRs enforced):</span> BR-01 (Internal Account Provisioning - Chỉ Admin có quyền tạo tài khoản), BR-03 (Phân quyền truy cập chức năng Admin cho vai trò Admin), gán Editor trực tiếp cho Mangaka phục vụ cho flow kích hoạt Series tự động.
-        </div>
-      </div>
     </div>
   )
 }

@@ -4,21 +4,21 @@ import { z } from 'zod'
 export const seriesProposalSchema = z.object({
   title: z
     .string()
-    .min(1, 'Title is required')
-    .max(100, 'Title must be ≤ 100 characters'),
-  genre: z.string().min(1, 'Genre is required'),
+    .min(1, 'Tiêu đề là bắt buộc')
+    .max(100, 'Tiêu đề phải ≤ 100 ký tự'),
+  genre: z.string().min(1, 'Thể loại là bắt buộc'),
   publicationType: z.enum(['Weekly', 'Monthly', 'One-Shot'], {
-    message: 'Publication type is required',
+    message: 'Hình thức xuất bản là bắt buộc',
   }),
   // BR-15: Synopsis must be 200–2000 characters
   synopsis: z
     .string()
-    .min(200, 'Synopsis must be ≥ 200 characters')
-    .max(2000, 'Synopsis must be ≤ 2000 characters'),
+    .min(200, 'Tóm tắt cốt truyện phải ≥ 200 ký tự')
+    .max(2000, 'Tóm tắt cốt truyện phải ≤ 2000 ký tự'),
   sampleFileUrl: z
     .string()
-    .min(1, 'Sample file is required'),
-  coverImageUrl: z.string().url('Invalid image URL').optional().or(z.literal('')),
+    .min(1, 'File bản vẽ mẫu là bắt buộc'),
+  coverImageUrl: z.string().url('Đường dẫn hình ảnh không hợp lệ').optional().or(z.literal('')),
   sourceZipFileAssetId: z.string().optional().nullable(),
 })
 
@@ -26,19 +26,19 @@ export type SeriesProposalInput = z.infer<typeof seriesProposalSchema>
 
 // BR-54: Chapter task deadline validation rules
 export const chapterTaskSchema = z.object({
-  chapterId: z.string().min(1, 'Chapter is required'),
-  pageStart: z.number().min(1, 'Page start must be at least 1'),
-  pageEnd: z.number().min(1, 'Page end must be at least 1'),
-  assignedToId: z.string().min(1, 'Please assign to an assistant'),
-  deadline: z.string().refine((date) => new Date(date) > new Date(), 'Deadline must be in the future'),
+  chapterId: z.string().min(1, 'Chapter là bắt buộc'),
+  pageStart: z.number().min(1, 'Trang bắt đầu phải ít nhất là 1'),
+  pageEnd: z.number().min(1, 'Trang kết thúc phải ít nhất là 1'),
+  assignedToId: z.string().min(1, 'Vui lòng phân công cho trợ lý'),
+  deadline: z.string().refine((date) => new Date(date) > new Date(), 'Hạn chót phải ở tương lai'),
 })
 
 export type ChapterTaskInput = z.infer<typeof chapterTaskSchema>
 
 export const manuscriptSchema = z.object({
-  seriesId: z.string().min(1, 'Series is required'),
-  fileUrl: z.string().url('Invalid file URL'),
-  notes: z.string().max(500, 'Notes must be less than 500 characters').optional(),
+  seriesId: z.string().min(1, 'Tác phẩm là bắt buộc'),
+  fileUrl: z.string().url('Đường dẫn file không hợp lệ'),
+  notes: z.string().max(500, 'Ghi chú phải ít hơn 500 ký tự').optional(),
 })
 
 export type ManuscriptInput = z.infer<typeof manuscriptSchema>
@@ -46,13 +46,13 @@ export type ManuscriptInput = z.infer<typeof manuscriptSchema>
 // BR-89: VoteRecord Validation constraints (readerCount >= voteCount >= 0)
 export const voteEntrySchema = z
   .object({
-    seriesId: z.string().min(1, 'Series is required'),
-    chapterId: z.string().min(1, 'Chapter is required'),
-    readerCount: z.number().min(0, 'Reader count must be non-negative'),
-    voteCount: z.number().min(0, 'Vote count must be non-negative'),
+    seriesId: z.string().min(1, 'Tác phẩm là bắt buộc'),
+    chapterId: z.string().min(1, 'Chapter là bắt buộc'),
+    readerCount: z.number().min(0, 'Số lượng độc giả không được âm'),
+    voteCount: z.number().min(0, 'Số lượng bình chọn không được âm'),
   })
   .refine((data) => data.voteCount <= data.readerCount, {
-    message: 'Vote count cannot exceed reader count',
+    message: 'Số lượng bình chọn không được vượt quá số lượng độc giả',
     path: ['voteCount'],
   })
 
@@ -60,19 +60,19 @@ export type VoteEntryInput = z.infer<typeof voteEntrySchema>
 
 // BR-59: Mandatory fields for page tasks
 export const pageTaskSchema = z.object({
-  chapterId: z.string().min(1, 'Chapter is required'),
-  pageNumber: z.number().min(1, 'Page number must be at least 1'),
+  chapterId: z.string().min(1, 'Chapter là bắt buộc'),
+  pageNumber: z.number().min(1, 'Số trang phải ít nhất là 1'),
   status: z.enum(['Pending', 'In-Progress', 'Submitted', 'Approved', 'Rejected']),
   assignedToId: z.string().optional(),
-  rejectionReason: z.string().max(500, 'Reason must be less than 500 characters').optional(),
+  rejectionReason: z.string().max(500, 'Lý do phải ít hơn 500 ký tự').optional(),
 })
 
 
 export type PageTaskInput = z.infer<typeof pageTaskSchema>
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Địa chỉ email không hợp lệ'),
+  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
 })
 
 export type LoginInput = z.infer<typeof loginSchema>
