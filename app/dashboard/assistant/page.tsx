@@ -129,6 +129,17 @@ export default function AssistantDashboardPage() {
   }
 
   const loadData = useCallback(() => {
+    // Lấy id assistant đang đăng nhập từ localStorage (không phụ thuộc /api/users)
+    if (typeof window !== 'undefined' && !selectedAssistantId) {
+      const userInfo = localStorage.getItem('user-info')
+      if (userInfo) {
+        try {
+          const parsed = JSON.parse(userInfo)
+          const myId = parsed?.id || parsed?.userId
+          if (myId) setSelectedAssistantId(myId)
+        } catch {}
+      }
+    }
     // Load static and dynamic assistant metadata
     userService.getUsers().then((res) => {
       const list = (res.data || []).filter(u => u.roleName?.toLowerCase() === 'assistant')
