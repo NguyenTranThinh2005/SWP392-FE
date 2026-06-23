@@ -93,6 +93,8 @@ export default function ChaptersPage() {
   const [editChapterId, setEditChapterId] = useState<string>('')
   const [editChapterTitle, setEditChapterTitle] = useState('')
   const [editChapterPages, setEditChapterPages] = useState<number>(0)
+  const [editChapterPubDate, setEditChapterPubDate] = useState('')
+  const [editChapterDeadline, setEditChapterDeadline] = useState('')
   const [newChapterPubDate, setNewChapterPubDate] = useState('')
   const [newChapterSynopsis, setNewChapterSynopsis] = useState('')
   const [newChapterNotes, setNewChapterNotes] = useState('')
@@ -463,6 +465,8 @@ export default function ChaptersPage() {
     setEditChapterId(chap.id)
     setEditChapterTitle(chap.title || '')
     setEditChapterPages(chap.totalPages ?? chap.pages ?? 0)
+    setEditChapterPubDate((chap.publicationDate || '').slice(0, 10))
+    setEditChapterDeadline((chap.deadline || '').slice(0, 10))
     setIsEditChapterOpen(true)
   }
 
@@ -474,7 +478,9 @@ export default function ChaptersPage() {
     try {
       await chapterService.updateChapter(editChapterId, {
         title: editChapterTitle.trim(),
-        totalPages: editChapterPages
+        totalPages: editChapterPages,
+        publicationDate: editChapterPubDate || undefined,
+        deadline: editChapterDeadline || undefined
       })
       showToast('Đã cập nhật chapter!', 'success')
       setIsEditChapterOpen(false)
@@ -1312,7 +1318,24 @@ export default function ChaptersPage() {
                 className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
-
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground">Ngày xuất bản</label>
+              <input
+                type="date"
+                value={editChapterPubDate}
+                onChange={(e) => setEditChapterPubDate(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground">Deadline nộp</label>
+              <input
+                type="date"
+                value={editChapterDeadline}
+                onChange={(e) => setEditChapterDeadline(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
