@@ -1,4 +1,4 @@
-export type ProposalStatus = 'Draft' | 'Pending Review' | 'Under Review' | 'Approved' | 'Rejected' | 'Active';
+export type ProposalStatus = 'Draft' | 'Pending Review' | 'Under Review' | 'Board Voting' | 'Approved' | 'Rejected' | 'Active';
 
 export interface Proposal {
   id: string;
@@ -15,4 +15,5 @@ export interface Proposal {
   rawStatus?: string;
   sourceZipFileAssetId?: string | null;
   author?: string;
+  tantouEditorName?: string;
 }

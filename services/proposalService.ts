@@ -5,14 +5,28 @@ export const mapSeriesToProposal = (s: any): Proposal => {
   let status: ProposalStatus = 'Draft';
   const rawStatus = s.status || '';
 
-  if (rawStatus === 'Active' || rawStatus === 'Approved') {
+  // BE status mapping:
+  // UnderReview  → Mangaka submitted to Tantou Editor (awaiting Tantou review)
+  // BoardVoting  → Tantou approved; now at Editorial Board for voting
+  // Approved/Active → Board approved
+  // Rejected/Cancelled → Rejected
+  // Draft → still a draft
+
+  if (rawStatus === 'Active') {
+    status = 'Active';
+  } else if (rawStatus === 'Approved') {
     status = 'Approved';
   } else if (rawStatus === 'Cancelled' || rawStatus === 'Rejected') {
     status = 'Rejected';
-  } else if (rawStatus === 'UnderReview' || rawStatus === 'Under Review' || rawStatus === 'PendingReview' || rawStatus === 'Proposed') {
-    status = 'Pending Review';
-  } else if (rawStatus === 'BoardVoting') {
+  } else if (rawStatus === 'UnderReview' || rawStatus === 'Under Review') {
+    // Mangaka submitted → Tantou is reviewing
     status = 'Under Review';
+  } else if (rawStatus === 'BoardVoting' || rawStatus === 'Board Voting') {
+    // Tantou approved → Editorial Board is voting
+    status = 'Board Voting';
+  } else if (rawStatus === 'PendingReview' || rawStatus === 'Proposed') {
+    // Legacy / fallback
+    status = 'Pending Review';
   } else {
     status = 'Draft';
   }
@@ -32,6 +46,7 @@ export const mapSeriesToProposal = (s: any): Proposal => {
     rawStatus: rawStatus,
     sourceZipFileAssetId: s.sourceZipFileAssetId || null,
     author: s.author || 'Tác giả',
+    tantouEditorName: s.tantouEditorName || undefined,
   };
 };
 
@@ -169,11 +184,12 @@ export const proposalService = {
     try {
       // Map to backend status
       let backendStatus = 'Draft';
-      if (status === 'Approved') backendStatus = 'Active';
-      else if (status === 'Active') backendStatus = 'Active';
+      if (status === 'Active') backendStatus = 'Active';
+      else if (status === 'Approved') backendStatus = 'Approved';
       else if (status === 'Rejected') backendStatus = 'Rejected';
-      else if (status === 'Pending Review') backendStatus = 'PendingReview';
       else if (status === 'Under Review') backendStatus = 'UnderReview';
+      else if (status === 'Board Voting') backendStatus = 'BoardVoting';
+      else if (status === 'Pending Review') backendStatus = 'PendingReview';
       
       await seriesService.updateProposalStatus(id, backendStatus, rejectReason);
       return true;

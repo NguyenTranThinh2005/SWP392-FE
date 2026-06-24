@@ -911,17 +911,18 @@ function TantouEditorWorkspace() {
                       {/* Top Accent Row */}
                       <div className="flex justify-between items-center">
                         <span
-                          className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${series.status === 'Active'
+                          className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${series.status === 'Active' || series.status === 'Approved'
                             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                            : series.status === 'Proposed'
-                              ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
-                              : series.status === 'Under Review' ||
-                                series.status === 'UnderReview'
-                                ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                : 'bg-muted text-muted-foreground border-border'
+                            : series.status === 'Under Review' || series.status === 'UnderReview'
+                              ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20'
+                              : series.status === 'BoardVoting' || series.status === 'Board Voting'
+                                ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                                : series.status === 'Rejected'
+                                  ? 'bg-red-500/10 text-red-600 border-red-500/20'
+                                  : 'bg-muted text-muted-foreground border-border'
                             }`}
                         >
-                          {series.status || 'Active'}
+                          {series.status === 'UnderReview' ? 'Under Review' : series.status === 'BoardVoting' ? 'Board Voting' : (series.status || 'Active')}
                         </span>
                         <span className="text-[10px] text-muted-foreground font-mono font-bold">
                           {displayCode}
@@ -957,18 +958,11 @@ function TantouEditorWorkspace() {
                     </div>
 
                     {/* Bottom Metadata row */}
-                    <div className="pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="pt-3 border-t border-border/40 flex items-center text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="font-bold text-foreground truncate flex items-center">
                           <PencilLine className="w-3.5 h-3.5 mr-1 text-primary shrink-0" /> {series.author || 'Unknown Mangaka'}
                         </span>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {series.rating && (
-                          <span className="text-[10px] font-black text-sky-500">
-                            {series.rating}% score
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -983,15 +977,20 @@ function TantouEditorWorkspace() {
           let bg = 'bg-gray-500/20';
           let dot = 'bg-gray-400';
 
-          const normalizedStatus = (status || 'Proposed').trim();
+          const normalizedStatus = (status || '').trim();
 
           if (normalizedStatus === 'Approved' || normalizedStatus === 'Active') {
             bg = 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/20';
             dot = 'bg-emerald-500';
-          } else if (normalizedStatus === 'Proposed' || normalizedStatus === 'Pending Review' || normalizedStatus === 'PendingReview') {
+          } else if (normalizedStatus === 'Under Review' || normalizedStatus === 'UnderReview') {
+            // Mangaka submitted → Tantou reviewing
             bg = 'bg-indigo-500/15 text-indigo-600 border border-indigo-500/20';
             dot = 'bg-indigo-500';
-          } else if (normalizedStatus === 'Under Review' || normalizedStatus === 'UnderReview') {
+          } else if (normalizedStatus === 'BoardVoting' || normalizedStatus === 'Board Voting') {
+            // Tantou approved → Editorial Board voting
+            bg = 'bg-blue-500/15 text-blue-600 border border-blue-500/20';
+            dot = 'bg-blue-500';
+          } else if (normalizedStatus === 'Proposed' || normalizedStatus === 'Pending Review' || normalizedStatus === 'PendingReview') {
             bg = 'bg-amber-500/15 text-amber-600 border border-amber-500/20';
             dot = 'bg-amber-500';
           } else if (normalizedStatus === 'Rejected') {
@@ -999,10 +998,15 @@ function TantouEditorWorkspace() {
             dot = 'bg-red-500';
           }
 
+          const displayLabel = normalizedStatus === 'UnderReview' ? 'Under Review'
+            : normalizedStatus === 'BoardVoting' ? 'Board Voting'
+            : normalizedStatus === 'PendingReview' ? 'Pending Review'
+            : normalizedStatus;
+
           return (
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${bg}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-              {normalizedStatus}
+              {displayLabel}
             </span>
           );
         };
@@ -1030,7 +1034,7 @@ function TantouEditorWorkspace() {
                 const handleUpdateStatus = async (status: string, rejectReason?: string) => {
                   try {
                     await seriesService.updateProposalStatus(proposal.id, status, rejectReason)
-                    const displayStatus = (status === 'Under Review' || status === 'UnderReview') ? 'Board Voting' : status;
+                    const displayStatus = (status === 'BoardVoting') ? 'Board Voting' : status;
                     toast.success(`Proposal status successfully updated to "${displayStatus}"!`)
                     setShowRejectInput(false)
                     setRejectReasonText('')
@@ -1098,7 +1102,7 @@ function TantouEditorWorkspace() {
                           <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
                             Cover Artwork, Metadata & Evaluation
                           </h3>
-                          
+
                           {/* Image & Metadata Row */}
                           <div className="flex gap-4">
                             {/* Image Container */}
@@ -1178,7 +1182,8 @@ function TantouEditorWorkspace() {
                               </span>
                             </div>
 
-                            {['Proposed', 'PendingReview', 'Pending Review', 'UnderReview', 'Under Review', 'Draft'].includes(proposal.status) ? (
+                            {/* Show evaluation panel for proposals pending Tantou action: UnderReview from BE */}
+                            {['UnderReview', 'Under Review', 'Proposed', 'PendingReview', 'Pending Review'].includes(proposal.status) ? (
                               <div className="space-y-4">
                                 <div className="p-3 bg-muted/30 border border-border/80 rounded-xl space-y-1.5">
                                   <h4 className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
@@ -1223,10 +1228,10 @@ function TantouEditorWorkspace() {
                                 ) : (
                                   <div className="flex flex-col sm:flex-row gap-2 pt-1">
                                     <button
-                                      onClick={() => handleUpdateStatus('Under Review')}
+                                      onClick={() => handleUpdateStatus('BoardVoting')}
                                       className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
                                     >
-                                      <CheckCircle2 className="w-3.5 h-3.5" /> Approve & Submit
+                                      <CheckCircle2 className="w-3.5 h-3.5" /> Approve & Send to Board
                                     </button>
                                     <button
                                       onClick={() => setShowRejectInput(true)}
@@ -1400,7 +1405,7 @@ function TantouEditorWorkspace() {
                     </p>
                   </div>
                   <div className="text-xs font-bold bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-full shrink-0">
-                    {supervisedSeries.length} Total Proposals
+                    {supervisedSeries.filter(p => (p.status || '').toLowerCase() !== 'draft').length} Total Proposals
                   </div>
                 </div>
 
@@ -1427,8 +1432,8 @@ function TantouEditorWorkspace() {
                         className="w-full px-3.5 py-2.5 bg-muted/40 border border-border rounded-xl text-xs text-foreground focus:outline-none appearance-none cursor-pointer font-bold"
                       >
                         <option value="All">All Statuses</option>
-                        <option value="Proposed">Proposed (Awaiting Your Review)</option>
-                        <option value="Under Review">Under Review (At Editorial Board)</option>
+                        <option value="Under Review">Under Review (Awaiting Your Decision)</option>
+                        <option value="BoardVoting">Board Voting (At Editorial Board)</option>
                         <option value="Approved">Approved / Active</option>
                         <option value="Rejected">Rejected</option>
                       </select>
@@ -1440,12 +1445,15 @@ function TantouEditorWorkspace() {
                 {/* Proposals List Grid */}
                 {(() => {
                   const filtered = supervisedSeries.filter((p) => {
+                    // Always hide Draft proposals
+                    if ((p.status || '').toLowerCase() === 'draft') return false;
+
                     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                       p.author.toLowerCase().includes(searchQuery.toLowerCase());
                     if (proposalFilter === 'All') return matchesSearch;
 
-                    const pStatus = (p.status || 'Proposed').toLowerCase().replace(/\s+/g, '');
-                    const filterVal = proposalFilter.toLowerCase().replace(/\s+/g, '');
+                    const pStatus = (p.status || '').toLowerCase().replace(/[\s_]+/g, '');
+                    const filterVal = proposalFilter.toLowerCase().replace(/[\s_]+/g, '');
                     return matchesSearch && pStatus === filterVal;
                   });
 
@@ -1469,13 +1477,14 @@ function TantouEditorWorkspace() {
                         const deadlineDate = proposal.submittedAt ? new Date(proposal.submittedAt) : new Date(proposal.createdAt || Date.now());
                         deadlineDate.setDate(deadlineDate.getDate() + 7);
                         const deadlineStr = deadlineDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                        const isOverdue = (proposal.status === 'Proposed' || proposal.status === 'Pending Review' || proposal.status === 'PendingReview') && new Date() > deadlineDate;
+                        const isOverdue = (proposal.status === 'Under Review' || proposal.status === 'UnderReview') && new Date() > deadlineDate;
                         const escalated = isOverdue;
-                        const informationComplete = proposal.status !== 'Proposed';
-                        const isExpiredOrRejected = 
-                          proposal.status?.toLowerCase() === 'expired' || 
-                          proposal.status?.toLowerCase() === 'rejected' ||
-                          isOverdue;
+                        const informationComplete = proposal.status !== 'UnderReview' && proposal.status !== 'Under Review';
+                        const isRejected =
+                          proposal.status?.toLowerCase() === 'rejected';
+                        const isApprovedOrActive =
+                          proposal.status?.toLowerCase() === 'approved' ||
+                          proposal.status?.toLowerCase() === 'active';
 
                         return (
                           <div
@@ -1537,12 +1546,17 @@ function TantouEditorWorkspace() {
 
                             {/* Actions */}
                             <div className="shrink-0 w-full md:w-auto">
-                              {!isExpiredOrRejected && (
+                              {!isRejected && (
                                 <button
                                   onClick={() => setSelectedProposalId(proposal.id)}
-                                  className="w-full md:w-auto px-4 py-2.5 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
+                                  className={`w-full md:w-auto px-4 py-2.5 text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
+                                    isApprovedOrActive
+                                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                      : 'bg-primary hover:bg-primary/95 text-primary-foreground'
+                                  }`}
                                 >
-                                  <FileText className="w-4 h-4" /> Review & Decide
+                                  <FileText className="w-4 h-4" />
+                                  {isApprovedOrActive ? 'View Details' : 'Review & Decide'}
                                 </button>
                               )}
                             </div>

@@ -25,7 +25,7 @@ export interface SeriesProposal {
   status: string;
   description: string;
   coverColor: string;
-  rating: number;
+  rating?: number;
   sampleFileUrl?: string;
   coverImageUrl?: string;
   mangakaId?: string;
@@ -138,7 +138,6 @@ const mapSeriesResponse = (s: any): SeriesProposal => {
     tantouEditorId,
     tantouEditorName,
     coverColor,
-    rating: 4.8,
     rejectReason,
     sourceZipFileAssetId,
     sourceZipFile,
@@ -336,7 +335,7 @@ export const seriesService = {
       if (savedRole) userRole = savedRole.replace(/"/g, '').trim();
     }
 
-    if (status === 'UnderReview' || status === 'Under Review') {
+    if (status === 'UnderReview' || status === 'Under Review' || status === 'BoardVoting' || status === 'Board Voting') {
       return await fetchAPI(`/api/proposals/${id}/submit-to-board`, {
         method: 'POST'
       });

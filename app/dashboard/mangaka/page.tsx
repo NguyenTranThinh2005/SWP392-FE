@@ -26,8 +26,9 @@ const { getProposalsByMangaka, hasPendingProposal } = proposalService
 
 const STATUS_CONFIG: Record<ProposalStatus, { label: string; className: string; icon: React.ElementType }> = {
   Draft: { label: 'Bản thảo', className: 'bg-slate-500/10 text-slate-500 border-slate-500/20', icon: FileEdit },
-  'Pending Review': { label: 'Chờ duyệt', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20', icon: Clock },
-  'Under Review': { label: 'Đang thẩm định', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: Eye },
+  'Pending Review': { label: 'Chờ duyệt (cũ)', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20', icon: Clock },
+  'Under Review': { label: 'Tantou đang xem xét', className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20', icon: Eye },
+  'Board Voting': { label: 'Ban biên tập đang bỏ phiếu', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: Eye },
   Approved: { label: 'Đã duyệt', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', icon: CheckCircle2 },
   Rejected: { label: 'Bị từ chối', className: 'bg-red-500/10 text-red-600 border-red-500/20', icon: XCircle },
   Active: { label: 'Đã duyệt & Đang phát hành', className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20', icon: CheckCircle2 },
@@ -89,8 +90,8 @@ export default function MangakaDashboardPage() {
   const counts = {
     total: proposals.length,
     draft: proposals.filter(p => p.status === 'Draft').length,
-    pending: proposals.filter(p => p.status === 'Pending Review' || p.status === 'Under Review').length,
-    approved: proposals.filter(p => p.status === 'Approved').length,
+    pending: proposals.filter(p => p.status === 'Under Review' || p.status === 'Board Voting' || p.status === 'Pending Review').length,
+    approved: proposals.filter(p => p.status === 'Approved' || p.status === 'Active').length,
     rejected: proposals.filter(p => p.status === 'Rejected').length,
   }
 

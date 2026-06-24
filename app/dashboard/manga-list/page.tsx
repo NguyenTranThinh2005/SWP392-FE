@@ -33,6 +33,7 @@ export default function MangaListPage() {
           Approved: 'Active',
           'Pending Review': 'Proposed',
           'Under Review': 'Proposed',
+          'Board Voting': 'Proposed',
           Draft: 'Proposed',
           Rejected: 'Rejected',
           Active: 'Active',

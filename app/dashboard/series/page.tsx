@@ -41,6 +41,11 @@ const STATUS_CONFIG: Record<
   },
   'Under Review': {
     label: 'Under Review',
+    className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+    icon: Eye,
+  },
+  'Board Voting': {
+    label: 'Board Voting',
     className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
     icon: Eye,
   },
@@ -64,8 +69,8 @@ const STATUS_CONFIG: Record<
 const ALL_STATUSES: (ProposalStatus | 'All')[] = [
   'All',
   'Draft',
-  'Pending Review',
   'Under Review',
+  'Board Voting',
   'Approved',
   'Rejected',
   'Active',

@@ -39,6 +39,7 @@ import { useRole } from '@/context/RoleContext'
 const { getProposals, updateProposalStatus } = proposalService
 import { notificationStore } from '@/store/notificationStore'
 import { seriesService } from '@/services/seriesService'
+import { fetchAPI } from '@/services/api'
 import { API_BASE_URL } from '@/lib/constants'
 import { toast } from 'sonner'
 
@@ -59,8 +60,13 @@ const STATUS_CONFIG: Record<
   },
   'Under Review': {
     label: 'Under Review',
-    className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
     icon: Eye,
+  },
+  'Board Voting': {
+    label: 'Board Voting',
+    className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    icon: Users,
   },
   Approved: {
     label: 'Approved',
@@ -81,8 +87,8 @@ const STATUS_CONFIG: Record<
 
 const ALL_FILTERS: (ProposalStatus | 'All')[] = [
   'All',
-  'Pending Review',
   'Under Review',
+  'Board Voting',
   'Approved',
   'Rejected',
   'Active',
@@ -283,6 +289,16 @@ export default function ReviewProposalsPage() {
     setVotingLoading(true)
     try {
       await seriesService.castBoardVote(boardDecision.boardDecisionId, voteValue, comment)
+
+      // Proactively trigger activate endpoint if vote is positive
+      try {
+        if (voteValue) {
+          await fetchAPI(`/api/proposals/${selectedProposalId}/activate`, { method: 'POST' })
+        }
+      } catch (err) {
+        console.warn("Failed to auto-activate series on vote:", err)
+      }
+
       showNotification(`Successfully voted ${voteValue ? 'Approve' : 'Reject'}!`, 'success')
       await loadVotingData(selectedProposalId!)
       await loadProposals()
@@ -316,6 +332,21 @@ export default function ReviewProposalsPage() {
     setVotingLoading(true)
     try {
       await seriesService.overrideBoardDecision(boardDecision.boardDecisionId, overrideChoice, overrideReason.trim())
+
+      // Call corresponding finalize status API: activate or reject
+      try {
+        if (overrideChoice === 'Approved') {
+          await fetchAPI(`/api/proposals/${selectedProposalId}/activate`, { method: 'POST' })
+        } else if (overrideChoice === 'Rejected') {
+          await fetchAPI(`/api/proposals/${selectedProposalId}/reject`, {
+            method: 'POST',
+            body: JSON.stringify({ rejectReason: overrideReason.trim() })
+          })
+        }
+      } catch (err) {
+        console.warn("Failed to finalize series status on override:", err)
+      }
+
       showNotification(`Decision override finalize to "${overrideChoice}" recorded.`, 'success')
       setShowOverrideModal(false)
       setOverrideChoice('')
@@ -1181,14 +1212,20 @@ export default function ReviewProposalsPage() {
     )
   }
 
-  // Filter proposals
-  const filtered = filter === 'All' ? proposals : proposals.filter((p) => p.status === filter)
+  // Filter proposals: hide Draft, sort by date descending
+  const filtered = (filter === 'All' ? proposals : proposals.filter((p) => p.status === filter))
+    .filter((p) => (p.status || '').toLowerCase() !== 'draft')
+    .sort((a, b) => {
+      const dateA = new Date(a.submittedAt ?? a.createdAt).getTime()
+      const dateB = new Date(b.submittedAt ?? b.createdAt).getTime()
+      return dateB - dateA
+    })
 
   const counts = {
-    total: proposals.length,
-    pending: proposals.filter((p) => p.status === 'Pending Review').length,
+    total: proposals.filter(p => p.status !== 'Draft').length,
     underReview: proposals.filter((p) => p.status === 'Under Review').length,
-    approved: proposals.filter((p) => p.status === 'Approved').length,
+    boardVoting: proposals.filter((p) => p.status === 'Board Voting').length,
+    approved: proposals.filter((p) => p.status === 'Approved' || p.status === 'Active').length,
     rejected: proposals.filter((p) => p.status === 'Rejected').length,
   }
 
@@ -1210,13 +1247,12 @@ export default function ReviewProposalsPage() {
 
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Total Submitted', value: counts.total, icon: BookOpen, color: 'text-foreground' },
-          { label: 'Pending Review', value: counts.pending, icon: Clock, color: 'text-amber-600' },
-          { label: 'Under Review', value: counts.underReview, icon: Eye, color: 'text-blue-600' },
+          { label: 'Under Review (Tantou)', value: counts.underReview, icon: Eye, color: 'text-indigo-600' },
+          { label: 'Board Voting', value: counts.boardVoting, icon: Users, color: 'text-blue-600' },
           { label: 'Approved', value: counts.approved, icon: CheckCircle2, color: 'text-emerald-600' },
-          { label: 'Rejected', value: counts.rejected, icon: XCircle, color: 'text-red-500' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div
             key={label}
@@ -1281,18 +1317,24 @@ export default function ReviewProposalsPage() {
                 <div className="p-6 flex flex-col flex-1 gap-4">
                   {/* Proposal Header Info */}
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="font-extrabold text-lg text-foreground tracking-tight break-words">
                         {proposal.title}
                       </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded text-muted-foreground">
-                          {proposal.id}
-                        </span>
-                        <span className="text-muted-foreground/30">•</span>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <User className="w-3.5 h-3.5" /> Mangaka ID: {proposal.mangakaId}
+                          <User className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="font-semibold text-foreground">{proposal.author || 'Unknown Mangaka'}</span>
                         </span>
+                        {proposal.tantouEditorName && (
+                          <>
+                            <span className="text-muted-foreground/30">•</span>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Shield className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                              <span className="font-semibold text-foreground">{proposal.tantouEditorName}</span>
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -1317,20 +1359,6 @@ export default function ReviewProposalsPage() {
                     <span className="bg-primary/5 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-primary/10">
                       {proposal.publicationType}
                     </span>
-                    {proposal.sampleFileUrl ? (
-                      <a
-                        href={proposal.sampleFileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-primary/5 text-primary text-xs font-bold px-2.5 py-0.5 rounded-lg border border-primary/10 hover:underline"
-                      >
-                        View Sample File
-                      </a>
-                    ) : (
-                      <span className="bg-amber-500/5 text-amber-600 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-amber-500/10">
-                        No File
-                      </span>
-                    )}
                   </div>
 
                   {/* Synopsis section */}
@@ -1350,12 +1378,14 @@ export default function ReviewProposalsPage() {
                       Submitted: {formatDateShort(proposal.submittedAt ?? proposal.createdAt)}
                     </span>
 
-                    <button
-                      onClick={() => setSelectedProposalId(proposal.id)}
-                      className="flex items-center gap-1.5 px-4.5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> Review Proposal
-                    </button>
+                    {proposal.status !== 'Rejected' && (
+                      <button
+                        onClick={() => setSelectedProposalId(proposal.id)}
+                        className="flex items-center gap-1.5 px-4.5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Review Proposal
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
