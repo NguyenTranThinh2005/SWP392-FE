@@ -109,6 +109,16 @@ export default function ChaptersPage() {
   const [newTaskDesc, setNewTaskDesc] = useState('')
   const [newTaskAssistantId, setNewTaskAssistantId] = useState('Unassigned')
   const [newTaskDueDate, setNewTaskDueDate] = useState<string>('')
+  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false)
+  const [editTaskId, setEditTaskId] = useState<string>('')
+  const [editTaskPageStart, setEditTaskPageStart] = useState<number>(1)
+  const [editTaskPageEnd, setEditTaskPageEnd] = useState<number>(1)
+  const [editTaskDescription, setEditTaskDescription] = useState<string>('')
+  const [editTaskDueDate, setEditTaskDueDate] = useState<string>('')
+  const [isSubmitManuscriptOpen, setIsSubmitManuscriptOpen] = useState(false)
+  const [submitManuscriptFile, setSubmitManuscriptFile] = useState<File | null>(null)
+  const [submitManuscriptNotes, setSubmitManuscriptNotes] = useState<string>('')
+  const [submitManuscriptUploading, setSubmitManuscriptUploading] = useState(false)
   const [newTaskAttachments, setNewTaskAttachments] = useState<any[]>([])
 
   // Review states (Approve / Reject)
@@ -202,7 +212,8 @@ export default function ChaptersPage() {
             dueDate: t.dueDate || undefined,
             pageStart: t.pageStart,
             pageEnd: t.pageEnd,
-            submittedWorkUrl: latestSub?.submittedFileAssetUrl || (latestSub ? 'https://images.unsplash.com/photo-1528164344705-47542687000d?w=800' : undefined),
+            submittedWorkUrl: latestSub?.submittedFileAssetUrl || undefined,
+            submittedFileAssetId: latestSub?.submittedFileAssetId || undefined,
             submitDescription: latestSub?.note || undefined,
             submissionId: latestSub?.submissionId || latestSub?.id || undefined,
             feedback: latestSub?.rejectReason || undefined,
@@ -575,7 +586,72 @@ export default function ChaptersPage() {
       }
     })
   }
+const openEditTask = (task: Task) => {
+    setEditTaskId(task.id)
+    setEditTaskPageStart(task.pageStart || 1)
+    setEditTaskPageEnd(task.pageEnd || 1)
+    setEditTaskDescription(task.description || '')
+    setEditTaskDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '')
+    setIsEditTaskOpen(true)
+  }
 
+  const handleSaveEditTask = async () => {
+    if (editTaskPageStart > editTaskPageEnd) {
+      showToast('Trang bắt đầu phải nhỏ hơn hoặc bằng trang kết thúc.', 'error')
+      return
+    }
+    try {
+      await fetchAPI(`/api/page-tasks/${editTaskId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          pageStart: editTaskPageStart,
+          pageEnd: editTaskPageEnd,
+          description: editTaskDescription,
+          dueDate: editTaskDueDate || null
+        })
+      })
+      showToast('Đã cập nhật task!')
+      setIsEditTaskOpen(false)
+      refreshData()
+    } catch (err: any) {
+      const msg = err?.message || ''
+      if (msg.includes('Conflict') || msg.includes('overlap') || msg.includes('409')) {
+        showToast('Khoảng trang này đã được giao cho task khác. Vui lòng chọn khoảng trang khác.', 'error')
+      } else {
+        showToast(msg || 'Cập nhật task thất bại.', 'error')
+      }
+    }
+  }
+  const handleSubmitManuscript = async () => {
+    if (!submitManuscriptFile) {
+      showToast('Vui lòng chọn file bản thảo.', 'error')
+      return
+    }
+    try {
+      setSubmitManuscriptUploading(true)
+      const formData = new FormData()
+      formData.append('category', 'Generic')
+      formData.append('files', submitManuscriptFile)
+      const uploadRes = await fetchAPI<{ data: { files: { publicUrl?: string }[] } }>('/api/files', { method: 'POST', body: formData })
+      const fileUrl = uploadRes?.data?.files?.[0]?.publicUrl
+      if (!fileUrl) { showToast('Upload file thất bại.', 'error'); return }
+      await fetchAPI('/api/manuscripts', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId: selectedChapterId, fileUrl, notes: submitManuscriptNotes })
+      })
+      await chapterService.updateChapter(selectedChapterId, { status: 'Ready for Editor' })
+      showToast('Đã gửi bản thảo cho Editor (tạo version mới)!')
+      setIsSubmitManuscriptOpen(false)
+      setSubmitManuscriptFile(null)
+      setSubmitManuscriptNotes('')
+      refreshData()
+    } catch (err: any) {
+      const msg = err?.message || ''
+      showToast(msg || 'Gửi thất bại (có thể chưa duyệt hết task).', 'error')
+    } finally {
+      setSubmitManuscriptUploading(false)
+    }
+  }
   // 2. Tạo Task & Giao việc cho Assistant
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault()
@@ -1036,17 +1112,14 @@ export default function ChaptersPage() {
                             Set In Progress
                           </button>
                         )}
-                        {selectedChapter.status === 'In Progress' && progressPercent >= 100 && (
+                      
+                        {progressPercent >= 100 && (
                           <button
-                            onClick={() => {
-                              chapterService.updateChapter(selectedChapterId, { status: 'Ready for Editor' }).then(() => {
-                                refreshData()
-                                showToast('Chapter marked Ready for Editor review!')
-                              })
-                            }}
-                            className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            type="button"
+                            onClick={() => setIsSubmitManuscriptOpen(true)}
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
                           >
-                            Submit to Editor
+                            Gửi bản thảo
                           </button>
                         )}
                         {selectedChapter.status === 'Ready for Editor' && (
@@ -1120,11 +1193,27 @@ export default function ChaptersPage() {
 
                             {/* Actions on Task (For Mangaka) */}
                             <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                              {task.status !== 'Submitted' && task.status !== 'Approved' && (
+                                <button
+                                  type="button"
+                                  onClick={() => openEditTask(task)}
+                                  className="inline-flex items-center gap-1.5 border border-border hover:bg-muted text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer"
+                                >
+                                  ✏️ Sửa
+                                </button>
+                              )}
                               {task.status === 'Submitted' && (
                                 <button
-                                  onClick={() => {
+                                  onClick={async () => {
                                     setActiveTaskToReview(task)
                                     setIsReviewModalOpen(true)
+                                    if (task.submittedFileAssetId) {
+                                      try {
+                                        const res = await fetchAPI<{ data: { publicUrl?: string } }>(`/api/files/${task.submittedFileAssetId}`)
+                                        const url = res?.data?.publicUrl
+                                        if (url) setActiveTaskToReview(prev => prev ? { ...prev, submittedWorkUrl: url } : prev)
+                                      } catch (e) { /* ignore */ }
+                                    }
                                   }}
                                   className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer"
                                 >
@@ -1962,6 +2051,57 @@ export default function ChaptersPage() {
       )}
 
       {/* C. Review Assistant Submission Modal (Mangaka) */}
+      {isEditTaskOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setIsEditTaskOpen(false)}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold">Sửa Task</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">Trang bắt đầu</label>
+                <input type="number" value={editTaskPageStart} onChange={(e) => setEditTaskPageStart(Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">Trang kết thúc</label>
+                <input type="number" value={editTaskPageEnd} onChange={(e) => setEditTaskPageEnd(Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground">Mô tả</label>
+              <textarea value={editTaskDescription} onChange={(e) => setEditTaskDescription(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground">Hạn nộp</label>
+              <input type="date" value={editTaskDueDate} onChange={(e) => setEditTaskDueDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setIsEditTaskOpen(false)} className="px-4 py-2 rounded-xl border border-border text-sm font-bold hover:bg-muted">Hủy</button>
+              <button type="button" onClick={handleSaveEditTask} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90">Lưu</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isSubmitManuscriptOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setIsSubmitManuscriptOpen(false)}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold">Gửi bản thảo (Manuscript)</h3>
+            <p className="text-xs text-muted-foreground">Mỗi lần gửi sẽ tạo một version mới.</p>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground">File bản thảo</label>
+              <input type="file" onChange={(e) => setSubmitManuscriptFile(e.target.files?.[0] || null)} className="w-full text-sm" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground">Ghi chú</label>
+              <textarea value={submitManuscriptNotes} onChange={(e) => setSubmitManuscriptNotes(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setIsSubmitManuscriptOpen(false)} className="px-4 py-2 rounded-xl border border-border text-sm font-bold hover:bg-muted">Hủy</button>
+              <button type="button" disabled={submitManuscriptUploading} onClick={handleSubmitManuscript} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 disabled:opacity-50">
+                {submitManuscriptUploading ? 'Đang gửi...' : 'Gửi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {isReviewModalOpen && activeTaskToReview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-card border border-border rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
@@ -2011,6 +2151,10 @@ export default function ChaptersPage() {
                       ))}
                     </div>
                   </div>
+                ) : activeTaskToReview.submittedWorkUrl ? (
+                  <a href={activeTaskToReview.submittedWorkUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline bg-muted/40 p-2.5 rounded-xl border border-border">
+                    📎 Mở file bài nộp trong tab mới
+                  </a>
                 ) : (
                   <div className="text-xs text-muted-foreground italic bg-muted/40 p-2.5 rounded-xl border border-border">
                     Không có file đính kèm nào được nộp

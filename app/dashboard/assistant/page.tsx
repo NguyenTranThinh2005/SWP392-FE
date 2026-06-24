@@ -179,7 +179,7 @@ export default function AssistantDashboardPage() {
 
     if (selectedAssistantId) {
       fetchTasks().then((res) => {
-        setTasks(res.filter(t => t.assistantId === selectedAssistantId))
+        setTasks(res)
       }).catch(() => { })
     }
   }, [selectedAssistantId])
