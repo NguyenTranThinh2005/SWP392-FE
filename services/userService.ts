@@ -33,7 +33,7 @@ export const userService = {
   getUsers: async () => {
     const res = await fetchAPI<{ data: UserProfileResponse[]; message: string }>("/api/users");
     const users = res.data || [];
-    
+
     // Merge editor assignment overrides from local storage
     if (typeof window !== 'undefined') {
       try {
@@ -54,7 +54,7 @@ export const userService = {
           ...res,
           data: modifiedUsers
         };
-      } catch {}
+      } catch { }
     }
     return res;
   },
@@ -73,12 +73,17 @@ export const userService = {
   },
 
   assignEditorToMangaka: async (mangakaId: string, editorId: string) => {
+    await fetchAPI("/api/user-assignments/assign-editor", {
+      method: "POST",
+      body: JSON.stringify({ mangakaId, editorId }),
+    });
+
     if (typeof window !== 'undefined') {
       try {
         const overrides = JSON.parse(localStorage.getItem('editor_assignments_override') || '{}');
         overrides[mangakaId] = editorId;
         localStorage.setItem('editor_assignments_override', JSON.stringify(overrides));
-      } catch {}
+      } catch { }
     }
     return { message: "Assignment updated successfully." };
   },
@@ -86,7 +91,7 @@ export const userService = {
   getMyMangakas: async () => {
     // Call the existing backend UserAssignments to-me endpoint
     const res = await fetchAPI<{ data: any[]; message: string }>("/api/user-assignments/to-me");
-    
+
     // Map UserAssignmentResponse structure to UserProfileResponse structure
     const mappedData = (res.data || []).map(item => ({
       userId: item.toUserId,

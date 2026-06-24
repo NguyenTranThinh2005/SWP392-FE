@@ -35,14 +35,14 @@ import { toast } from 'sonner'
 export default function AssistantDashboardPage() {
   const { role } = useRole()
   const [mounted, setMounted] = useState(false)
-  
+
   // Simulation states
   const [assistants, setAssistants] = useState<Assistant[]>([])
   const [selectedAssistantId, setSelectedAssistantId] = useState<string>('')
   const [tasks, setTasks] = useState<Task[]>([])
   const [allChapters, setAllChapters] = useState<Chapter[]>([])
   const [allSeries, setAllSeries] = useState<any[]>([])
-  
+
   // Submit modal states
   const [submittingTaskId, setSubmittingTaskId] = useState<string | null>(null)
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
@@ -52,18 +52,18 @@ export default function AssistantDashboardPage() {
   const [submitFile, setSubmitFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; size: string; type: string }[]>([])
-  
+
   // Task Detail Modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
 
   const mapBackendTaskStatus = (status: any, submissions?: any[]): TaskStatus => {
     const statusStr = String(status).trim().toUpperCase();
-    const latestSubmission = submissions && submissions.length > 0 
-      ? submissions[submissions.length - 1] 
+    const latestSubmission = submissions && submissions.length > 0
+      ? submissions[submissions.length - 1]
       : null;
-    const latestSubStatus = latestSubmission 
-      ? String(latestSubmission.status).trim().toUpperCase() 
+    const latestSubStatus = latestSubmission
+      ? String(latestSubmission.status).trim().toUpperCase()
       : '';
 
     if (statusStr === '3' || statusStr === 'APPROVED') {
@@ -88,13 +88,13 @@ export default function AssistantDashboardPage() {
     try {
       const response = await fetchAPI<{ data: any[] }>('/api/page-tasks/assistant')
       const data = response.data || response || []
-      
+
       if (Array.isArray(data)) {
         return data.map((t: any) => {
-          const latestSub = t.submissions && t.submissions.length > 0 
-            ? t.submissions[t.submissions.length - 1] 
+          const latestSub = t.submissions && t.submissions.length > 0
+            ? t.submissions[t.submissions.length - 1]
             : null;
-          
+
           let uiStatus = mapBackendTaskStatus(t.status, t.submissions)
           if (uiStatus === 'Pending') {
             try {
@@ -102,7 +102,7 @@ export default function AssistantDashboardPage() {
               if (started.includes(t.pageTaskId || t.id)) {
                 uiStatus = 'In-Progress'
               }
-            } catch {}
+            } catch { }
           }
 
           return {
@@ -139,7 +139,7 @@ export default function AssistantDashboardPage() {
           const parsed = JSON.parse(userInfo)
           const myId = parsed?.id || parsed?.userId
           if (myId) setSelectedAssistantId(myId)
-        } catch {}
+        } catch { }
       }
     }
     // Load static and dynamic assistant metadata
@@ -153,7 +153,7 @@ export default function AssistantDashboardPage() {
         activeTasks: 0
       }))
       setAssistants(mapped)
-      
+
       // Auto-set the assistant ID to the logged in assistant if available, or first in the list
       if (typeof window !== 'undefined') {
         const userInfo = localStorage.getItem('user-info')
@@ -164,22 +164,22 @@ export default function AssistantDashboardPage() {
               setSelectedAssistantId(parsed.id)
               return
             }
-          } catch {}
+          } catch { }
         }
       }
       if (mapped.length > 0 && !selectedAssistantId) {
         setSelectedAssistantId(mapped[0].id)
       }
-    }).catch(() => {})
+    }).catch(() => { })
 
     // Load helper lookups
-    chapterService.listChapters().then((chaps) => setAllChapters(chaps)).catch(() => {})
-    seriesService.listSeries().then((list) => setAllSeries(list)).catch(() => {})
+    chapterService.listChapters().then((chaps) => setAllChapters(chaps)).catch(() => { })
+    seriesService.listSeries().then((list) => setAllSeries(list)).catch(() => { })
 
     if (selectedAssistantId) {
       fetchTasks().then((res) => {
         setTasks(res.filter(t => t.assistantId === selectedAssistantId))
-      }).catch(() => {})
+      }).catch(() => { })
     }
   }, [selectedAssistantId])
 
@@ -233,7 +233,7 @@ export default function AssistantDashboardPage() {
         started.push(taskId)
         localStorage.setItem('started_tasks', JSON.stringify(started))
       }
-    } catch {}
+    } catch { }
     loadData()
   }
 
@@ -335,11 +335,10 @@ export default function AssistantDashboardPage() {
                 <button
                   key={ast.id}
                   onClick={() => setSelectedAssistantId(ast.id)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                    selectedAssistantId === ast.id
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${selectedAssistantId === ast.id
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
                 >
                   {ast.name.split(' ')[0]} ({ast.id})
                 </button>
@@ -390,7 +389,7 @@ export default function AssistantDashboardPage() {
 
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        
+
         {/* Active & Pending Tasks */}
         <div className="xl:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
@@ -412,15 +411,14 @@ export default function AssistantDashboardPage() {
             ) : (
               tasks.filter(t => t.status !== 'Approved' && t.status !== 'Submitted').map((task) => {
                 const isWorking = task.status === 'In-Progress' || task.status === 'Rejected'
-                
+
                 return (
                   <div
                     key={task.id}
-                    className={`bg-card border rounded-2xl p-5 transition-all space-y-4 ${
-                      task.status === 'Rejected'
-                        ? 'border-red-500/30 bg-gradient-to-br from-card to-red-500/5'
-                        : 'border-border hover:border-primary/20'
-                    }`}
+                    className={`bg-card border rounded-2xl p-5 transition-all space-y-4 ${task.status === 'Rejected'
+                      ? 'border-red-500/30 bg-gradient-to-br from-card to-red-500/5'
+                      : 'border-border hover:border-primary/20'
+                      }`}
                   >
                     {/* Header */}
                     <div className="flex items-start justify-between gap-4">
@@ -515,15 +513,15 @@ export default function AssistantDashboardPage() {
                   {task.submittedWorkUrl && (
                     <div className="relative h-20 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center group">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
-                        src={task.submittedWorkUrl} 
-                        alt="Submitted Work" 
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity" 
+                      <img
+                        src={task.submittedWorkUrl}
+                        alt="Submitted Work"
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <a 
-                          href={task.submittedWorkUrl} 
-                          target="_blank" 
+                        <a
+                          href={task.submittedWorkUrl}
+                          target="_blank"
                           rel="noreferrer"
                           className="p-1.5 bg-card rounded-lg text-foreground text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1"
                         >
@@ -556,7 +554,7 @@ export default function AssistantDashboardPage() {
       {submittingTaskId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSubmittingTaskId(null)} />
-          
+
           <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6 overflow-hidden">
             <h3 className="text-base font-extrabold text-foreground flex items-center gap-2">
               <Send className="w-5 h-5 text-indigo-500" /> Nộp sản phẩm hoàn thành
@@ -587,7 +585,7 @@ export default function AssistantDashboardPage() {
                 />
               </div>
 
-              
+
 
               {/* Actions */}
               <div className="flex justify-end gap-2 pt-2">

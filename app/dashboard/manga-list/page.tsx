@@ -16,6 +16,7 @@ interface Manga {
   description: string
   coverColor: string
   rating: number
+  coverImageUrl?: string
 }
 
 export default function MangaListPage() {
@@ -58,6 +59,7 @@ export default function MangaListPage() {
           description: p.synopsis,
           coverColor,
           rating: 4.5 + (p.title.length % 5) * 0.1,
+          coverImageUrl: p.coverImageUrl,
         }
       })
       setMangaList(list)
@@ -127,7 +129,17 @@ export default function MangaListPage() {
               className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/25 hover:shadow-lg transition-all flex flex-col justify-between group"
             >
               {/* Cover Card Mockup */}
-              <div className={`bg-gradient-to-br ${manga.coverColor} h-40 p-5 flex flex-col justify-between text-white relative overflow-hidden`}>
+              <div className="h-40 p-5 flex flex-col justify-between text-white relative overflow-hidden bg-slate-900">
+                {manga.coverImageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={manga.coverImageUrl}
+                    alt={manga.title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className={`absolute inset-0 bg-gradient-to-br ${manga.coverColor} opacity-90`} />
+                )}
                 {/* Background decorative elements */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-xl pointer-events-none" />
 

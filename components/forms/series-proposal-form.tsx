@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { seriesProposalSchema, type SeriesProposalInput } from '@/lib/validation'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp, AlertCircle, BookOpen, FileText } from 'lucide-react'
+import { ChevronDown, ChevronUp, AlertCircle, BookOpen, FileText, Upload, X } from 'lucide-react'
 import { API_BASE_URL } from '@/lib/constants'
 import { systemService } from '@/services/systemService'
 
@@ -42,6 +42,39 @@ const uploadSourceZipToBackend = async (file: File): Promise<string> => {
   return fileAssetIds[0];
 };
 
+const uploadCoverImageToBackend = async (file: File): Promise<string> => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+  const formData = new FormData();
+  formData.append('category', '2'); // 2 is ProposalSamplePage (supports image formats)
+  formData.append('files', file);
+
+  const response = await fetch(`${API_BASE_URL}/api/files`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    }
+  });
+
+  if (!response.ok) {
+    let errMsg = "Tải lên ảnh bìa thất bại.";
+    try {
+      const errRes = await response.json();
+      if (errRes.message) errMsg = errRes.message;
+    } catch { }
+    throw new Error(errMsg);
+  }
+
+  const resData = await response.json();
+  const fileAssetIds: string[] = (resData?.data?.files || []).map((f: any) => f.fileAssetId).filter(Boolean);
+
+  if (fileAssetIds.length === 0) {
+    throw new Error("Không tìm thấy file asset ID trả về cho ảnh bìa.");
+  }
+
+  return fileAssetIds[0];
+};
+
 interface SeriesProposalFormProps {
   onSubmit: (data: SeriesProposalInput, action: 'draft' | 'submit') => Promise<void>
   isLoading?: boolean
@@ -50,7 +83,7 @@ interface SeriesProposalFormProps {
   defaultValues?: Partial<SeriesProposalInput>
 }
 
-const SYNOPSIS_MIN = 200
+const SYNOPSIS_MIN = 100
 const SYNOPSIS_MAX = 2000
 
 export function SeriesProposalForm({
@@ -67,6 +100,10 @@ export function SeriesProposalForm({
     defaultValues?.genre ? defaultValues.genre.split(', ').filter(Boolean) : []
   )
   const [sourceZipFile, setSourceZipFile] = useState<File | null>(null)
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null)
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string>(
+    defaultValues?.coverImageUrl ?? ''
+  )
   const [isUploading, setIsUploading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -123,8 +160,44 @@ export function SeriesProposalForm({
       if (defaultValues.genre) {
         setSelectedGenres(defaultValues.genre.split(', ').filter(Boolean))
       }
+      setCoverPreviewUrl(defaultValues.coverImageUrl ?? '')
     }
   }, [defaultValues, reset])
+
+  useEffect(() => {
+    return () => {
+      if (coverPreviewUrl && coverPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(coverPreviewUrl)
+      }
+    }
+  }, [coverPreviewUrl])
+
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setError('Vui lòng chọn tệp tin hình ảnh (PNG, JPG, JPEG).')
+        return
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Kích thước ảnh bìa không được vượt quá 5MB.')
+        return
+      }
+      setCoverImageFile(file)
+      setError(null)
+      const localUrl = URL.createObjectURL(file)
+      setCoverPreviewUrl(localUrl)
+    }
+  }
+
+  const handleRemoveCoverImage = () => {
+    setCoverImageFile(null)
+    if (coverPreviewUrl && coverPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(coverPreviewUrl)
+    }
+    setCoverPreviewUrl('')
+    setValue('coverImageUrl', '')
+  }
 
   const synopsisValue = watch('synopsis') ?? ''
   const titleValue = watch('title') ?? ''
@@ -167,6 +240,13 @@ export function SeriesProposalForm({
       setIsUploading(true)
 
       try {
+        if (coverImageFile) {
+          const coverAssetId = await uploadCoverImageToBackend(coverImageFile)
+          const coverUrl = `${API_BASE_URL}/api/files/${coverAssetId}`
+          finalData.coverImageUrl = coverUrl
+          setValue('coverImageUrl', coverUrl)
+        }
+
         if (sourceZipFile) {
           const zipAssetId = await uploadSourceZipToBackend(sourceZipFile)
           finalData.sourceZipFileAssetId = zipAssetId
@@ -182,6 +262,8 @@ export function SeriesProposalForm({
       await onSubmit(finalData, action)
       reset()
       setSourceZipFile(null)
+      setCoverImageFile(null)
+      setCoverPreviewUrl('')
       setSelectedGenres([])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra. Vui lòng thử lại.')
@@ -402,22 +484,60 @@ export function SeriesProposalForm({
           )}
         </div>
 
-        {/* Cover Image URL (optional) */}
+        {/* Cover Image Upload (optional) */}
         <div className="space-y-1.5">
           <label className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5" />
-            Đường dẫn Ảnh bìa truyện
+            Ảnh bìa truyện
             <span className="text-[10px] text-muted-foreground font-normal ml-1">(Tùy chọn)</span>
           </label>
-          <input
-            {...register('coverImageUrl')}
-            placeholder="https://example.com/cover.jpg"
-            className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50"
-            disabled={isLoading || isUploading || hasActivePendingProposal}
-          />
-          {errors.coverImageUrl && (
-            <span className="text-destructive text-xs font-semibold">{errors.coverImageUrl.message}</span>
-          )}
+          
+          <div className="space-y-3">
+            {coverPreviewUrl ? (
+              <div className="relative w-40 aspect-[3/4] rounded-xl overflow-hidden border border-border shadow-sm group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={coverPreviewUrl}
+                  alt="Ảnh bìa xem trước"
+                  className="w-full h-full object-cover"
+                />
+                {!isLoading && !isUploading && !hasActivePendingProposal && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoverImage}
+                    className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/85 text-white rounded-full transition-all hover:scale-105"
+                    title="Xóa ảnh bìa"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-xl cursor-pointer bg-card hover:bg-muted/40 transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                    <p className="text-xs text-muted-foreground font-semibold">Tải lên ảnh bìa truyện</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-1">PNG, JPG, JPEG (Tối đa 5MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverImageChange}
+                    className="hidden"
+                    disabled={isLoading || isUploading || hasActivePendingProposal}
+                  />
+                </label>
+              </div>
+            )}
+            
+            {/* Hidden input to keep React Hook Form synchronized */}
+            <input type="hidden" {...register('coverImageUrl')} />
+            
+            {errors.coverImageUrl && (
+              <span className="text-destructive text-xs font-semibold block">{errors.coverImageUrl.message}</span>
+            )}
+          </div>
         </div>
       </div>
 

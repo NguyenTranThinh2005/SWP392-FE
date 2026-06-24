@@ -20,6 +20,7 @@ import {
 import { proposalService } from '@/services/proposalService'
 import type { Proposal, ProposalStatus } from '@/types/proposal'
 import { useRole } from '@/context/RoleContext'
+import { toast } from 'sonner'
 
 const { getProposalsByMangaka, deleteDraft, hasPendingProposal } = proposalService
 
@@ -91,19 +92,30 @@ function ProposalCard({
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/25 hover:shadow-md transition-all group flex flex-col">
-      {/* Coloured top accent bar */}
-      <div
-        className={`h-1 w-full ${proposal.status === 'Approved'
-          ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
-          : proposal.status === 'Rejected'
-            ? 'bg-gradient-to-r from-red-400 to-rose-500'
-            : proposal.status === 'Under Review'
-              ? 'bg-gradient-to-r from-blue-400 to-indigo-500'
-              : proposal.status === 'Pending Review'
-                ? 'bg-gradient-to-r from-amber-400 to-orange-500'
-                : 'bg-gradient-to-r from-slate-400 to-slate-500'
-          }`}
-      />
+      {proposal.coverImageUrl ? (
+        <div className="h-40 w-full relative overflow-hidden border-b border-border bg-slate-900/10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={proposal.coverImageUrl}
+            alt={proposal.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        </div>
+      ) : (
+        /* Coloured top accent bar */
+        <div
+          className={`h-1 w-full ${proposal.status === 'Approved'
+            ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
+            : proposal.status === 'Rejected'
+              ? 'bg-gradient-to-r from-red-400 to-rose-500'
+              : proposal.status === 'Under Review'
+                ? 'bg-gradient-to-r from-blue-400 to-indigo-500'
+                : proposal.status === 'Pending Review'
+                  ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                  : 'bg-gradient-to-r from-slate-400 to-slate-500'
+            }`}
+        />
+      )}
 
       <div className="p-5 flex flex-col flex-1 gap-4">
         {/* Header row */}
@@ -239,7 +251,16 @@ export default function MyProposalsPage() {
 
   const confirmDelete = async () => {
     if (deleteConfirmId) {
-      await deleteDraft(deleteConfirmId)
+      try {
+        const success = await deleteDraft(deleteConfirmId)
+        if (success) {
+          toast.success('Xóa bản thảo thành công!')
+        } else {
+          toast.error('Xóa bản thảo thất bại. Có thể do giới hạn phân quyền API (AdminOnly).')
+        }
+      } catch (err: any) {
+        toast.error(err?.message || 'Có lỗi xảy ra khi xóa bản thảo.')
+      }
       setDeleteConfirmId(null)
       await reload(mangakaId)
     }

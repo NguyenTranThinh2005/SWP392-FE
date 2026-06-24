@@ -440,9 +440,14 @@ function TantouEditorWorkspace() {
   //BR74:Filters manuscript dashboard to show only works of creators supervised by the active editor.
   const supervisedSeries = useMemo(() => {
     const assignedIds = new Set(assignedMangakas.map(m => m.id.toLowerCase()))
-    return seriesList.filter(
+    const filteredList = seriesList.filter(
       (s) => s.mangakaId && assignedIds.has(s.mangakaId.toLowerCase())
     )
+    return [...filteredList].sort((a, b) => {
+      const dateA = new Date(a.submittedAt || a.createdAt || 0).getTime()
+      const dateB = new Date(b.submittedAt || b.createdAt || 0).getTime()
+      return dateB - dateA
+    })
   }, [seriesList, assignedMangakas])
 
   // Stats Counters
@@ -1029,6 +1034,7 @@ function TantouEditorWorkspace() {
                     toast.success(`Proposal status successfully updated to "${displayStatus}"!`)
                     setShowRejectInput(false)
                     setRejectReasonText('')
+                    setSelectedProposalId(null)
                     // Refresh data
                     const list = await seriesService.listSeries()
                     setSeriesList(list)
@@ -1086,65 +1092,210 @@ function TantouEditorWorkspace() {
                     </div>
 
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                      {/* Left: Metadata & cover */}
+                      {/* Left: Combined Cover, Metadata & Evaluation Panel */}
                       <div className="space-y-6">
                         <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm">
                           <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
-                            Cover Artwork & Metadata
+                            Cover Artwork, Metadata & Evaluation
                           </h3>
-                          {proposal.coverImageUrl ? (
-                            <div className="aspect-[3/4] rounded-xl overflow-hidden border border-border shadow-sm">
-                              <img
-                                src={proposal.coverImageUrl}
-                                alt={proposal.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className={`aspect-[3/4] rounded-xl bg-gradient-to-br ${proposal.coverColor || 'from-primary to-primary/60'} p-6 flex flex-col justify-between text-white shadow-sm`}>
-                              <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center font-black text-xs uppercase">
-                                MF
-                              </div>
-                              <span className="font-black text-base tracking-tight leading-snug drop-shadow-sm">
-                                {proposal.title}
-                              </span>
-                              <span className="text-[10px] font-medium opacity-80">
-                                By {proposal.author}
-                              </span>
-                            </div>
-                          )}
-
-                          <div className="space-y-3 pt-2 text-xs divide-y divide-border/40">
-                            <div className="flex justify-between py-1.5">
-                              <span className="text-muted-foreground font-semibold">Mangaka</span>
-                              <span className="font-bold text-foreground">{proposal.author}</span>
-                            </div>
-                            <div className="flex justify-between py-1.5">
-                              <span className="text-muted-foreground font-semibold">Publication Type</span>
-                              <span className="font-bold text-foreground uppercase">{proposal.type}</span>
-                            </div>
-                            <div className="flex justify-between py-1.5">
-                              <span className="text-muted-foreground font-semibold">Genres</span>
-                              <div className="flex flex-wrap gap-1 justify-end max-w-[180px]">
-                                {proposal.genre.map((g: string) => (
-                                  <span key={g} className="bg-muted px-2 py-0.5 rounded text-[10px] font-bold text-muted-foreground">
-                                    {g}
+                          
+                          {/* Image & Metadata Row */}
+                          <div className="flex gap-4">
+                            {/* Image Container */}
+                            <div className="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden border border-border shadow-sm shrink-0">
+                              {proposal.coverImageUrl ? (
+                                <img
+                                  src={proposal.coverImageUrl}
+                                  alt={proposal.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className={`w-full h-full bg-gradient-to-br ${proposal.coverColor || 'from-primary to-primary/60'} p-3 flex flex-col justify-between text-white`}>
+                                  <div className="w-6 h-6 rounded bg-white/20 backdrop-blur-md flex items-center justify-center font-black text-[9px] uppercase">
+                                    MF
+                                  </div>
+                                  <span className="font-black text-xs tracking-tight leading-snug drop-shadow-sm line-clamp-3">
+                                    {proposal.title}
                                   </span>
-                                ))}
+                                  <span className="text-[8px] font-medium opacity-80 truncate">
+                                    By {proposal.author}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Metadata */}
+                            <div className="flex-1 min-w-0 space-y-2 text-xs">
+                              <div>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase block tracking-wider">Mangaka</span>
+                                <span className="font-extrabold text-foreground text-sm block truncate">{proposal.author}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase block tracking-wider">Publication Type</span>
+                                <span className="font-bold text-foreground capitalize block">{proposal.type || 'Weekly'}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase block tracking-wider">Genre</span>
+                                <div className="flex flex-wrap gap-1 mt-0.5">
+                                  {proposal.genre && proposal.genre.length > 0 ? (
+                                    proposal.genre.map((g: string) => (
+                                      <span key={g} className="bg-muted px-1.5 py-0.5 rounded text-[9px] font-bold text-muted-foreground">
+                                        {g}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="text-muted-foreground">N/A</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="flex justify-between py-1.5">
+                          </div>
+
+                          {/* Extra Metadata Details */}
+                          <div className="space-y-2 pt-2 text-xs border-t border-border/40">
+                            <div className="flex justify-between py-1">
                               <span className="text-muted-foreground font-semibold">Date Submitted</span>
                               <span className="font-bold text-foreground">
                                 {proposal.submittedAt ? new Date(proposal.submittedAt).toLocaleDateString('en-US', { dateStyle: 'medium' }) : (proposal.status === 'Draft' ? 'Draft' : 'N/A')}
                               </span>
                             </div>
-                            <div className="flex justify-between py-1.5">
+                            <div className="flex justify-between py-1">
                               <span className="text-muted-foreground font-semibold">Review Deadline</span>
                               <span className={`font-bold ${isOverdue ? 'text-destructive' : 'text-foreground'}`}>
                                 {deadlineStr}
                               </span>
                             </div>
+                          </div>
+
+                          {/* Evaluation Section */}
+                          <div className="pt-4 border-t border-border/40 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
+                                Direct Editor Evaluation
+                              </h4>
+                              <span className="text-[9px] font-extrabold px-2 py-0.5 bg-primary/10 text-primary rounded-lg border border-primary/20">
+                                ACTION REQUIRED
+                              </span>
+                            </div>
+
+                            {['Proposed', 'PendingReview', 'Pending Review', 'UnderReview', 'Under Review', 'Draft'].includes(proposal.status) ? (
+                              <div className="space-y-4">
+                                <div className="p-3 bg-muted/30 border border-border/80 rounded-xl space-y-1.5">
+                                  <h4 className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-amber-500" /> Pending Your Evaluation
+                                  </h4>
+                                  <p className="text-[10px] text-muted-foreground leading-normal">
+                                    As the assigned Tantou Editor, you must review this submission.
+                                    Approving it changes its status to <strong>Board Voting</strong>. Rejecting it marks it as <strong>Rejected</strong>.
+                                  </p>
+                                </div>
+
+                                {showRejectInput ? (
+                                  <div className="p-3.5 rounded-xl bg-destructive/5 border border-destructive/20 space-y-3 animate-in slide-in-from-top-2">
+                                    <label className="text-xs font-extrabold text-destructive flex items-center gap-2">
+                                      <AlertTriangle className="w-4 h-4" /> Rejection Reason
+                                    </label>
+                                    <textarea
+                                      value={rejectReasonText}
+                                      onChange={(e) => setRejectReasonText(e.target.value)}
+                                      placeholder="Explain why this proposal is being rejected... (This will be sent to the Mangaka)"
+                                      className="w-full p-2.5 bg-card border border-border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 text-foreground resize-none"
+                                      rows={4}
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                      <button
+                                        onClick={() => {
+                                          setShowRejectInput(false);
+                                          setRejectReasonText('');
+                                        }}
+                                        className="px-2.5 py-1.5 border border-border rounded-lg text-xs font-bold hover:bg-muted text-muted-foreground"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={handleRejectSubmit}
+                                        className="px-2.5 py-1.5 bg-destructive hover:bg-destructive/95 text-destructive-foreground rounded-lg text-xs font-bold"
+                                      >
+                                        Confirm Rejection
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                                    <button
+                                      onClick={() => handleUpdateStatus('Under Review')}
+                                      className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" /> Approve & Submit
+                                    </button>
+                                    <button
+                                      onClick={() => setShowRejectInput(true)}
+                                      className="flex-1 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-black text-[10px] rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+                                    >
+                                      <X className="w-3.5 h-3.5" /> Reject Proposal
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <div className="p-4 bg-muted/40 border border-border rounded-xl flex items-center gap-3">
+                                  {proposal.status === 'Board Voting' || proposal.status === 'BoardVoting' ? (
+                                    <>
+                                      <Clock className="w-7 h-7 text-amber-500 shrink-0" />
+                                      <div className="space-y-0.5">
+                                        <p className="text-[11px] font-extrabold text-foreground">Under Board Review</p>
+                                        <p className="text-[9px] text-muted-foreground">Currently being voted on by the Editorial Board.</p>
+                                      </div>
+                                    </>
+                                  ) : proposal.status === 'Approved' || proposal.status === 'Active' ? (
+                                    <>
+                                      <CheckCircle2 className="w-7 h-7 text-emerald-500 shrink-0" />
+                                      <div className="space-y-0.5">
+                                        <p className="text-[11px] font-extrabold text-foreground">
+                                          {proposal.rawStatus === 'Approved' ? 'Proposal Approved' : 'Approved & Active'}
+                                        </p>
+                                        <p className="text-[9px] text-muted-foreground">
+                                          {proposal.rawStatus === 'Approved'
+                                            ? 'Approved by the Editorial Board. You can now activate it.'
+                                            : 'Approved and activated as an official series.'}
+                                        </p>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <XCircle className="w-7 h-7 text-destructive shrink-0" />
+                                      <div className="space-y-0.5">
+                                        <p className="text-[11px] font-extrabold text-foreground">Proposal Rejected</p>
+                                        <p className="text-[9px] text-muted-foreground">This proposal has been rejected.</p>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+
+                                {proposal.rawStatus === 'Approved' && (
+                                  <div className="pt-1">
+                                    <button
+                                      onClick={() => handleUpdateStatus('Active')}
+                                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+                                    >
+                                      <CheckCircle2 className="w-4 h-4" /> Activate Series
+                                    </button>
+                                  </div>
+                                )}
+
+                                {proposal.status === 'Rejected' && proposal.rejectReason && (
+                                  <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 space-y-1 text-[11px]">
+                                    <p className="text-[9px] font-extrabold text-destructive uppercase tracking-wider">
+                                      Editor Rejection Feedback:
+                                    </p>
+                                    <p className="text-muted-foreground italic leading-normal">
+                                      "{proposal.rejectReason}"
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1233,205 +1384,6 @@ function TantouEditorWorkspace() {
                           </div>
                         )}
 
-                        {/* Mandatory Manuscript Preview (5 Pages) */}
-                        {(() => {
-                          const previewPages = proposal.proposalPages && proposal.proposalPages.length > 0
-                            ? proposal.proposalPages
-                            : (proposal.sampleFileUrl || '')
-                              .split(',')
-                              .filter(Boolean)
-                              .map((id: string, idx: number) => ({
-                                pageNo: idx + 1,
-                                previewFileAssetId: id.trim(),
-                                url: undefined as string | undefined,
-                              }));
-
-                          if (previewPages.length === 0) return null;
-
-                          return (
-                            <div className="bg-card border border-border p-6 rounded-2xl space-y-4 shadow-sm">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
-                                    Mandatory Manuscript Preview (5 Pages)
-                                  </h3>
-                                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                                    Required sample pages submitted by the Mangaka for review
-                                  </p>
-                                </div>
-                                <span className="text-[10px] font-extrabold px-2 py-0.5 bg-primary/10 text-primary rounded-lg border border-primary/20">
-                                  {previewPages.length} PAGES
-                                </span>
-                              </div>
-
-                              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                                {previewPages.map((page: any, idx: number) => {
-                                  const imgUrl = page.url
-                                    || (page.previewFileAssetId?.startsWith('http')
-                                      ? page.previewFileAssetId
-                                      : `${API_BASE_URL}/api/files/${page.previewFileAssetId}`);
-                                  return (
-                                    <div
-                                      key={page.proposalPageId || idx}
-                                      onClick={() => {
-                                        setLightboxActiveIndex(idx);
-                                        setLightboxOpen(true);
-                                      }}
-                                      className="group relative cursor-pointer aspect-[3/4] bg-muted border border-border hover:border-primary/50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
-                                    >
-                                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                                      <img
-                                        src={imgUrl}
-                                        alt={`Page ${page.pageNo || idx + 1}`}
-                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                        onError={(e) => {
-                                          (e.target as HTMLElement).style.display = 'none';
-                                        }}
-                                      />
-                                      {/* Hover Overlay */}
-                                      <div className="absolute inset-0 bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                                        <div className="bg-background/90 backdrop-blur-sm p-1.5 rounded-lg shadow-sm text-primary text-[10px] font-bold flex items-center gap-1">
-                                          <ZoomIn className="w-3.5 h-3.5" /> Inspect
-                                        </div>
-                                      </div>
-
-                                      {/* Page Number Label */}
-                                      <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md">
-                                        Page {page.pageNo || idx + 1}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Evaluation Panel */}
-                        <div className="bg-card border border-border p-6 rounded-2xl space-y-4 shadow-sm">
-                          <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
-                            Direct Editor Evaluation
-                          </h3>
-
-                          {['Proposed', 'PendingReview', 'Pending Review', 'UnderReview', 'Under Review', 'Draft'].includes(proposal.status) ? (
-                            <div className="space-y-4">
-                              <div className="p-4 bg-muted/30 border border-border/80 rounded-xl space-y-2">
-                                <h4 className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
-                                  <Clock className="w-4 h-4 text-amber-500" /> Pending Your Evaluation
-                                </h4>
-                                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                  As the assigned Tantou Editor, you are responsible for the first line of evaluation.
-                                  If you approve this proposal, its status will become <strong>Board Voting</strong> and it will be sent to the Editorial Board for voting. If you reject it, it will be marked as <strong>Rejected</strong>.
-                                </p>
-                              </div>
-
-                              {showRejectInput ? (
-                                <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 space-y-3 animate-in slide-in-from-top-2">
-                                  <label className="text-xs font-extrabold text-destructive flex items-center gap-2">
-                                    <AlertTriangle className="w-4 h-4" /> Rejection Reason
-                                  </label>
-                                  <textarea
-                                    value={rejectReasonText}
-                                    onChange={(e) => setRejectReasonText(e.target.value)}
-                                    placeholder="Explain why this proposal is being rejected... (This will be sent to the Mangaka)"
-                                    className="w-full p-3 bg-card border border-border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 text-foreground resize-none"
-                                    rows={4}
-                                  />
-                                  <div className="flex justify-end gap-2">
-                                    <button
-                                      onClick={() => {
-                                        setShowRejectInput(false);
-                                        setRejectReasonText('');
-                                      }}
-                                      className="px-3 py-1.5 border border-border rounded-lg text-xs font-bold hover:bg-muted text-muted-foreground"
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button
-                                      onClick={handleRejectSubmit}
-                                      className="px-3 py-1.5 bg-destructive hover:bg-destructive/95 text-destructive-foreground rounded-lg text-xs font-bold"
-                                    >
-                                      Confirm Rejection
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex gap-3 pt-2">
-                                  <button
-                                    onClick={() => handleUpdateStatus('Under Review')}
-                                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
-                                  >
-                                    <CheckCircle2 className="w-4 h-4" /> Approve & Submit to Board
-                                  </button>
-                                  <button
-                                    onClick={() => setShowRejectInput(true)}
-                                    className="flex-1 py-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
-                                  >
-                                    <X className="w-4 h-4" /> Reject Proposal
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <div className="p-5 bg-muted/40 border border-border rounded-xl flex items-center gap-3">
-                                {proposal.status === 'Board Voting' || proposal.status === 'BoardVoting' ? (
-                                  <>
-                                    <Clock className="w-8 h-8 text-amber-500 shrink-0" />
-                                    <div className="space-y-0.5">
-                                      <p className="text-xs font-extrabold text-foreground">Under Review by Editorial Board</p>
-                                      <p className="text-[10px] text-muted-foreground">You approved this proposal. It is currently being voted on by the Editorial Board.</p>
-                                    </div>
-                                  </>
-                                ) : proposal.status === 'Approved' || proposal.status === 'Active' ? (
-                                  <>
-                                    <CheckCircle2 className="w-8 h-8 text-emerald-500 shrink-0" />
-                                    <div className="space-y-0.5">
-                                      <p className="text-xs font-extrabold text-foreground">
-                                        {proposal.rawStatus === 'Approved' ? 'Proposal Approved' : 'Proposal Approved & Active'}
-                                      </p>
-                                      <p className="text-[10px] text-muted-foreground">
-                                        {proposal.rawStatus === 'Approved'
-                                          ? 'This proposal has been approved by the Editorial Board. You can now activate it.'
-                                          : 'This proposal was approved by the Editorial Board and has been activated as an official series.'}
-                                      </p>
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <XCircle className="w-8 h-8 text-destructive shrink-0" />
-                                    <div className="space-y-0.5">
-                                      <p className="text-xs font-extrabold text-foreground">Proposal Rejected</p>
-                                      <p className="text-[10px] text-muted-foreground">This proposal has been rejected.</p>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-
-                              {proposal.rawStatus === 'Approved' && (
-                                <div className="pt-2">
-                                  <button
-                                    onClick={() => handleUpdateStatus('Active')}
-                                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
-                                  >
-                                    <CheckCircle2 className="w-4 h-4" /> Activate Series
-                                  </button>
-                                </div>
-                              )}
-
-                              {proposal.status === 'Rejected' && proposal.rejectReason && (
-                                <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 space-y-1 text-xs">
-                                  <p className="text-[10px] font-extrabold text-destructive uppercase tracking-wider">
-                                    Editor Rejection Feedback:
-                                  </p>
-                                  <p className="text-muted-foreground italic leading-normal">
-                                    "{proposal.rejectReason}"
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -1520,6 +1472,10 @@ function TantouEditorWorkspace() {
                         const isOverdue = (proposal.status === 'Proposed' || proposal.status === 'Pending Review' || proposal.status === 'PendingReview') && new Date() > deadlineDate;
                         const escalated = isOverdue;
                         const informationComplete = proposal.status !== 'Proposed';
+                        const isExpiredOrRejected = 
+                          proposal.status?.toLowerCase() === 'expired' || 
+                          proposal.status?.toLowerCase() === 'rejected' ||
+                          isOverdue;
 
                         return (
                           <div
@@ -1565,7 +1521,7 @@ function TantouEditorWorkspace() {
                               <div className="flex gap-2 flex-wrap pt-0.5">
                                 {informationComplete && (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-600 border border-emerald-500/20">
-                                    <CheckCircle className="w-3 h-3" /> Info Complete
+                                    <CheckCircle className="w-3.5 h-3.5" /> Info Complete
                                   </span>
                                 )}
                                 <span className="bg-muted px-2 py-0.5 rounded text-[9px] font-bold text-muted-foreground uppercase">
@@ -1581,15 +1537,17 @@ function TantouEditorWorkspace() {
 
                             {/* Actions */}
                             <div className="shrink-0 w-full md:w-auto">
-                              <button
-                                onClick={() => setSelectedProposalId(proposal.id)}
-                                className="w-full md:w-auto px-4 py-2.5 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
-                              >
-                                <FileText className="w-4 h-4" /> Review & Decide
-                              </button>
+                              {!isExpiredOrRejected && (
+                                <button
+                                  onClick={() => setSelectedProposalId(proposal.id)}
+                                  className="w-full md:w-auto px-4 py-2.5 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
+                                >
+                                  <FileText className="w-4 h-4" /> Review & Decide
+                                </button>
+                              )}
                             </div>
                           </div>
-                        )
+                        );
                       })}
                     </div>
                   )

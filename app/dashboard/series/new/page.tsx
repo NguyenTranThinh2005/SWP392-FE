@@ -198,19 +198,19 @@ export default function NewProposalPage() {
       {/* Success overlay */}
       {successMessage && (
         <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-sm animate-in fade-in duration-200">
-          <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+          <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <div>
             {successMessage === 'submitted' ? (
               <>
-                <p className="font-bold text-slate-900">Proposal submitted for review!</p>
-                <p className="text-muted-foreground text-xs mt-0.5">
+                <p className="font-bold text-emerald-800 dark:text-emerald-300">Proposal submitted for review!</p>
+                <p className="text-emerald-700/90 dark:text-emerald-400/95 text-xs mt-0.5">
                   The Editorial Board has been notified. Redirecting to My Proposals…
                 </p>
               </>
             ) : (
               <>
-                <p className="font-bold text-slate-900">Draft saved successfully!</p>
-                <p className="text-muted-foreground text-xs mt-0.5">Redirecting to My Proposals…</p>
+                <p className="font-bold text-emerald-800 dark:text-emerald-300">Draft saved successfully!</p>
+                <p className="text-emerald-700/90 dark:text-emerald-400/95 text-xs mt-0.5">Redirecting to My Proposals…</p>
               </>
             )}
           </div>

@@ -151,7 +151,7 @@ export const proposalService = {
    */
   deleteDraft: async (id: string): Promise<boolean> => {
     try {
-      await seriesService.updateProposalStatus(id, 'Cancelled');
+      await seriesService.deleteSeries(id);
       return true;
     } catch {
       return false;

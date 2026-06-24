@@ -1,4 +1,5 @@
 import { fetchAPI } from "./api";
+import { API_BASE_URL } from "@/lib/constants";
 
 export interface ProposalPageResponse {
   proposalPageId: string;
@@ -63,6 +64,16 @@ const mapGenreNamesToGuids = async (genreString: string): Promise<string[]> => {
   return ["3fa85f64-5717-4562-b3fc-2c963f66afa6"];
 };
 
+const extractAssetId = (urlOrId: string | null | undefined): string | null => {
+  if (!urlOrId) return null;
+  if (urlOrId.includes('/api/files/')) {
+    const parts = urlOrId.split('/api/files/');
+    const id = parts[parts.length - 1];
+    return id || null;
+  }
+  return urlOrId;
+};
+
 const mapSeriesResponse = (s: any): SeriesProposal => {
   const seriesId = s.seriesId || s.SeriesId || s.id || s.Id;
   const title = s.title || s.Title;
@@ -72,7 +83,18 @@ const mapSeriesResponse = (s: any): SeriesProposal => {
   let status = s.status || s.Status;
   const description = s.synopsis || s.Synopsis || s.description || s.Description || '';
   const sampleFileUrl = s.sampleFileUrl || s.SampleFileUrl || '';
-  const coverImageUrl = s.coverImageUrl || s.CoverImageUrl || '';
+  const proposalPages = s.proposalPages || s.ProposalPages || [];
+  
+  let coverImageUrl = s.coverImageUrl || s.CoverImageUrl || '';
+  if (coverImageUrl && !coverImageUrl.startsWith('http') && !coverImageUrl.startsWith('/')) {
+    coverImageUrl = `${API_BASE_URL}/api/files/${coverImageUrl}`;
+  } else if (!coverImageUrl && proposalPages && proposalPages.length > 0) {
+    const firstPage = proposalPages.find((p: any) => (p.pageNo || p.PageNo) === 1) || proposalPages[0];
+    const previewFileAssetId = firstPage?.previewFileAssetId || firstPage?.PreviewFileAssetId;
+    if (previewFileAssetId) {
+      coverImageUrl = `${API_BASE_URL}/api/files/${previewFileAssetId}`;
+    }
+  }
   const mangakaId = s.mangakaId || s.MangakaId;
   const tantouEditorId = s.tantouEditorId || s.TantouEditorId;
   const tantouEditorName = s.tantouEditorName || s.TantouEditorName;
@@ -101,7 +123,6 @@ const mapSeriesResponse = (s: any): SeriesProposal => {
   const sourceZipFileAssetId = s.sourceZipFileAssetId || s.SourceZipFileAssetId || null;
   const sourceZipFile = s.sourceZipFile || s.SourceZipFile || null;
   const sourceZipPublicUrl = s.sourceZipPublicUrl || s.SourceZipPublicUrl || null;
-  const proposalPages = s.proposalPages || s.ProposalPages || [];
 
   return {
     id: seriesId,
@@ -145,6 +166,25 @@ export const seriesService = {
   getSeriesById: async (id: string): Promise<SeriesProposal> => {
     const res = await fetchAPI<{ data: any }>(`/api/series/${id}`);
     const proposal = mapSeriesResponse(res.data || res);
+
+    // Resolve public URL for cover image if it is a raw GUID or api file path
+    let coverAssetId = '';
+    if (proposal.coverImageUrl) {
+      if (proposal.coverImageUrl.includes('/api/files/')) {
+        coverAssetId = proposal.coverImageUrl.split('/').pop() || '';
+      } else if (!proposal.coverImageUrl.startsWith('http') && !proposal.coverImageUrl.startsWith('/')) {
+        coverAssetId = proposal.coverImageUrl;
+      }
+    }
+    if (coverAssetId) {
+      try {
+        const fileRes = await fetchAPI<{ data: any }>(`/api/files/${coverAssetId}`);
+        const fileAsset = fileRes.data || fileRes;
+        proposal.coverImageUrl = fileAsset.publicUrl || fileAsset.PublicUrl || proposal.coverImageUrl;
+      } catch (err) {
+        console.error(`Failed to fetch cover image URL for ${coverAssetId}:`, err);
+      }
+    }
 
     // Parse legacy sampleFileUrl to proposalPages if empty
     if ((!proposal.proposalPages || proposal.proposalPages.length === 0) && proposal.sampleFileUrl) {
@@ -208,13 +248,19 @@ export const seriesService = {
       .split(',')
       .filter(Boolean);
 
+    const coverAssetId = extractAssetId(proposal.coverImageUrl);
+    if (coverAssetId && !samplePageFileAssetIds.includes(coverAssetId)) {
+      samplePageFileAssetIds.unshift(coverAssetId);
+    }
+
     const payload = {
       title: proposal.title,
       synopsis: proposal.synopsis || proposal.description,
       publicationType: proposal.publicationType,
       genreIds: genreIds,
       sourceZipFileAssetId: proposal.sourceZipFileAssetId || null,
-      samplePageFileAssetIds: samplePageFileAssetIds
+      samplePageFileAssetIds: samplePageFileAssetIds,
+      coverImageUrl: proposal.coverImageUrl || null
     };
 
     const res = await fetchAPI<{ data: any }>("/api/series", {
@@ -247,13 +293,19 @@ export const seriesService = {
       .split(',')
       .filter(Boolean);
 
+    const coverAssetId = extractAssetId(proposal.coverImageUrl);
+    if (coverAssetId && !samplePageFileAssetIds.includes(coverAssetId)) {
+      samplePageFileAssetIds.unshift(coverAssetId);
+    }
+
     const payload = {
       title: proposal.title,
       synopsis: proposal.synopsis || proposal.description,
       publicationType: proposal.publicationType,
       genreIds: genreIds,
       sourceZipFileAssetId: proposal.sourceZipFileAssetId || null,
-      samplePageFileAssetIds: samplePageFileAssetIds
+      samplePageFileAssetIds: samplePageFileAssetIds,
+      coverImageUrl: proposal.coverImageUrl || null
     };
 
     const res = await fetchAPI<{ data: any }>(`/api/series/${id}`, {
@@ -443,6 +495,12 @@ export const seriesService = {
     return await fetchAPI<any>(`/api/board-decisions/${boardDecisionId}/special-decision`, {
       method: 'POST',
       body: JSON.stringify({ decision, reason }),
+    });
+  },
+
+  deleteSeries: async (id: string): Promise<any> => {
+    return await fetchAPI<any>(`/api/series/${id}/soft-delete`, {
+      method: 'DELETE',
     });
   }
 };

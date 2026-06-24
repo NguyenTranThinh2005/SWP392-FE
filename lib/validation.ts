@@ -10,10 +10,10 @@ export const seriesProposalSchema = z.object({
   publicationType: z.enum(['Weekly', 'Monthly', 'One-Shot'], {
     message: 'Hình thức xuất bản là bắt buộc',
   }),
-  // BR-15: Synopsis must be 200–2000 characters
+  // BR-15: Synopsis must be 100–2000 characters
   synopsis: z
     .string()
-    .min(200, 'Tóm tắt cốt truyện phải ≥ 200 ký tự')
+    .min(100, 'Tóm tắt cốt truyện phải ≥ 100 ký tự')
     .max(2000, 'Tóm tắt cốt truyện phải ≤ 2000 ký tự'),
   sampleFileUrl: z.string(),
   coverImageUrl: z.string().url('Đường dẫn hình ảnh không hợp lệ').optional().or(z.literal('')),
