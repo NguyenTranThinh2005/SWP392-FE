@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Client-side chapters and tasks store backed by localStorage.
  * Powers the Mangaka Chapter Creation, Assistant Task Assignment, and Approval workflow.
  */
@@ -38,13 +38,14 @@ export interface Task {
   feedback?: string // Feedback comments from Mangaka
   assignedAt?: string
   updatedAt?: string
-  dueDate?: string // Ngày hạn chót nộp task để Mangaka theo dõi tiến độ
-  pageStart?: number // Số trang bắt đầu vẽ
-  pageEnd?: number // Số trang kết thúc vẽ
-  attachments?: { name: string; size: string; type: string }[] // Tài liệu hướng dẫn đính kèm từ Mangaka
-  submittedFiles?: { name: string; size: string; type: string }[] // Các file hình ảnh/sản phẩm Assistant đã nộp
-  submitDescription?: string // Lời nhắn hoặc mô tả chỉnh sửa từ Assistant khi nộp bài
+  dueDate?: string // NgÃ y háº¡n chÃ³t ná»™p task Ä‘á»ƒ Mangaka theo dÃµi tiáº¿n Ä‘á»™
+  pageStart?: number // Sá»‘ trang báº¯t Ä‘áº§u váº½
+  pageEnd?: number // Sá»‘ trang káº¿t thÃºc váº½
+  attachments?: { name: string; size: string; type: string }[] // TÃ i liá»‡u hÆ°á»›ng dáº«n Ä‘Ã­nh kÃ¨m tá»« Mangaka
+  submittedFiles?: { name: string; size: string; type: string }[] // CÃ¡c file hÃ¬nh áº£nh/sáº£n pháº©m Assistant Ä‘Ã£ ná»™p
+  submitDescription?: string // Lá»i nháº¯n hoáº·c mÃ´ táº£ chá»‰nh sá»­a tá»« Assistant khi ná»™p bÃ i
   submissionId?: string // to support backend approve/reject calls
+  submittedFileAssetId?: string
   referenceFiles?: { fileAssetId: string; publicUrl: string; originalFileName: string; mimeType?: string }[]
 }
 
@@ -73,28 +74,28 @@ export const SEED_ASSISTANTS: Assistant[] = []
 export const TASK_TYPE_SUGGESTIONS = [
   {
     name: 'Line Art',
-    description: 'Phác thảo nét vẽ và vẽ viền cho nhân vật/bối cảnh.',
-    template: 'Yêu cầu đi nét vẽ chi tiết cho nhân vật chính ở trang {pages}. Chú ý độ dày nét viền mặt và tóc.'
+    description: 'PhÃ¡c tháº£o nÃ©t váº½ vÃ  váº½ viá»n cho nhÃ¢n váº­t/bá»‘i cáº£nh.',
+    template: 'YÃªu cáº§u Ä‘i nÃ©t váº½ chi tiáº¿t cho nhÃ¢n váº­t chÃ­nh á»Ÿ trang {pages}. ChÃº Ã½ Ä‘á»™ dÃ y nÃ©t viá»n máº·t vÃ  tÃ³c.'
   },
   {
     name: 'Coloring',
-    description: 'Tô màu, đánh bóng và xử lý nguồn sáng cảnh tranh.',
-    template: 'Thực hiện tô màu kỹ thuật số cho trang {pages}. Sử dụng tông màu hoàng hôn vàng ấm áp theo moodboard.'
+    description: 'TÃ´ mÃ u, Ä‘Ã¡nh bÃ³ng vÃ  xá»­ lÃ½ nguá»“n sÃ¡ng cáº£nh tranh.',
+    template: 'Thá»±c hiá»‡n tÃ´ mÃ u ká»¹ thuáº­t sá»‘ cho trang {pages}. Sá»­ dá»¥ng tÃ´ng mÃ u hoÃ ng hÃ´n vÃ ng áº¥m Ã¡p theo moodboard.'
   },
   {
     name: 'Background Art',
-    description: 'Vẽ bối cảnh, môi trường và cảnh nền chi tiết.',
-    template: 'Vẽ chi tiết bối cảnh ngôi đền cổ ở hậu cảnh cho các trang {pages}. Tập trung vào họa tiết mái ngói.'
+    description: 'Váº½ bá»‘i cáº£nh, mÃ´i trÆ°á»ng vÃ  cáº£nh ná»n chi tiáº¿t.',
+    template: 'Váº½ chi tiáº¿t bá»‘i cáº£nh ngÃ´i Ä‘á»n cá»• á»Ÿ háº­u cáº£nh cho cÃ¡c trang {pages}. Táº­p trung vÃ o há»a tiáº¿t mÃ¡i ngÃ³i.'
   },
   {
     name: 'Screentoning',
-    description: 'Dán lưới tông màu và tạo hiệu ứng chiều sâu cho trang truyện.',
-    template: 'Dán lưới screentone tạo chiều sâu bóng râm và vân sáng cho trang {pages}.'
+    description: 'DÃ¡n lÆ°á»›i tÃ´ng mÃ u vÃ  táº¡o hiá»‡u á»©ng chiá»u sÃ¢u cho trang truyá»‡n.',
+    template: 'DÃ¡n lÆ°á»›i screentone táº¡o chiá»u sÃ¢u bÃ³ng rÃ¢m vÃ  vÃ¢n sÃ¡ng cho trang {pages}.'
   },
   {
     name: 'Clean-up',
-    description: 'Làm sạch nét vẽ phác thảo thô, căn chỉnh các khung tranh.',
-    template: 'Tẩy xóa nét nháp thô thừa và chuẩn hóa kích thước khung hình cho trang {pages}.'
+    description: 'LÃ m sáº¡ch nÃ©t váº½ phÃ¡c tháº£o thÃ´, cÄƒn chá»‰nh cÃ¡c khung tranh.',
+    template: 'Táº©y xÃ³a nÃ©t nhÃ¡p thÃ´ thá»«a vÃ  chuáº©n hÃ³a kÃ­ch thÆ°á»›c khung hÃ¬nh cho trang {pages}.'
   }
 ]
 
@@ -302,9 +303,9 @@ export function createTask(data: Omit<Task, 'id' | 'status' | 'assistantName'>):
 }
 
 /**
- * Cập nhật trạng thái và các dữ liệu liên quan của một Task.
- * Hàm này hỗ trợ cả luồng của Mangaka (phê duyệt/từ chối, ghi feedback)
- * và luồng của Assistant (nộp bài, gửi danh sách file và lời nhắn mô tả).
+ * Cáº­p nháº­t tráº¡ng thÃ¡i vÃ  cÃ¡c dá»¯ liá»‡u liÃªn quan cá»§a má»™t Task.
+ * HÃ m nÃ y há»— trá»£ cáº£ luá»“ng cá»§a Mangaka (phÃª duyá»‡t/tá»« chá»‘i, ghi feedback)
+ * vÃ  luá»“ng cá»§a Assistant (ná»™p bÃ i, gá»­i danh sÃ¡ch file vÃ  lá»i nháº¯n mÃ´ táº£).
  */
 export function updateTaskStatus(
   taskId: string, 
@@ -321,7 +322,7 @@ export function updateTaskStatus(
   const oldTask = tasks[idx]
   const oldStatus = oldTask.status
 
-  // Tạo đối tượng Task mới kế thừa dữ liệu cũ và ghi đè bằng các thuộc tính mới nhận được
+  // Táº¡o Ä‘á»‘i tÆ°á»£ng Task má»›i káº¿ thá»«a dá»¯ liá»‡u cÅ© vÃ  ghi Ä‘Ã¨ báº±ng cÃ¡c thuá»™c tÃ­nh má»›i nháº­n Ä‘Æ°á»£c
   tasks[idx] = {
     ...oldTask,
     status,
@@ -342,7 +343,7 @@ export function updateTaskStatus(
         pageTaskId: taskId,
         versionNo: 1,
         submittedFileAssetId: '88888888-8888-8888-8888-888888888888', // Default file asset ID
-        note: submitDescription || 'Nộp trang vẽ'
+        note: submitDescription || 'Ná»™p trang váº½'
       }
       fetchAPI<any>('/api/submissions', {
         method: 'POST',
@@ -379,7 +380,7 @@ export function updateTaskStatus(
     else if (status === 'Rejected' && oldTask.submissionId) {
       const payload = {
         status: 'Rejected',
-        rejectReason: feedback || 'Cần vẽ lại chi tiết hơn.'
+        rejectReason: feedback || 'Cáº§n váº½ láº¡i chi tiáº¿t hÆ¡n.'
       }
       fetchAPI<any>(`/api/submissions/${oldTask.submissionId}`, {
         method: 'PUT',
@@ -525,3 +526,4 @@ export async function syncTasksFromBackend(chapterId?: string): Promise<Task[]> 
   }
   return getTasks(chapterId)
 }
+
