@@ -553,7 +553,7 @@ export default function ReviewProposalsPage() {
                   Proposal Synopsis
                 </h3>
                 <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-medium">
-                  {proposal.synopsis || 'No synopsis provided.'}
+                  {proposal.description || proposal.synopsis || 'No synopsis provided.'}
                 </p>
               </div>
 

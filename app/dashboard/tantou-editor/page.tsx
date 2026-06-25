@@ -1609,25 +1609,49 @@ function TantouEditorWorkspace() {
                 {/* Left side: previews & annotations */}
                 <div className="xl:col-span-2 space-y-5">
                   <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
-                    Manuscript Draft Preview
+                    Manuscript File Attachment
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {activeManuscript.pages?.map((p, idx) => (
-                      <div
-                        key={idx}
-                        className="aspect-[3/4] rounded-2xl bg-muted/30 border border-border/80 flex flex-col justify-between p-4 shadow-sm group hover:border-primary/25 transition-all"
-                      >
-                        <div className="w-6 h-6 rounded-lg bg-muted text-[10px] text-muted-foreground font-bold flex items-center justify-center border border-border/30">
-                          {idx + 1}
-                        </div>
-                        <span className="text-[11px] text-muted-foreground text-center font-bold">
-                          Page {idx + 1}
-                        </span>
-                        <span className="text-[9px] text-muted-foreground/50 text-center">
-                          Storyboard File
-                        </span>
+
+                  <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                        <FileArchive className="w-6 h-6" />
                       </div>
-                    ))}
+                      <div>
+                        <h4 className="text-sm font-bold text-foreground">
+                          Bản thảo đã nộp (Manuscript File)
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          Tập tin đính kèm của Mangaka cho phiên bản {activeManuscript.latestVersion}
+                        </p>
+                      </div>
+                    </div>
+
+                    {activeManuscript.fileUrl ? (
+                      <div className="p-4 bg-muted/30 border border-border/80 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-foreground truncate">
+                            {activeManuscript.fileUrl.split('/').pop() || 'manuscript_file'}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                            URL: {activeManuscript.fileUrl}
+                          </p>
+                        </div>
+                        <a
+                          href={activeManuscript.fileUrl}
+                          download
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-extrabold rounded-xl transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
+                        >
+                          <Download className="w-4 h-4" /> Tải về Bản thảo
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs text-amber-600 font-medium">
+                        Không tìm thấy liên kết file cho phiên bản này.
+                      </div>
+                    )}
                   </div>
 
                   {/* Annotations */}

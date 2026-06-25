@@ -14,7 +14,10 @@ import {
   ChevronRight,
   FileCheck,
   Lock,
-  ChevronDown
+  ChevronDown,
+  FileArchive,
+  Download,
+  FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -168,24 +171,51 @@ export default function ManuscriptsPage() {
 
           {/* Grid Layout: Left Storyboards, Right Review panel */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* Left Column: Pages Preview */}
+            {/* Left Column: Manuscript File */}
             <div className="xl:col-span-2 space-y-4">
-              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Manuscript Storyboard Pages</h2>
+              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Manuscript File Attachment</h2>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {activeManuscript.pages.map((p, idx) => (
-                  <div
-                    key={p}
-                    className="aspect-[3/4] rounded-2xl bg-[#121824] border border-border/60 flex flex-col justify-between p-4 shadow-sm group hover:border-primary/25 transition-all"
-                  >
-                    <div className="w-6 h-6 rounded-lg bg-slate-800 text-[10px] text-slate-400 font-bold flex items-center justify-center">
-                      {idx + 5}
-                    </div>
-                    <span className="text-[11px] text-slate-400 text-center font-semibold">Page {idx + 5}</span>
-                    <span className="text-[9px] text-slate-600 text-center">Storyboard Preview</span>
+              <Card className="border-border bg-card p-6 rounded-2xl space-y-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <FileArchive className="w-6 h-6" />
                   </div>
-                ))}
-              </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground">
+                      Bản thảo đã nộp (Manuscript File)
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Tập tin đính kèm của Mangaka cho phiên bản {activeManuscript.latestVersion}
+                    </p>
+                  </div>
+                </div>
+
+                {activeManuscript.fileUrl ? (
+                  <div className="p-4 bg-muted/30 border border-border/80 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-foreground truncate">
+                        {activeManuscript.fileUrl.split('/').pop() || 'manuscript_file'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                        URL: {activeManuscript.fileUrl}
+                      </p>
+                    </div>
+                    <a
+                      href={activeManuscript.fileUrl}
+                      download
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-extrabold rounded-xl transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
+                    >
+                      <Download className="w-4 h-4" /> Tải về Bản thảo
+                    </a>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs text-amber-600 font-medium">
+                    Không tìm thấy liên kết file cho phiên bản này.
+                  </div>
+                )}
+              </Card>
 
               {/* Annotations panel (BR-78) */}
               <Card className="border-border bg-card p-5 rounded-2xl space-y-4 shadow-sm">

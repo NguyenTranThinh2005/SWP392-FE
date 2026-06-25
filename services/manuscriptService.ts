@@ -89,6 +89,24 @@ export const manuscriptService = {
       const chaptersRes = await fetchAPI<{ data: any[] } | any[]>('/api/chapters')
       const chaptersList = (chaptersRes as any).data || chaptersRes || []
 
+      // Fetch all series to resolve correct series titles (e.g. mapping seriesId -> title)
+      let seriesMap = new Map<string, string>()
+      try {
+        const seriesRes = await fetchAPI<{ data: any[] } | any[]>('/api/series')
+        const seriesList = (seriesRes as any).data || seriesRes || []
+        if (Array.isArray(seriesList)) {
+          seriesList.forEach((s: any) => {
+            const sId = s.seriesId || s.id || s.Id
+            const sTitle = s.title || s.Title
+            if (sId && sTitle) {
+              seriesMap.set(sId, sTitle)
+            }
+          })
+        }
+      } catch (se) {
+        console.warn("Failed to fetch series list for manuscript title mapping:", se)
+      }
+
       if (Array.isArray(chaptersList)) {
         const allManuscripts: any[] = []
 
@@ -122,7 +140,8 @@ export const manuscriptService = {
             submittedAt: h.submittedAt || new Date().toISOString(),
             reviewedAt: h.reviewedAt || undefined,
             feedback: h.revisionNotes || h.feedback || undefined,
-            revisionNumber: h.revisionCount || undefined
+            revisionNumber: h.revisionCount || undefined,
+            fileUrl: h.fileUrl || h.FileUrl || undefined
           }))
 
           if (historyList.length === 0) {
@@ -130,20 +149,22 @@ export const manuscriptService = {
               version: m.versionLabel || `v${m.versionNo || 1}`,
               status: mapBackendManuscriptStatus(m.status),
               submittedAt: m.submittedAt || new Date().toISOString(),
+              fileUrl: m.fileUrl || m.FileUrl || undefined
             })
           }
 
           return {
             id: m.manuscriptId || m.id,
             seriesId: m.seriesId || 'S01',
-            seriesTitle: m.seriesTitle || 'Sakura Knights',
+            seriesTitle: m.seriesTitle || seriesMap.get(m.seriesId) || 'Sakura Knights',
             chapterNumber: m.chapterNumber || 1,
             chapterTitle: m.chapterTitle || 'Chương mới',
             latestVersion: m.versionLabel || `v${m.versionNo || 1}`,
             status: mapBackendManuscriptStatus(m.status),
             progress: m.progress || 100,
             history: historyList,
-            pages: ['Page 1', 'Page 2', 'Page 3', 'Page 4']
+            pages: ['Page 1', 'Page 2', 'Page 3', 'Page 4'],
+            fileUrl: m.fileUrl || m.FileUrl || undefined
           }
         })
 
