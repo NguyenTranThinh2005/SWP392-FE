@@ -341,7 +341,7 @@ export default function AssistantDashboardPage() {
                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                 >
-                  {ast.name.split(' ')[0]} ({ast.id})
+                  {ast.name.split(' ')[0]}
                 </button>
               ))}
             </div>
