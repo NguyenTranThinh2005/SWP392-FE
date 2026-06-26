@@ -1113,7 +1113,7 @@ const openEditTask = (task: Task) => {
                           </button>
                         )}
                       
-                        {progressPercent >= 100 && (
+                        {progressPercent >= 100 && selectedChapter.status !== 'Ready for Editor' && selectedChapter.status !== 'Published' && (
                           <button
                             type="button"
                             onClick={() => setIsSubmitManuscriptOpen(true)}
@@ -1122,7 +1122,7 @@ const openEditTask = (task: Task) => {
                             Gửi bản thảo
                           </button>
                         )}
-                        {selectedChapter.status === 'Ready for Editor' && (
+                        {false && selectedChapter?.status === 'Published' && (
                           <button
                             onClick={() => {
                               chapterService.updateChapter(selectedChapterId, { status: 'Published' }).then(() => {
