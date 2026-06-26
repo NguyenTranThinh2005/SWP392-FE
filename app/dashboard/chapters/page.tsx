@@ -873,8 +873,12 @@ const openEditTask = (task: Task) => {
   }
 
   // Tính phần trăm tiến độ của chapter hiện tại
- const totalTasksOfChapter = chapterTasks.length
-  const approvedTasksOfChapter = chapterTasks.filter(t => t.status === 'Approved').length
+ // Task "outdated" = quá hạn mà chưa Approved/Submitted → coi như bỏ, không tính vào tiến độ
+  const isOutdatedTask = (t: Task) =>
+    !!t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Approved' && t.status !== 'Submitted'
+  const countableTasks = chapterTasks.filter(t => !isOutdatedTask(t))
+  const totalTasksOfChapter = countableTasks.length
+  const approvedTasksOfChapter = countableTasks.filter(t => t.status === 'Approved').length
   const progressPercent = totalTasksOfChapter > 0
     ? Math.round((approvedTasksOfChapter / totalTasksOfChapter) * 100)
     : 0
