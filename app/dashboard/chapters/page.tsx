@@ -148,7 +148,7 @@ export default function ChaptersPage() {
     refreshData()
   }, [role, selectedSeriesId, selectedChapterId, selectedAssistantId, mangakaId])
 
-  const getSubmissionStatus = (submission: any) => String(submission?.status).trim().toUpperCase()
+  const getSubmissionStatus = (submission: any) => String(submission?.status ?? submission?.Status ?? '').trim().toUpperCase()
 
   const getLatestSubmission = (submissions?: any[]) => {
     if (!Array.isArray(submissions) || submissions.length === 0) return null
@@ -157,9 +157,8 @@ export default function ChaptersPage() {
       const bVersion = Number(b?.versionNo ?? b?.VersionNo ?? 0)
       const aVersion = Number(a?.versionNo ?? a?.VersionNo ?? 0)
       if (bVersion !== aVersion) return bVersion - aVersion
-
-      const bSubmittedAt = new Date(b?.submittedAt ?? b?.SubmittedAt ?? 0).getTime()
-      const aSubmittedAt = new Date(a?.submittedAt ?? a?.SubmittedAt ?? 0).getTime()
+      const bSubmittedAt = new Date(b?.submittedAt ?? b?.SubmittedAt ?? b?.createdAt ?? b?.submittedDate ?? 0).getTime()
+      const aSubmittedAt = new Date(a?.submittedAt ?? a?.SubmittedAt ?? a?.createdAt ?? a?.submittedDate ?? 0).getTime()
       return bSubmittedAt - aSubmittedAt
     })
 
@@ -179,6 +178,7 @@ export default function ChaptersPage() {
 
   const mapBackendTaskStatus = (status: any, submissions?: any[]): TaskStatus => {
     const statusStr = String(status).trim().toUpperCase();
+
     const latestSubmission = getLatestSubmission(submissions);
     const latestSubStatus = getSubmissionStatus(latestSubmission);
 
@@ -494,7 +494,7 @@ export default function ChaptersPage() {
     setErrors({})
     showToast('Đã điền dữ liệu mẫu (demo quy trình thực)!', 'success')
   }
- const openEditChapter = () => {
+  const openEditChapter = () => {
     const chap = chapters.find(c => c.id === selectedChapterId) as any
     if (!chap) {
       showToast('Chưa chọn chapter để sửa!', 'error')
@@ -610,7 +610,7 @@ export default function ChaptersPage() {
       }
     })
   }
-const openEditTask = (task: Task) => {
+  const openEditTask = (task: Task) => {
     setEditTaskId(task.id)
     setEditTaskPageStart(task.pageStart || 1)
     setEditTaskPageEnd(task.pageEnd || 1)
@@ -679,7 +679,7 @@ const openEditTask = (task: Task) => {
   // 2. Tạo Task & Giao việc cho Assistant
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (newTaskPageStart > newTaskPageEnd) {
       showToast('Trang bắt đầu không thể lớn hơn trang kết thúc!', 'error')
       return
@@ -894,7 +894,7 @@ const openEditTask = (task: Task) => {
   }
 
   // Tính phần trăm tiến độ của chapter hiện tại
- // Task "outdated" = quá hạn mà chưa Approved/Submitted → coi như bỏ, không tính vào tiến độ
+  // Task "outdated" = quá hạn mà chưa Approved/Submitted → coi như bỏ, không tính vào tiến độ
   const isOutdatedTask = (t: Task) =>
     !!t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Approved' && t.status !== 'Submitted'
   const countableTasks = chapterTasks.filter(t => !isOutdatedTask(t))
@@ -909,8 +909,8 @@ const openEditTask = (task: Task) => {
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed top-5 right-5 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-bold shadow-lg animate-in fade-in slide-in-from-top-4 duration-300 ${toast.type === 'success'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400'
-            : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400'
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400'
+          : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400'
           }`}>
           {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertTriangle className="w-4 h-4 shrink-0" />}
           {toast.message}
@@ -1092,7 +1092,7 @@ const openEditTask = (task: Task) => {
                         <strong>Chapter Deadline:</strong> {selectedChapter.deadline} (Submission target to Editorial Board).
                       </span>
                     </div>
-                    
+
                     {selectedChapter.referenceFiles && selectedChapter.referenceFiles.length > 0 && (
                       <div className="space-y-1">
                         <p className="text-xs font-bold text-muted-foreground">📎 Tài liệu tham khảo</p>
@@ -1116,7 +1116,7 @@ const openEditTask = (task: Task) => {
                         />
                       </div>
                       <p className="text-[10px] text-muted-foreground italic text-right">
-                       {approvedTasksOfChapter} of {totalTasksOfChapter} tasks completed and approved
+                        {approvedTasksOfChapter} of {totalTasksOfChapter} tasks completed and approved
                       </p>
                     </div>
 
@@ -1137,7 +1137,7 @@ const openEditTask = (task: Task) => {
                             Set In Progress
                           </button>
                         )}
-                      
+
                         {progressPercent >= 100 && selectedChapter.status !== 'Ready for Editor' && selectedChapter.status !== 'Published' && (
                           <button
                             type="button"
@@ -1802,8 +1802,8 @@ const openEditTask = (task: Task) => {
                   Đính kèm phác thảo thô (pencil) hoặc bản vẽ nét (ink) để bắt đầu phân chia công việc vẽ.
                 </p>
                 <div className={`p-5 border-2 border-dashed rounded-2xl text-center transition-colors ${errors.manuscriptFiles
-                    ? 'border-red-500 bg-red-500/5'
-                    : 'border-primary/20 hover:border-primary/40 bg-primary/5'
+                  ? 'border-red-500 bg-red-500/5'
+                  : 'border-primary/20 hover:border-primary/40 bg-primary/5'
                   }`}>
                   <Upload className={`w-8 h-8 mx-auto mb-2 ${errors.manuscriptFiles ? 'text-red-400' : 'text-primary'} opacity-65`} />
                   <p className="text-xs text-muted-foreground">Kéo thả bản thảo vào đây hoặc</p>
@@ -1932,8 +1932,8 @@ const openEditTask = (task: Task) => {
                             setNewTaskDesc(suggestion.template.replace('{pages}', pagesText));
                           }}
                           className={`text-left p-2.5 rounded-xl border text-xs transition-all flex flex-col gap-1 cursor-pointer ${isSelected
-                              ? 'bg-primary/10 border-primary text-foreground'
-                              : 'bg-muted/40 border-border/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                            ? 'bg-primary/10 border-primary text-foreground'
+                            : 'bg-muted/40 border-border/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground'
                             }`}
                         >
                           <div className="flex items-center justify-between">
@@ -2111,7 +2111,7 @@ const openEditTask = (task: Task) => {
             <p className="text-xs text-muted-foreground">Mỗi lần gửi sẽ tạo một version mới.</p>
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">File bản thảo</label>
-             <label className="flex items-center gap-3 w-full px-3 py-2 rounded-xl border border-border bg-background text-sm cursor-pointer hover:bg-muted transition-colors">
+              <label className="flex items-center gap-3 w-full px-3 py-2 rounded-xl border border-border bg-background text-sm cursor-pointer hover:bg-muted transition-colors">
                 <span className="shrink-0 px-3 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs">Chọn file</span>
                 <span className="text-muted-foreground truncate">
                   {submitManuscriptFile ? submitManuscriptFile.name : 'Chưa chọn tệp nào'}
@@ -2351,7 +2351,7 @@ const openEditTask = (task: Task) => {
                   Hủy
                 </button>
                 <button
-                 type="submit"
+                  type="submit"
                   disabled={submitWorkUploading}
                   className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
