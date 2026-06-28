@@ -19,6 +19,7 @@ export interface ManuscriptItem {
   progress: number // chapter drawing progress (e.g., 0 to 100) for BR-84 check
   history: ManuscriptVersion[]
   pages: string[] // mock page previews
+  fileUrl?: string
 }
 
 export interface Annotation {
