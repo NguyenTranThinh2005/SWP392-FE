@@ -17,7 +17,9 @@ export const chapterService = {
   listChapters: async (): Promise<Chapter[]> => {
     const res = await fetchAPI<{ data: any[] }>("/api/chapters");
     const list = res.data || res || [];
-    return list.map((c: any) => ({
+    return list
+      .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .map((c: any) => ({
       id: c.chapterId || c.id,
       seriesId: c.seriesId,
       number: c.chapterNo || c.number,
@@ -34,7 +36,9 @@ export const chapterService = {
   getChaptersBySeries: async (seriesId: string): Promise<Chapter[]> => {
     const res = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/chapters`);
     const list = res.data || res || [];
-    return list.map((c: any) => ({
+    return list
+      .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .map((c: any) => ({
       id: c.chapterId || c.id,
       seriesId: c.seriesId,
       number: c.chapterNo || c.number,
