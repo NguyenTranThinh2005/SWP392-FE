@@ -69,26 +69,32 @@ export const manuscriptService = {
   },
 
   // Annotation Version Binding
-  async addAnnotation(manuscriptId: string, versionName: string, text: string): Promise<Annotation> {
+  async addAnnotation(manuscriptId: string, versionName: string, pageNo: number, positionX: number, positionY: number, text: string): Promise<Annotation> {
     const payload = {
-      pageNo: 1, // Default page coordinate fallback
-      positionX: 50.00,
-      positionY: 50.00,
+      pageNo,
+      positionX,
+      positionY,
       content: text
     }
 
     try {
-      const res = await fetchAPI<{ id: string; annotationId: string }>(`/api/manuscripts/${manuscriptId}/annotations`, {
+      const res = await fetchAPI<any>(`/api/manuscripts/${manuscriptId}/annotations`, {
         method: 'POST',
         body: JSON.stringify(payload)
       })
 
+      const data = res.data || res
+
       const newAnn: Annotation = {
-        id: res.id || res.annotationId || `A${Date.now()}`,
+        id: data.annotationId || data.id || `A${Date.now()}`,
         manuscriptId,
         versionName,
-        text,
-        createdAt: new Date().toISOString()
+        pageNo: data.pageNo,
+        positionX: Number(data.positionX ?? positionX),
+        positionY: Number(data.positionY ?? positionY),
+        text: data.content ?? text,
+        authorName: data.authorName,
+        createdAt: data.createdAt || new Date().toISOString()
       }
 
       memoryAnnotations.push(newAnn)
@@ -105,7 +111,7 @@ export const manuscriptService = {
       const chaptersList = (chaptersRes as any).data || chaptersRes || []
 
       // Fetch all series to resolve correct series titles (e.g. mapping seriesId -> title)
-      let seriesMap = new Map<string, string>()
+      const seriesMap = new Map<string, string>()
       try {
         const seriesRes = await fetchAPI<{ data: any[] } | any[]>('/api/series')
         const seriesList = (seriesRes as any).data || seriesRes || []
@@ -202,7 +208,11 @@ export const manuscriptService = {
           id: a.annotationId || a.id,
           manuscriptId: a.manuscriptId || manuscriptId,
           versionName: `v${a.versionNo || 1}`,
+          pageNo: a.pageNo || 1,
+          positionX: Number(a.positionX ?? 0),
+          positionY: Number(a.positionY ?? 0),
           text: a.content || a.text,
+          authorName: a.authorName,
           createdAt: a.createdAt || new Date().toISOString()
         }))
 

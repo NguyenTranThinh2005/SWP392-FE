@@ -3,15 +3,15 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { 
-  ArrowRight, 
-  BookOpen, 
-  Users, 
-  CheckCircle, 
-  BarChart3, 
-  Layers, 
-  PencilLine, 
-  ClipboardList, 
+import {
+  ArrowRight,
+  BookOpen,
+  Users,
+  CheckCircle,
+  BarChart3,
+  Layers,
+  PencilLine,
+  ClipboardList,
   ShieldAlert,
   ChevronRight,
   Sparkles
@@ -102,9 +102,9 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link 
-              href="/login" 
-              className="bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-md hover:bg-primary/95 shadow-md shadow-primary/10 transition-all"
+            <Link
+              href="/login"
+              className="bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary/95 shadow-md shadow-primary/10 transition-all"
             >
               Đăng Nhập
             </Link>
@@ -115,14 +115,14 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-20 pb-24 lg:pt-28 lg:pb-32 bg-gradient-to-b from-background to-muted/30">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-60" />
-        
+
         <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center max-w-3xl mx-auto space-y-6">
             <div className="inline-flex items-center gap-1.5 bg-accent text-accent-foreground px-3 py-1 rounded-full text-xs font-semibold tracking-wide border border-border animate-pulse">
               <Sparkles className="w-3.5 h-3.5" />
               Không gian làm việc cho Xuất bản Manga & Truyện tranh
             </div>
-            
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.15]">
               Tối ưu hóa quy trình <br className="hidden sm:inline" />
               <span className="bg-gradient-to-r from-primary via-indigo-600 to-primary/80 bg-clip-text text-transparent">
@@ -135,16 +135,16 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Link 
-                href="/login" 
-                className="group flex items-center justify-center gap-2 w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3.5 rounded-lg shadow-lg shadow-primary/10 transition-all"
+              <Link
+                href="/login"
+                className="group flex items-center justify-center gap-2 w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3.5 rounded-xl shadow-lg shadow-primary/10 transition-all"
               >
                 Bắt đầu Cộng tác
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link 
-                href="/dashboard/forms-demo" 
-                className="flex items-center justify-center gap-2 w-full sm:w-auto bg-card border border-border text-foreground hover:text-primary hover:border-primary/30 font-semibold px-6 py-3.5 rounded-lg hover:bg-accent/30 shadow-sm transition-all"
+              <Link
+                href="/dashboard/forms-demo"
+                className="flex items-center justify-center gap-2 w-full sm:w-auto bg-card border border-border text-foreground hover:text-primary hover:border-primary/30 font-semibold px-6 py-3.5 rounded-xl hover:bg-accent/30 shadow-sm transition-all"
               >
                 Trải nghiệm Bản Demo
               </Link>
@@ -167,8 +167,8 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Feature 1 */}
-            <div className="bg-card p-6 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/10 transition-all group">
-              <div className="bg-primary/10 text-primary w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <div className="bg-card p-6 rounded-2xl border border-border hover:border-primary/30 hover:bg-accent/10 transition-all group">
+              <div className="bg-primary/10 text-primary w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <PencilLine className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold mb-2 text-foreground">Đề xuất Tác phẩm</h3>
@@ -178,8 +178,8 @@ export default function LandingPage() {
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-card p-6 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/10 transition-all group">
-              <div className="bg-primary/10 text-primary w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <div className="bg-card p-6 rounded-2xl border border-border hover:border-primary/30 hover:bg-accent/10 transition-all group">
+              <div className="bg-primary/10 text-primary w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <ClipboardList className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold mb-2 text-foreground">Phân công Nhiệm vụ</h3>
@@ -189,8 +189,8 @@ export default function LandingPage() {
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-card p-6 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/10 transition-all group">
-              <div className="bg-primary/10 text-primary w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <div className="bg-card p-6 rounded-2xl border border-border hover:border-primary/30 hover:bg-accent/10 transition-all group">
+              <div className="bg-primary/10 text-primary w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Layers className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold mb-2 text-foreground">Kiểm soát Bản thảo</h3>
@@ -200,8 +200,8 @@ export default function LandingPage() {
             </div>
 
             {/* Feature 4 */}
-            <div className="bg-card p-6 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/10 transition-all group">
-              <div className="bg-primary/10 text-primary w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <div className="bg-card p-6 rounded-2xl border border-border hover:border-primary/30 hover:bg-accent/10 transition-all group">
+              <div className="bg-primary/10 text-primary w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <BarChart3 className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold mb-2 text-foreground">Phân tích Độc giả</h3>
@@ -226,16 +226,15 @@ export default function LandingPage() {
           </div>
 
           {/* Role Tabs */}
-          <div className="flex flex-wrap justify-center gap-2 p-1.5 bg-muted rounded-lg max-w-xl mx-auto mb-12">
+          <div className="flex flex-wrap justify-center gap-2 p-1.5 bg-muted rounded-xl max-w-xl mx-auto mb-12">
             {(['mangaka', 'assistant', 'editor', 'board'] as const).map((role) => (
               <button
                 key={role}
                 onClick={() => setActiveRole(role)}
-                className={`px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
-                  activeRole === role 
-                    ? 'bg-card text-primary shadow-sm' 
+                className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeRole === role
+                    ? 'bg-card text-primary shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-                }`}
+                  }`}
               >
                 {role === 'mangaka' && 'Mangaka'}
                 {role === 'assistant' && 'Trợ lý'}
@@ -252,7 +251,7 @@ export default function LandingPage() {
                 <span className={`inline-flex self-start bg-gradient-to-r ${rolesDetails[activeRole].color} text-white px-3 py-1 rounded-full text-xs font-bold tracking-wider`}>
                   {rolesDetails[activeRole].badge}
                 </span>
-                
+
                 <div>
                   <h3 className="text-2xl font-bold text-foreground mb-1">
                     {rolesDetails[activeRole].title}
@@ -267,8 +266,8 @@ export default function LandingPage() {
                 </p>
 
                 <div className="pt-2">
-                  <Link 
-                    href="/login" 
+                  <Link
+                    href="/login"
                     className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
                   >
                     Vào Bảng Điều Khiển <ChevronRight className="w-4 h-4" />
@@ -308,15 +307,15 @@ export default function LandingPage() {
             Đăng nhập ngay để truy cập không gian làm việc, quản lý đề xuất, theo dõi bản thảo và điều phối công việc giữa các đội ngũ.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <Link 
-              href="/login" 
-              className="bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-8 py-3.5 rounded-lg shadow-sm shadow-primary/10 transition-all w-full sm:w-auto"
+            <Link
+              href="/login"
+              className="bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-8 py-3.5 rounded-xl shadow-sm shadow-primary/10 transition-all w-full sm:w-auto"
             >
               Đăng nhập vào Workspace
             </Link>
-            <Link 
-              href="/dashboard/forms-demo" 
-              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold px-8 py-3.5 rounded-lg transition-all w-full sm:w-auto"
+            <Link
+              href="/dashboard/forms-demo"
+              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold px-8 py-3.5 rounded-xl transition-all w-full sm:w-auto"
             >
               Trải nghiệm Demo
             </Link>

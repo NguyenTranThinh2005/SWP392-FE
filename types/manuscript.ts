@@ -26,7 +26,11 @@ export interface ManuscriptItem {
 export interface Annotation {
   id: string
   manuscriptId: string
-  versionName: string
+  versionName?: string
+  pageNo: number
+  positionX: number
+  positionY: number
   text: string
+  authorName?: string
   createdAt: string
 }

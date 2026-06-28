@@ -94,7 +94,7 @@ export default function ManuscriptsPage() {
     e.preventDefault()
     if (!activeManuscript || !newAnnotationText.trim()) return
 
-    manuscriptService.addAnnotation(activeManuscript.id, activeManuscript.latestVersion, newAnnotationText.trim()).then((ann) => {
+    manuscriptService.addAnnotation(activeManuscript.id, activeManuscript.latestVersion, 1, 0.5, 0.5, newAnnotationText.trim()).then((ann) => {
       setAnnotations(prev => [...prev, ann])
       setNewAnnotationText('')
       toast.success('Annotation added to this version draft!')

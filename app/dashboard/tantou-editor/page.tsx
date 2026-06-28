@@ -341,6 +341,9 @@ function TantouEditorWorkspace() {
     manuscriptService.addAnnotation(
       activeManuscript.id,
       activeManuscript.latestVersion,
+      1,
+      0.5,
+      0.5,
       newAnnotationText.trim()
     ).then((ann) => {
       setAnnotations((prev) => [...prev, ann])
@@ -411,12 +414,12 @@ function TantouEditorWorkspace() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-5">
         <div>
           <h1 className="text-2xl font-black text-foreground tracking-tight mt-1.5">
-            Welcome back, <span className="text-primary">{currentUserName}</span>
+            Chào mừng, <span className="text-primary">{currentUserName}</span>
           </h1>
         </div>
         <div className="flex items-center gap-2 bg-card border border-border px-3.5 py-1.5 rounded-lg text-xs font-bold text-muted-foreground shadow-sm">
           <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-          Active: {assignedMangakas.length} assigned Mangakas
+          Hoạt động: {assignedMangakas.length} Mangaka được gán
         </div>
       </div>
 
@@ -424,7 +427,7 @@ function TantouEditorWorkspace() {
       {activeTab === 'dashboard' && (
         <div className="space-y-6 animate-in fade-in duration-200">
           <div>
-            <h2 className="text-2xl font-black text-foreground">Dashboard</h2>
+            <h2 className="text-2xl font-black text-foreground">Tổng quan</h2>
           </div>
 
           {/* Stats Summary Strip */}
@@ -437,7 +440,7 @@ function TantouEditorWorkspace() {
                 <BookOpen className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground font-semibold">My Series</p>
+                <p className="text-xs text-muted-foreground font-semibold">Series của tôi</p>
                 <p className="text-2xl font-black text-foreground leading-none mt-1">
                   {stats.seriesCount}
                 </p>
@@ -453,7 +456,7 @@ function TantouEditorWorkspace() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-semibold font-sans">
-                  Pending Reviews
+                  Đang chờ đánh giá
                 </p>
                 <p className="text-2xl font-black text-foreground leading-none mt-1">
                   {stats.pendingCount}
