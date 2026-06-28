@@ -1,4 +1,5 @@
 import pixelmatch from 'pixelmatch'
+import JSZip from 'jszip'
 
 // Tải 1 ảnh từ URL về dạng có thể đọc pixel
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -53,7 +54,6 @@ export async function compareImages(urlA: string, urlB: string): Promise<Compare
     diffDataUrl: diffCanvas.toDataURL()
   }
 }
-import JSZip from 'jszip'
 
 // Kiem tra file co phai anh khong (theo duoi)
 function isImageName(name: string): boolean {
