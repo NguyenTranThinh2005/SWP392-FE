@@ -311,6 +311,7 @@ export function updateTaskStatus(
   status: TaskStatus, 
   feedback?: string, 
   submittedWorkUrl?: string,
+  prevSubmittedWorkUrl?: string,
   submitDescription?: string,
   submittedFiles?: { name: string; size: string; type: string }[]
 ): boolean {

@@ -1,5 +1,6 @@
 'use client'
 
+import { compareAny } from '@/lib/imageCompare'
 import { getSalaryByAssistant, formatVND } from '@/lib/salary'
 import { useEffect, useState } from 'react'
 import { useRole } from '@/context/RoleContext'
@@ -84,7 +85,22 @@ export default function ChaptersPage() {
   const [activeTaskToReview, setActiveTaskToReview] = useState<Task | null>(null)
   const [isViewDetailModalOpen, setIsViewDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
+const [subCompareLoading, setSubCompareLoading] = useState(false)
+  const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string } | null>(null)
+  const [subCompareError, setSubCompareError] = useState('')
 
+  const handleCompareSubmissions = async () => {
+    const cur = activeTaskToReview?.submittedWorkUrl
+    const prev = activeTaskToReview?.prevSubmittedWorkUrl
+    if (!cur || !prev) { setSubCompareError('Cần ít nhất 2 lần nộp để so sánh.'); setSubCompareResult(null); return }
+    setSubCompareError(''); setSubCompareLoading(true); setSubCompareResult(null)
+    try {
+      const r = await compareAny(prev, cur)
+      setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl })
+    } catch (e: any) {
+      setSubCompareError('Lỗi khi so sánh: ' + (e?.message || 'không đọc được file'))
+    } finally { setSubCompareLoading(false) }
+  }
   // Form states for creating chapter (Matching SubmitChapterPage.jsx)
   const [newChapterSeriesId, setNewChapterSeriesId] = useState('')
   const [newChapterNo, setNewChapterNo] = useState<string>('')
@@ -217,6 +233,7 @@ export default function ChaptersPage() {
             pageStart: t.pageStart,
             pageEnd: t.pageEnd,
             submittedWorkUrl: latestSub?.submittedFileAssetUrl || undefined,
+            prevSubmittedWorkUrl: sortedSubs.length >= 2 ? sortedSubs[sortedSubs.length - 2]?.submittedFileAssetUrl : undefined,
             submittedFileAssetId: latestSub?.submittedFileAssetId || undefined,
             submitDescription: latestSub?.note || undefined,
             submissionId: latestSub?.submissionId || latestSub?.id || undefined,
@@ -1210,7 +1227,7 @@ const openEditTask = (task: Task) => {
                                   onClick={() => openEditTask(task)}
                                   className="inline-flex items-center gap-1.5 border border-border hover:bg-muted text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer"
                                 >
-                                  ✏️ Sửa
+                                  Sửa
                                 </button>
                               )}
                               {task.status === 'Submitted' && (
@@ -2182,8 +2199,29 @@ const openEditTask = (task: Task) => {
                     />
                   ) : (
                     <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
-                  )}
+                 )}
                 </div>
+
+                {activeTaskToReview.prevSubmittedWorkUrl && (
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleCompareSubmissions}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
+                    >
+                      🔍 So sánh với lần nộp trước
+                    </button>
+                    {subCompareLoading && <p className="text-xs text-muted-foreground text-center">Đang so sánh...</p>}
+                    {subCompareError && <p className="text-xs text-red-600">{subCompareError}</p>}
+                    {subCompareResult && (
+                      <div className="border border-border rounded-xl p-2 text-xs">
+                        <p className="font-bold mb-1">Mức thay đổi: <span className="text-indigo-600">{subCompareResult.percent}%</span></p>
+                        {subCompareResult.diff && <img src={subCompareResult.diff} alt="diff" className="w-full max-w-xs border border-border rounded-lg" />}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Submitted Files List */}
 
                 {/* Submitted Files List */}
                 {activeTaskToReview.submittedFiles && activeTaskToReview.submittedFiles.length > 0 ? (
