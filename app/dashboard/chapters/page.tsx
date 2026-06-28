@@ -1,5 +1,6 @@
 'use client'
 
+import { getSalaryByAssistant, formatVND } from '@/lib/salary'
 import { useEffect, useState } from 'react'
 import { useRole } from '@/context/RoleContext'
 import {
@@ -882,6 +883,7 @@ const openEditTask = (task: Task) => {
   const isOutdatedTask = (t: Task) =>
     !!t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Approved' && t.status !== 'Submitted'
   const countableTasks = chapterTasks.filter(t => !isOutdatedTask(t))
+  const salaryByAssistant = getSalaryByAssistant(chapterTasks)
   const totalTasksOfChapter = countableTasks.length
   const approvedTasksOfChapter = countableTasks.filter(t => t.status === 'Approved').length
   const progressPercent = totalTasksOfChapter > 0
@@ -1064,7 +1066,7 @@ const openEditTask = (task: Task) => {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`px-2.5 py-1 text-xs font-bold border rounded-full ${getChapterStatusClass(selectedChapter.status)}`}>
-                          {selectedChapter.status}
+                          {selectedChapter.status}                       
                         </span>
                       </div>
                     </div>
@@ -1253,6 +1255,33 @@ const openEditTask = (task: Task) => {
                           </div>
                         ))
                       )}
+
+                      {salaryByAssistant.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <h4 className="text-xs font-extrabold mb-2">💰 Lương phải trả (task đã duyệt)</h4>
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-left text-muted-foreground border-b border-border">
+                                <th className="py-1.5 font-bold">Trợ lý</th>
+                                <th className="py-1.5 font-bold text-center">Số task</th>
+                                <th className="py-1.5 font-bold text-center">Số trang</th>
+                                <th className="py-1.5 font-bold text-right">Thành tiền</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {salaryByAssistant.map((s) => (
+                                <tr key={s.assistantName} className="border-b border-border/50">
+                                  <td className="py-1.5 font-semibold">{s.assistantName}</td>
+                                  <td className="py-1.5 text-center">{s.taskCount}</td>
+                                  <td className="py-1.5 text-center">{s.totalPages}</td>
+                                  <td className="py-1.5 text-right font-bold text-green-600">{formatVND(s.amount)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                   
                     </div>
                   </div>
                 </>
