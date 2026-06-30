@@ -787,7 +787,7 @@ const openEditTask = (task: Task) => {
     }
     fetchAPI(`/api/page-tasks/submissions/${task.submissionId}/reject`, {
       method: 'POST',
-      body: JSON.stringify({ rejectReason: reviewFeedback })
+      body: JSON.stringify({ rejectReason: reviewFeedback, feedback: reviewFeedback })
     }).then(() => {
       showToast(`Đã từ chối và gửi phản hồi yêu cầu sửa đổi!`, 'error')
       setIsReviewModalOpen(false)
