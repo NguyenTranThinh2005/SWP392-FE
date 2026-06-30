@@ -71,6 +71,7 @@ export const manuscriptService = {
   // Annotation Version Binding
   async addAnnotation(manuscriptId: string, versionName: string, pageNo: number, positionX: number, positionY: number, text: string): Promise<Annotation> {
     const payload = {
+      manuscriptId,
       pageNo,
       positionX,
       positionY,
@@ -202,7 +203,7 @@ export const manuscriptService = {
   async syncAnnotationsFromBackend(manuscriptId: string): Promise<Annotation[]> {
     try {
       const response = await fetchAPI<{ annotations: any[] } | any>(`/api/manuscripts/${manuscriptId}/annotations`)
-      const rawAnns = response.annotations || (Array.isArray(response) ? response : [])
+      const rawAnns = response.data || response.annotations || (Array.isArray(response) ? response : [])
       if (Array.isArray(rawAnns)) {
         const backendAnns: Annotation[] = rawAnns.map(a => ({
           id: a.annotationId || a.id,

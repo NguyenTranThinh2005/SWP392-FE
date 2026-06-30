@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 
 import { manuscriptService } from '@/services/manuscriptService'
 import type { ManuscriptItem, Annotation } from '@/types/manuscript'
+import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
 
 export default function ManuscriptsPage() {
   const { role } = useRole()
@@ -101,6 +102,27 @@ export default function ManuscriptsPage() {
     }).catch((err) => {
       toast.error(err.message || 'Failed to add annotation')
     })
+  }
+
+  const handleAddImageAnnotation = async (
+    pageNo: number,
+    x: number,
+    y: number,
+    text: string
+  ) => {
+    if (!activeManuscript) return
+
+    const ann = await manuscriptService.addAnnotation(
+      activeManuscript.id,
+      activeManuscript.latestVersion,
+      pageNo,
+      x,
+      y,
+      text
+    )
+
+    setAnnotations(prev => [...prev, ann])
+    toast.success('Annotation added!')
   }
 
   // aandle decision outcomes (, )
@@ -191,24 +213,32 @@ export default function ManuscriptsPage() {
                 </div>
 
                 {activeManuscript.fileUrl ? (
-                  <div className="p-4 bg-muted/30 border border-border/80 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-foreground truncate">
-                        {activeManuscript.fileUrl.split('/').pop() || 'manuscript_file'}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                        URL: {activeManuscript.fileUrl}
-                      </p>
+                  <div className="space-y-3">
+                    <ImageCommentLayer
+                      imageUrl={activeManuscript.fileUrl}
+                      pageNo={1}
+                      annotations={annotations}
+                      onAddAnnotation={handleAddImageAnnotation}
+                    />
+                    <div className="p-4 bg-muted/30 border border-border/80 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-foreground truncate">
+                          {activeManuscript.fileUrl.split('/').pop() || 'manuscript_file'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                          URL: {activeManuscript.fileUrl}
+                        </p>
+                      </div>
+                      <a
+                        href={activeManuscript.fileUrl}
+                        download
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-extrabold rounded-lg transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
+                      >
+                        <Download className="w-4 h-4" /> Tải về Bản thảo
+                      </a>
                     </div>
-                    <a
-                      href={activeManuscript.fileUrl}
-                      download
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-extrabold rounded-lg transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
-                    >
-                      <Download className="w-4 h-4" /> Tải về Bản thảo
-                    </a>
                   </div>
                 ) : (
                   <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-lg text-xs text-amber-600 font-medium">

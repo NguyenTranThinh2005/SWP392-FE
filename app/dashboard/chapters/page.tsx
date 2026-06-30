@@ -46,6 +46,8 @@ import { seriesService } from '@/services/seriesService'
 import { chapterService } from '@/services/chapterService'
 import { userService } from '@/services/userService'
 import { calculateChapterDeadline, calculateChapterProgress } from '@/lib/business-logic'
+import type { Annotation } from '@/types/manuscript'
+import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
 
 export default function ChaptersPage() {
   const { role } = useRole()
@@ -124,6 +126,51 @@ export default function ChaptersPage() {
 
   // Review states (Approve / Reject)
   const [reviewFeedback, setReviewFeedback] = useState('')
+  const [taskAnnotations, setTaskAnnotations] = useState<Annotation[]>([])
+
+  useEffect(() => {
+    const activeId = activeTaskToReview?.id || activeTaskToView?.id
+    if (activeId) {
+      const saved = localStorage.getItem(`task_annotations_${activeId}`)
+      if (saved) {
+        try {
+          setTaskAnnotations(JSON.parse(saved))
+        } catch {
+          setTaskAnnotations([])
+        }
+      } else {
+        setTaskAnnotations([])
+      }
+    } else {
+      setTaskAnnotations([])
+    }
+  }, [activeTaskToReview, activeTaskToView])
+
+  const handleAddTaskAnnotation = async (
+    pageNo: number,
+    x: number,
+    y: number,
+    text: string
+  ) => {
+    const activeId = activeTaskToReview?.id || activeTaskToView?.id
+    if (!activeId) return
+
+    const newAnn: Annotation = {
+      id: `task_ann_${Date.now()}`,
+      manuscriptId: activeId,
+      pageNo,
+      positionX: x,
+      positionY: y,
+      text,
+      authorName: role === 'Mangaka' ? 'Mangaka' : 'Assistant',
+      createdAt: new Date().toISOString()
+    }
+
+    const updated = [...taskAnnotations, newAnn]
+    setTaskAnnotations(updated)
+    localStorage.setItem(`task_annotations_${activeId}`, JSON.stringify(updated))
+    showToast('Đã thêm ghi chú trên ảnh!')
+  }
 
   // --- State for Assistant Role ---
   const [selectedAssistantId, setSelectedAssistantId] = useState<string>('A01') // Sato Takashi by default
@@ -2159,16 +2206,18 @@ export default function ChaptersPage() {
               {/* Left Side: Mock Image Preview */}
               <div className="space-y-3">
                 <label className="text-xs font-bold text-muted-foreground">Xem trước sản phẩm đã nộp</label>
-                <div className="relative border border-border rounded-xl overflow-hidden bg-muted aspect-4/3 flex items-center justify-center group shadow-inner">
+                <div className="overflow-hidden group shadow-inner">
                   {activeTaskToReview.submittedWorkUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={activeTaskToReview.submittedWorkUrl}
-                      alt="Work deliverable"
-                      className="w-full h-full object-cover"
+                    <ImageCommentLayer
+                      imageUrl={activeTaskToReview.submittedWorkUrl}
+                      pageNo={1}
+                      annotations={taskAnnotations}
+                      onAddAnnotation={handleAddTaskAnnotation}
                     />
                   ) : (
-                    <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
+                    <div className="relative border border-border rounded-xl overflow-hidden bg-muted aspect-4/3 flex items-center justify-center w-full">
+                      <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
+                    </div>
                   )}
                 </div>
 
@@ -2452,6 +2501,20 @@ export default function ChaptersPage() {
                   <p className="text-xs font-bold text-muted-foreground">Ghi chú sản phẩm nộp của Trợ lý</p>
                   <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl text-foreground text-xs leading-relaxed">
                     {activeTaskToView.submitDescription}
+                  </div>
+                </div>
+              )}
+
+              {activeTaskToView.submittedWorkUrl && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-bold text-muted-foreground">Sản phẩm vẽ đã nộp (Xem trước & Chú thích)</p>
+                  <div className="overflow-hidden group shadow-inner">
+                    <ImageCommentLayer
+                      imageUrl={activeTaskToView.submittedWorkUrl}
+                      pageNo={1}
+                      annotations={taskAnnotations}
+                      readOnly={true}
+                    />
                   </div>
                 </div>
               )}
