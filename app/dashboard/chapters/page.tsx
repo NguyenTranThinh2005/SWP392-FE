@@ -1,6 +1,6 @@
 'use client'
 
-import { compareAny } from '@/lib/imageCompare'
+import { compareAny,extractImagesFromZip  } from '@/lib/imageCompare'
 import { getSalaryByAssistant, formatVND } from '@/lib/salary'
 import { useEffect, useState } from 'react'
 import { useRole } from '@/context/RoleContext'
@@ -140,8 +140,30 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
 
   // Review states (Approve / Reject)
   const [reviewFeedback, setReviewFeedback] = useState('')
-  const [imagePins, setImagePins] = useState<{ x: number; y: number; note: string }[]>([])
+  const [imagePins, setImagePins] = useState<{ x: number; y: number; note: string; page: number }[]>([])
+  const [zipPages, setZipPages] = useState<{ name: string; dataUrl: string }[]>([])
+  const [currentPage, setCurrentPage] = useState(0)
+  const [zipLoading, setZipLoading] = useState(false)
   const [pinOverlayOpen, setPinOverlayOpen] = useState(false)
+  const openPinOverlay = async () => {
+    const url = activeTaskToReview?.submittedWorkUrl
+    if (!url) return
+    setCurrentPage(0)
+    setPinOverlayOpen(true)
+    if (/\.zip(\?|$)/i.test(url)) {
+      setZipLoading(true)
+      try {
+        const imgs = await extractImagesFromZip(url)
+        setZipPages(imgs.length ? imgs : [])
+      } catch {
+        setZipPages([])
+      } finally {
+        setZipLoading(false)
+      }
+    } else {
+      setZipPages([{ name: 'image', dataUrl: url }])
+    }
+  }
   // --- State for Assistant Role ---
   const [selectedAssistantId, setSelectedAssistantId] = useState<string>('A01') // Sato Takashi by default
   const [assistantTasks, setAssistantTasks] = useState<Task[]>([])
@@ -784,7 +806,7 @@ const openEditTask = (task: Task) => {
     }
     const pinNotes = imagePins
       .filter(p => p.note.trim())
-      .map((p, i) => `${i + 1}. ${p.note.trim()}`)
+      .map((p, i) => `${i + 1}. (Trang ${p.page + 1}) ${p.note.trim()}`)
       .join(' | ')
     const fullFeedback = [reviewFeedback.trim(), pinNotes ? `[Góp ý trên ảnh] ${pinNotes}` : '']
       .filter(Boolean).join(' — ')
@@ -801,6 +823,8 @@ const openEditTask = (task: Task) => {
       setActiveTaskToReview(null)
       setReviewFeedback('')
       setImagePins([])
+      setZipPages([])
+      setCurrentPage(0)
       refreshData()
     }).catch((err: any) => {
       showToast(err.message || 'Failed to reject submission.', 'error')
@@ -2142,6 +2166,79 @@ const openEditTask = (task: Task) => {
           </div>
         </div>
       )}
+      {pinOverlayOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/90 flex flex-col" onClick={() => setPinOverlayOpen(false)}>
+          <div className="flex items-center justify-between p-3 text-white shrink-0">
+            <span className="text-sm font-bold">
+              Bấm lên ảnh để ghim góp ý
+              {zipPages.length > 1 && ` — Trang ${currentPage + 1}/${zipPages.length}`}
+              {` — ${imagePins.filter(p => p.page === currentPage).length} điểm`}
+            </span>
+            <button onClick={() => setPinOverlayOpen(false)} className="text-white text-xl px-3">✕</button>
+          </div>
+
+          {zipPages.length > 1 && (
+            <div className="flex items-center justify-center gap-3 pb-2 text-white shrink-0" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0} className="px-3 py-1 bg-white/20 rounded-lg disabled:opacity-30">‹ Trước</button>
+              <span className="text-sm">Trang {currentPage + 1}/{zipPages.length}</span>
+              <button onClick={() => setCurrentPage(p => Math.min(zipPages.length - 1, p + 1))} disabled={currentPage === zipPages.length - 1} className="px-3 py-1 bg-white/20 rounded-lg disabled:opacity-30">Sau ›</button>
+            </div>
+          )}
+
+          <div className="flex-1 flex overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="flex-1 relative flex items-center justify-center overflow-auto cursor-crosshair"
+              onClick={(e) => {
+                const img = (e.currentTarget.querySelector('img') as HTMLImageElement)
+                if (!img) return
+                const rect = img.getBoundingClientRect()
+                const x = ((e.clientX - rect.left) / rect.width) * 100
+                const y = ((e.clientY - rect.top) / rect.height) * 100
+                if (x < 0 || x > 100 || y < 0 || y > 100) return
+                setImagePins(prev => [...prev, { x, y, note: '', page: currentPage }])
+              }}
+            >
+              {zipLoading ? (
+                <p className="text-white text-sm">Đang giải nén zip...</p>
+              ) : zipPages[currentPage] ? (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={zipPages[currentPage].dataUrl} alt="bai nop" className="max-h-[80vh] max-w-full object-contain pointer-events-none" />
+                  {imagePins.map((pin, idx) => pin.page === currentPage && (
+                    <div key={idx} className="absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
+                      {idx + 1}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-white text-sm">Không có ảnh để hiển thị.</p>
+              )}
+            </div>
+
+            <div className="w-80 bg-background p-4 overflow-y-auto shrink-0 space-y-2">
+              <h3 className="text-sm font-extrabold mb-2">Góp ý ({imagePins.length})</h3>
+              {imagePins.length === 0 && <p className="text-xs text-muted-foreground">Bấm lên ảnh để thêm điểm góp ý.</p>}
+              {imagePins.map((pin, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0 mt-1">{idx + 1}</span>
+                  <div className="flex-1">
+                    {zipPages.length > 1 && <span className="text-[10px] text-muted-foreground">Trang {pin.page + 1}</span>}
+                    <textarea
+                      value={pin.note}
+                      onChange={(e) => setImagePins(prev => prev.map((p, i) => i === idx ? { ...p, note: e.target.value } : p))}
+                      placeholder="Góp ý cho điểm này..."
+                      className="w-full text-xs px-2 py-1.5 border border-border rounded-lg bg-background resize-none"
+                      rows={2}
+                    />
+                  </div>
+                  <button onClick={() => setImagePins(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-red-500 shrink-0 mt-1">✕</button>
+                </div>
+              ))}
+              <button onClick={() => setPinOverlayOpen(false)} className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl">Xong</button>
+            </div>
+          </div>
+        </div>
+      )}
       {isSubmitManuscriptOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setIsSubmitManuscriptOpen(false)}>
           <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
@@ -2199,13 +2296,7 @@ const openEditTask = (task: Task) => {
                 <label className="text-xs font-bold text-muted-foreground">Xem trước sản phẩm đã nộp</label>
                <div
                   className="relative border border-border rounded-xl overflow-hidden bg-muted min-h-[400px] max-h-[600px] flex items-center justify-center group shadow-inner cursor-crosshair"
-                  onClick={(e) => {
-                    if (!activeTaskToReview.submittedWorkUrl) return
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    const x = ((e.clientX - rect.left) / rect.width) * 100
-                    const y = ((e.clientY - rect.top) / rect.height) * 100
-                    setImagePins(prev => [...prev, { x, y, note: '' }])
-                  }}
+                  onClick={() => { if (activeTaskToReview.submittedWorkUrl) openPinOverlay() }}
                 >
                   {activeTaskToReview.submittedWorkUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -2230,7 +2321,7 @@ const openEditTask = (task: Task) => {
 
             {activeTaskToReview.submittedWorkUrl && (
                   <button
-                    onClick={() => setPinOverlayOpen(true)}
+                    onClick={openPinOverlay}
                     className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
                   >
                     🔍 Mở to để góp ý chi tiết

@@ -61,7 +61,7 @@ function isImageName(name: string): boolean {
 }
 
 // Giai nen 1 zip tu URL -> tra ve danh sach { ten, dataUrl } cua cac anh, sort theo ten
-async function extractImagesFromZip(zipUrl: string): Promise<{ name: string; dataUrl: string }[]> {
+export async function extractImagesFromZip(zipUrl: string): Promise<{ name: string; dataUrl: string }[]> {
   const res = await fetch(zipUrl)
   const blob = await res.blob()
   const zip = await JSZip.loadAsync(blob)
