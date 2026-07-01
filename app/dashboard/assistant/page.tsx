@@ -121,7 +121,7 @@ export default function AssistantDashboardPage() {
             submittedWorkUrl: latestSub?.submittedFileAssetUrl,
             submitDescription: latestSub?.note || undefined,
             submissionId: latestSub?.submissionId || latestSub?.id || undefined,
-            feedback: latestSub?.rejectReason || undefined,
+            feedback: latestSub?.feedback || latestSub?.rejectReason || undefined,
             referenceFiles: t.taskReferences || t.referenceFiles || [],
             submissionCount: t.submissions?.length || 0
           }

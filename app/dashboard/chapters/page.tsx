@@ -260,7 +260,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
             submittedFileAssetId: latestSub?.submittedFileAssetId || undefined,
             submitDescription: latestSub?.note || undefined,
             submissionId: latestSub?.submissionId || latestSub?.id || undefined,
-            feedback: latestSub?.rejectReason || undefined,
+            feedback: latestSub?.feedback || latestSub?.rejectReason || undefined,
             createdAt: t.createdAt || '',
             referenceFiles: t.taskReferences || t.referenceFiles || []
           }
