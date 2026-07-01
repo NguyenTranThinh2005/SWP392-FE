@@ -688,7 +688,6 @@ const openEditTask = (task: Task) => {
         method: 'POST',
         body: JSON.stringify({ chapterId: selectedChapterId, fileUrl, notes: submitManuscriptNotes })
       })
-      await chapterService.updateChapter(selectedChapterId, { status: 'Ready for Editor' })
       showToast('Đã gửi bản thảo cho Editor (tạo version mới)!')
       setIsSubmitManuscriptOpen(false)
       setSubmitManuscriptFile(null)
