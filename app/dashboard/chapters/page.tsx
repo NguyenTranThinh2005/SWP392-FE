@@ -1172,7 +1172,7 @@ const openEditTask = (task: Task) => {
                           </button>
                         )}
                       
-                        {progressPercent >= 100 && selectedChapter.status !== 'Ready for Editor' && selectedChapter.status !== 'Published' && (
+                       {progressPercent >= 100 && selectedChapter.status !== 'Submitted' && selectedChapter.status !== 'Ready for Editor' && selectedChapter.status !== 'Published' && (
                           <button
                             type="button"
                             onClick={() => setIsSubmitManuscriptOpen(true)}
@@ -1563,8 +1563,9 @@ const openEditTask = (task: Task) => {
               <label className="text-xs font-bold text-muted-foreground">Tổng số trang</label>
               <input
                 type="number"
-                value={editChapterPages}
-                onChange={(e) => setEditChapterPages(Number(e.target.value))}
+               value={editChapterPages === 0 ? '' : editChapterPages}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setEditChapterPages(e.target.value === '' ? 0 : Number(e.target.value))}
                 className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
@@ -2143,11 +2144,11 @@ const openEditTask = (task: Task) => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Trang bắt đầu</label>
-                <input type="number" value={editTaskPageStart} onChange={(e) => setEditTaskPageStart(Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+               <input type="number" value={editTaskPageStart === 0 ? '' : editTaskPageStart} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageStart(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Trang kết thúc</label>
-                <input type="number" value={editTaskPageEnd} onChange={(e) => setEditTaskPageEnd(Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+               <input type="number" value={editTaskPageEnd === 0 ? '' : editTaskPageEnd} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageEnd(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
               </div>
             </div>
             <div className="space-y-1">
