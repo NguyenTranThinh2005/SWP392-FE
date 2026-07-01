@@ -1,5 +1,7 @@
 'use client'
 
+import { compareAny,extractImagesFromZip  } from '@/lib/imageCompare'
+import { getSalaryByAssistant, formatVND } from '@/lib/salary'
 import { useEffect, useState } from 'react'
 import { useRole } from '@/context/RoleContext'
 import {
@@ -86,7 +88,22 @@ export default function ChaptersPage() {
   const [activeTaskToReview, setActiveTaskToReview] = useState<Task | null>(null)
   const [isViewDetailModalOpen, setIsViewDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
+const [subCompareLoading, setSubCompareLoading] = useState(false)
+  const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string } | null>(null)
+  const [subCompareError, setSubCompareError] = useState('')
 
+  const handleCompareSubmissions = async () => {
+    const cur = activeTaskToReview?.submittedWorkUrl
+    const prev = activeTaskToReview?.prevSubmittedWorkUrl
+    if (!cur || !prev) { setSubCompareError('Cần ít nhất 2 lần nộp để so sánh.'); setSubCompareResult(null); return }
+    setSubCompareError(''); setSubCompareLoading(true); setSubCompareResult(null)
+    try {
+      const r = await compareAny(prev, cur)
+      setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl })
+    } catch (e: any) {
+      setSubCompareError('Lỗi khi so sánh: ' + (e?.message || 'không đọc được file'))
+    } finally { setSubCompareLoading(false) }
+  }
   // Form states for creating chapter (Matching SubmitChapterPage.jsx)
   const [newChapterSeriesId, setNewChapterSeriesId] = useState('')
   const [newChapterNo, setNewChapterNo] = useState<string>('')
@@ -118,6 +135,7 @@ export default function ChaptersPage() {
   const [editTaskPageEnd, setEditTaskPageEnd] = useState<number>(1)
   const [editTaskDescription, setEditTaskDescription] = useState<string>('')
   const [editTaskDueDate, setEditTaskDueDate] = useState<string>('')
+  const [editTaskAssistantId, setEditTaskAssistantId] = useState('')
   const [isSubmitManuscriptOpen, setIsSubmitManuscriptOpen] = useState(false)
   const [submitManuscriptFile, setSubmitManuscriptFile] = useState<File | null>(null)
   const [submitManuscriptNotes, setSubmitManuscriptNotes] = useState<string>('')
@@ -257,6 +275,30 @@ export default function ChaptersPage() {
     }
   }
 
+  const [imagePins, setImagePins] = useState<{ x: number; y: number; note: string; page: number }[]>([])
+  const [zipPages, setZipPages] = useState<{ name: string; dataUrl: string }[]>([])
+  const [currentPage, setCurrentPage] = useState(0)
+  const [zipLoading, setZipLoading] = useState(false)
+  const [pinOverlayOpen, setPinOverlayOpen] = useState(false)
+  const openPinOverlay = async () => {
+    const url = activeTaskToReview?.submittedWorkUrl
+    if (!url) return
+    setCurrentPage(0)
+    setPinOverlayOpen(true)
+    if (/\.zip(\?|$)/i.test(url)) {
+      setZipLoading(true)
+      try {
+        const imgs = await extractImagesFromZip(url)
+        setZipPages(imgs.length ? imgs : [])
+      } catch {
+        setZipPages([])
+      } finally {
+        setZipLoading(false)
+      }
+    } else {
+      setZipPages([{ name: 'image', dataUrl: url }])
+    }
+  }
   // --- State for Assistant Role ---
   const [selectedAssistantId, setSelectedAssistantId] = useState<string>('A01') // Sato Takashi by default
   const [assistantTasks, setAssistantTasks] = useState<Task[]>([])
@@ -345,6 +387,12 @@ export default function ChaptersPage() {
       if (Array.isArray(data)) {
         const mapped = data.map((t: any) => {
           const latestSub = getLatestSubmission(t.submissions);
+          const sortedSubs = (t.submissions || []).slice().sort((a: any, b: any) => {
+            const da = new Date(a.submittedAt || a.createdAt || a.submittedDate || 0).getTime()
+            const db = new Date(b.submittedAt || b.createdAt || b.submittedDate || 0).getTime()
+            return da - db // cu -> moi
+          })
+          const prevSub = sortedSubs.length >= 2 ? sortedSubs[sortedSubs.length - 2] : null;
 
           let uiStatus = mapBackendTaskStatus(t.status, t.submissions)
           if (uiStatus === 'Pending') {
@@ -370,10 +418,12 @@ export default function ChaptersPage() {
             pageStart: t.pageStart,
             pageEnd: t.pageEnd,
             submittedWorkUrl: getSubmissionFileUrl(latestSub),
+            prevSubmittedWorkUrl: getSubmissionFileUrl(prevSub),
             submittedFileAssetId: latestSub?.submittedFileAssetId || latestSub?.SubmittedFileAssetId || undefined,
             submitDescription: latestSub?.note || undefined,
             submissionId: latestSub?.submissionId || latestSub?.id || undefined,
-            feedback: latestSub?.rejectReason || undefined,
+            feedback: latestSub?.feedback || latestSub?.rejectReason || undefined,
+            createdAt: t.createdAt || '',
             referenceFiles: t.taskReferences || t.referenceFiles || []
           }
         })
@@ -427,7 +477,9 @@ export default function ChaptersPage() {
 
           // Load tasks from backend
           const backendTasks = await fetchTasks(currentChapterId)
-          setChapterTasks(backendTasks)
+          setChapterTasks(
+            [...backendTasks].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+          )
         } else {
           setSelectedChapter(null)
           setChapterTasks([])
@@ -463,7 +515,9 @@ export default function ChaptersPage() {
       // 4. Load tasks for assistant role
       if (role === 'Assistant' && selectedAssistantId) {
         const assTasks = allTasksList.filter(t => t.assistantId === selectedAssistantId)
-        setAssistantTasks(assTasks)
+        setAssistantTasks(
+          [...assTasks].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+        )
       }
     } catch (error) {
       console.error("refreshData failed:", error)
@@ -749,6 +803,7 @@ export default function ChaptersPage() {
     setEditTaskPageEnd(task.pageEnd || 1)
     setEditTaskDescription(task.description || '')
     setEditTaskDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '')
+    setEditTaskAssistantId(task.assistantId || '')
     setIsEditTaskOpen(true)
   }
 
@@ -760,11 +815,12 @@ export default function ChaptersPage() {
     try {
       await fetchAPI(`/api/page-tasks/${editTaskId}`, {
         method: 'PUT',
-        body: JSON.stringify({
+       body: JSON.stringify({
           pageStart: editTaskPageStart,
           pageEnd: editTaskPageEnd,
           description: editTaskDescription,
-          dueDate: editTaskDueDate || null
+          dueDate: editTaskDueDate,
+          assistantId: editTaskAssistantId || undefined,
         })
       })
       showToast('Đã cập nhật task!')
@@ -796,7 +852,6 @@ export default function ChaptersPage() {
         method: 'POST',
         body: JSON.stringify({ chapterId: selectedChapterId, fileUrl, notes: submitManuscriptNotes })
       })
-      await chapterService.updateChapter(selectedChapterId, { status: 'Ready for Editor' })
       showToast('Đã gửi bản thảo cho Editor (tạo version mới)!')
       setIsSubmitManuscriptOpen(false)
       setSubmitManuscriptFile(null)
@@ -869,14 +924,7 @@ export default function ChaptersPage() {
       setNewTaskDueDate('')
       setNewTaskAttachments([])
 
-      // Update chapter status to 'In Progress' if it is 'Draft'
-      if (selectedChapter && selectedChapter.status === 'Draft') {
-        chapterService.updateChapter(selectedChapterId, { status: 'In Progress' }).finally(() => {
-          refreshData()
-        })
-      } else {
-        refreshData()
-      }
+      refreshData()
     }).catch((err: any) => {
       const msg = err?.message || ''
       if (msg.includes('Conflict') || msg.includes('overlap') || msg.includes('409')) {
@@ -912,18 +960,27 @@ export default function ChaptersPage() {
       showToast('Không tìm thấy bản nộp để từ chối.', 'error')
       return
     }
-    if (!reviewFeedback.trim()) {
-      showToast('Vui lòng điền phản hồi (lý do từ chối)!', 'error')
+    const pinNotes = imagePins
+      .filter(p => p.note.trim())
+      .map((p, i) => `${i + 1}. (Trang ${p.page + 1}) ${p.note.trim()}`)
+      .join(' | ')
+    const fullFeedback = [reviewFeedback.trim(), pinNotes ? `[Góp ý trên ảnh] ${pinNotes}` : '']
+      .filter(Boolean).join(' — ')
+    if (!fullFeedback.trim()) {
+      showToast('Vui lòng điền phản hồi hoặc góp ý trên ảnh!', 'error')
       return
     }
     fetchAPI(`/api/page-tasks/submissions/${task.submissionId}/reject`, {
       method: 'POST',
-      body: JSON.stringify({ rejectReason: reviewFeedback })
+      body: JSON.stringify({ rejectReason: fullFeedback, feedback: fullFeedback })
     }).then(() => {
       showToast(`Đã từ chối và gửi phản hồi yêu cầu sửa đổi!`, 'error')
       setIsReviewModalOpen(false)
       setActiveTaskToReview(null)
       setReviewFeedback('')
+      setImagePins([])
+      setZipPages([])
+      setCurrentPage(0)
       refreshData()
     }).catch((err: any) => {
       showToast(err.message || 'Failed to reject submission.', 'error')
@@ -1031,6 +1088,7 @@ export default function ChaptersPage() {
   const isOutdatedTask = (t: Task) =>
     !!t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Approved' && t.status !== 'Submitted'
   const countableTasks = chapterTasks.filter(t => !isOutdatedTask(t))
+  const salaryByAssistant = getSalaryByAssistant(chapterTasks)
   const totalTasksOfChapter = countableTasks.length
   const approvedTasksOfChapter = countableTasks.filter(t => t.status === 'Approved').length
   const progressPercent = totalTasksOfChapter > 0
@@ -1271,7 +1329,7 @@ export default function ChaptersPage() {
                           </button>
                         )}
 
-                        {progressPercent >= 100 && selectedChapter.status !== 'Ready for Editor' && selectedChapter.status !== 'Published' && (
+                       {progressPercent >= 100 && selectedChapter.status !== 'Submitted' && selectedChapter.status !== 'Ready for Editor' && selectedChapter.status !== 'Published' && (
                           <button
                             type="button"
                             onClick={() => setIsSubmitManuscriptOpen(true)}
@@ -1357,7 +1415,7 @@ export default function ChaptersPage() {
                                   onClick={() => openEditTask(task)}
                                   className="inline-flex items-center gap-1.5 border border-border hover:bg-muted text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer"
                                 >
-                                  ✏️ Sửa
+                                  Sửa
                                 </button>
                               )}
                               {task.status === 'Submitted' && (
@@ -1402,6 +1460,33 @@ export default function ChaptersPage() {
                           </div>
                         ))
                       )}
+
+                      {salaryByAssistant.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <h4 className="text-sm font-bold mb-3 text-foreground">Lương phải trả cho trợ lý</h4>
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-left text-muted-foreground border-b border-border">
+                                <th className="py-1.5 font-bold">Trợ lý</th>
+                                <th className="py-1.5 font-bold text-center">Số task</th>
+                                <th className="py-1.5 font-bold text-center">Số trang</th>
+                                <th className="py-1.5 font-bold text-right">Thành tiền</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {salaryByAssistant.map((s) => (
+                                <tr key={s.assistantName} className="border-b border-border/50">
+                                  <td className="py-1.5 font-semibold">{s.assistantName}</td>
+                                  <td className="py-1.5 text-center">{s.taskCount}</td>
+                                  <td className="py-1.5 text-center">{s.totalPages}</td>
+                                  <td className="py-1.5 text-right font-bold text-green-600">{formatVND(s.amount)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
                     </div>
                   </div>
                 </>
@@ -1635,8 +1720,9 @@ export default function ChaptersPage() {
               <label className="text-xs font-bold text-muted-foreground">Tổng số trang</label>
               <input
                 type="number"
-                value={editChapterPages}
-                onChange={(e) => setEditChapterPages(Number(e.target.value))}
+               value={editChapterPages === 0 ? '' : editChapterPages}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setEditChapterPages(e.target.value === '' ? 0 : Number(e.target.value))}
                 className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
@@ -2215,11 +2301,11 @@ export default function ChaptersPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Trang bắt đầu</label>
-                <input type="number" value={editTaskPageStart} onChange={(e) => setEditTaskPageStart(Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+               <input type="number" value={editTaskPageStart === 0 ? '' : editTaskPageStart} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageStart(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Trang kết thúc</label>
-                <input type="number" value={editTaskPageEnd} onChange={(e) => setEditTaskPageEnd(Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+               <input type="number" value={editTaskPageEnd === 0 ? '' : editTaskPageEnd} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageEnd(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
               </div>
             </div>
             <div className="space-y-1">
@@ -2230,9 +2316,96 @@ export default function ChaptersPage() {
               <label className="text-xs font-bold text-muted-foreground">Hạn nộp</label>
               <input type="date" value={editTaskDueDate} onChange={(e) => setEditTaskDueDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
             </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground">Giao cho (đổi trợ lý)</label>
+              <select
+                value={editTaskAssistantId}
+                onChange={(e) => setEditTaskAssistantId(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm"
+              >
+                <option value="">-- Chọn trợ lý --</option>
+                {assistants.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground">Đổi trợ lý để giao lại nhiệm vụ này cho người khác.</p>
+            </div>
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setIsEditTaskOpen(false)} className="px-4 py-2 rounded-xl border border-border text-sm font-bold hover:bg-muted">Hủy</button>
               <button type="button" onClick={handleSaveEditTask} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90">Lưu</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {pinOverlayOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/90 flex flex-col" onClick={() => setPinOverlayOpen(false)}>
+          <div className="flex items-center justify-between p-3 text-white shrink-0">
+            <span className="text-sm font-bold">
+              Bấm lên ảnh để ghim góp ý
+              {zipPages.length > 1 && ` — Trang ${currentPage + 1}/${zipPages.length}`}
+              {` — ${imagePins.filter(p => p.page === currentPage).length} điểm`}
+            </span>
+            <button onClick={() => setPinOverlayOpen(false)} className="text-white text-xl px-3">✕</button>
+          </div>
+
+          {zipPages.length > 1 && (
+            <div className="flex items-center justify-center gap-3 pb-2 text-white shrink-0" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0} className="px-3 py-1 bg-white/20 rounded-lg disabled:opacity-30">‹ Trước</button>
+              <span className="text-sm">Trang {currentPage + 1}/{zipPages.length}</span>
+              <button onClick={() => setCurrentPage(p => Math.min(zipPages.length - 1, p + 1))} disabled={currentPage === zipPages.length - 1} className="px-3 py-1 bg-white/20 rounded-lg disabled:opacity-30">Sau ›</button>
+            </div>
+          )}
+
+          <div className="flex-1 flex overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="flex-1 relative flex items-center justify-center overflow-auto cursor-crosshair"
+              onClick={(e) => {
+                const img = (e.currentTarget.querySelector('img') as HTMLImageElement)
+                if (!img) return
+                const rect = img.getBoundingClientRect()
+                const x = ((e.clientX - rect.left) / rect.width) * 100
+                const y = ((e.clientY - rect.top) / rect.height) * 100
+                if (x < 0 || x > 100 || y < 0 || y > 100) return
+                setImagePins(prev => [...prev, { x, y, note: '', page: currentPage }])
+              }}
+            >
+              {zipLoading ? (
+                <p className="text-white text-sm">Đang giải nén zip...</p>
+              ) : zipPages[currentPage] ? (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={zipPages[currentPage].dataUrl} alt="bai nop" className="max-h-[80vh] max-w-full object-contain pointer-events-none" />
+                  {imagePins.map((pin, idx) => pin.page === currentPage && (
+                    <div key={idx} className="absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
+                      {idx + 1}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-white text-sm">Không có ảnh để hiển thị.</p>
+              )}
+            </div>
+
+            <div className="w-80 bg-background p-4 overflow-y-auto shrink-0 space-y-2">
+              <h3 className="text-sm font-extrabold mb-2">Góp ý ({imagePins.length})</h3>
+              {imagePins.length === 0 && <p className="text-xs text-muted-foreground">Bấm lên ảnh để thêm điểm góp ý.</p>}
+              {imagePins.map((pin, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0 mt-1">{idx + 1}</span>
+                  <div className="flex-1">
+                    {zipPages.length > 1 && <span className="text-[10px] text-muted-foreground">Trang {pin.page + 1}</span>}
+                    <textarea
+                      value={pin.note}
+                      onChange={(e) => setImagePins(prev => prev.map((p, i) => i === idx ? { ...p, note: e.target.value } : p))}
+                      placeholder="Góp ý cho điểm này..."
+                      className="w-full text-xs px-2 py-1.5 border border-border rounded-lg bg-background resize-none"
+                      rows={2}
+                    />
+                  </div>
+                  <button onClick={() => setImagePins(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-red-500 shrink-0 mt-1">✕</button>
+                </div>
+              ))}
+              <button onClick={() => setPinOverlayOpen(false)} className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl">Xong</button>
             </div>
           </div>
         </div>
@@ -2292,20 +2465,116 @@ export default function ChaptersPage() {
               {/* Left Side: Mock Image Preview */}
               <div className="space-y-3">
                 <label className="text-xs font-bold text-muted-foreground">Xem trước sản phẩm đã nộp</label>
-                <div className="overflow-hidden group shadow-inner">
-                  {activeTaskToReview.submittedWorkUrl ? (
+                <div
+                  className="relative border border-border rounded-xl overflow-hidden bg-muted min-h-[400px] max-h-[600px] flex items-center justify-center group shadow-inner cursor-crosshair"
+                  onClick={() => {
+                    if (activeTaskToReview.submittedWorkUrl && /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl)) {
+                      openPinOverlay()
+                    }
+                  }}
+                >
+                  {!activeTaskToReview.submittedWorkUrl ? (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground/50">
+                      <ImageIcon className="w-12 h-12" />
+                      <span className="text-xs">Chưa có bài nộp</span>
+                    </div>
+                  ) : /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) ? (
+                    <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
+                      <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
+                      <span className="text-sm font-bold text-foreground">File nén nhiều trang</span>
+                      <span className="text-xs">Bấm vào đây để xem & góp ý từng trang</span>
+                    </div>
+                  ) : (
                     <ImageCommentLayer
                       imageUrl={activeTaskToReview.submittedWorkUrl}
                       pageNo={1}
                       annotations={taskAnnotations}
                       onAddAnnotation={handleAddTaskAnnotation}
                     />
-                  ) : (
-                    <div className="relative border border-border rounded-xl overflow-hidden bg-muted aspect-4/3 flex items-center justify-center w-full">
-                      <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
-                    </div>
                   )}
+                  {imagePins.map((pin, idx) => (
+                    <div
+                      key={idx}
+                      className="absolute w-6 h-6 -ml-3 -mt-3 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                      style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
+                    >
+                      {idx + 1}
+                    </div>
+                  ))}
                 </div>
+
+            {activeTaskToReview.submittedWorkUrl && (
+                  <button
+                    onClick={openPinOverlay}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
+                  >
+                    Mở to để góp ý chi tiết
+                  </button>
+                )}
+
+                {imagePins.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted-foreground">Góp ý trên ảnh ({imagePins.length})</label>
+                    {imagePins.map((pin, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
+                        <input
+                          value={pin.note}
+                          onChange={(e) => setImagePins(prev => prev.map((p, i) => i === idx ? { ...p, note: e.target.value } : p))}
+                          placeholder="Nhập góp ý cho điểm này..."
+                          className="flex-1 text-xs px-2 py-1.5 border border-border rounded-lg bg-background"
+                        />
+                        <button onClick={() => setImagePins(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-red-500 shrink-0">✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeTaskToReview.prevSubmittedWorkUrl && (
+                  <div className="space-y-2">
+                   <button
+                      onClick={handleCompareSubmissions}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors"
+                    >
+                      So sánh với lần nộp trước
+                    </button>
+                    {subCompareLoading && (
+                      <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                        <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                        Đang so sánh ảnh...
+                      </div>
+                    )}
+                    {subCompareError && (
+                      <div className="text-xs text-red-600 bg-red-500/5 border border-red-500/20 rounded-lg p-2">
+                        {subCompareError}
+                      </div>
+                    )}
+                    {subCompareResult && (
+                      <div className="border border-border rounded-xl p-3 space-y-2 bg-muted/20">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-foreground">Mức thay đổi so với lần trước</span>
+                          <span className={`text-sm font-extrabold ${subCompareResult.percent > 20 ? 'text-red-600' : subCompareResult.percent > 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {subCompareResult.percent}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${subCompareResult.percent > 20 ? 'bg-red-500' : subCompareResult.percent > 5 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                            style={{ width: `${Math.min(subCompareResult.percent, 100)}%` }}
+                          />
+                        </div>
+                        {subCompareResult.diff && (
+                          <div className="space-y-1">
+                            <img src={subCompareResult.diff} alt="Vùng thay đổi" className="w-full border border-border rounded-lg" />
+                            <p className="text-[10px] text-muted-foreground text-center">🔴 Vùng màu đỏ là chỗ có thay đổi so với lần nộp trước</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Submitted Files List */}
 
                 {/* Submitted Files List */}
                 {activeTaskToReview.submittedFiles && activeTaskToReview.submittedFiles.length > 0 ? (

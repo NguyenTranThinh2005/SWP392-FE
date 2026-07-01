@@ -1,5 +1,4 @@
 'use client'
-
 import { useEffect, useState, useMemo } from 'react'
 import { useRole } from '@/context/RoleContext'
 import {
@@ -89,8 +88,7 @@ export default function ManuscriptsPage() {
     setActiveManuscriptId(null)
     setManuscripts(manuscriptService.getManuscripts())
   }
-
-  // aandle adding version-bound annotations
+  // Handle adding version-bound annotations (BR-78)
   const handleAddAnnotation = (e: React.FormEvent) => {
     e.preventDefault()
     if (!activeManuscript || !newAnnotationText.trim()) return
@@ -162,6 +160,7 @@ export default function ManuscriptsPage() {
   if (!mounted) return null
 
   return (
+
     <div className="space-y-6">
       {/* If Reviewing a Specific Manuscript (Image 2 View) */}
       {activeManuscript ? (

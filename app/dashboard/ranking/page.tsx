@@ -70,24 +70,24 @@ export interface RankingRow {
 export default function RankingPage() {
   const { role } = useRole()
   const [mounted, setMounted] = useState(false)
-  
+
   // State variables
   const [selectedPeriod, setSelectedPeriod] = useState<string>('2026-Q1')
   const [pendingVotes, setPendingVotes] = useState<VoteRecord[]>([])
   const [rankings, setRankings] = useState<RankingRow[]>([])
   const [allSeries, setAllSeries] = useState<any[]>([])
   const [availableChapters, setAvailableChapters] = useState<any[]>([])
-  
+
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  
+
   // Form states
   const [formSeriesId, setFormSeriesId] = useState('')
   const [formChapterId, setFormChapterId] = useState('')
   const [formReaderCount, setFormReaderCount] = useState<number>(0)
   const [formVoteCount, setFormVoteCount] = useState<number>(0)
-  const [formPeriod, setFormPeriod] = useState('2026-Q2')
-  
+  const [formPeriod, setFormPeriod] = useState('2026-Q1')
+
   const periods = ['2026-Q2', '2026-Q1', '2025-Q4']
 
   // Determine if active user is Authorized Admin for Vote Imports
@@ -160,10 +160,10 @@ export default function RankingPage() {
           return []
         })
       )
-      
+
       const flatRecords = allRecordsList.flat()
       setPendingVotes(flatRecords.filter(r => !r.confirmed))
-      
+
       // Calculate rankings for the selected period
       const confirmedForPeriod = flatRecords.filter(r => r.confirmed && r.period === selectedPeriod)
       const sorted = [...confirmedForPeriod].sort((a, b) => {
@@ -239,13 +239,13 @@ export default function RankingPage() {
     }).then(() => {
       toast.success('Vote record successfully imported as Pending Confirmation!')
       setIsDialogOpen(false)
-      
+
       // Reset form fields
       setFormSeriesId('')
       setFormChapterId('')
       setFormReaderCount(0)
       setFormVoteCount(0)
-      
+
       refreshData()
     }).catch((err: any) => {
       toast.error(err.message || 'Failed to import vote data.')
@@ -486,23 +486,31 @@ export default function RankingPage() {
                   else scoreClass = 'text-rose-500 font-bold'
 
                   return (
-                    <TableRow key={row.seriesId} className="border-b border-border hover:bg-muted/15 transition-colors">
+                   <TableRow key={row.seriesId} className={`border-b border-border transition-colors ${
+                      row.rank === 1 ? 'bg-amber-50 dark:bg-amber-500/5 hover:bg-amber-100/60' :
+                      row.rank === 2 ? 'bg-slate-50 dark:bg-slate-500/5 hover:bg-slate-100/60' :
+                      row.rank === 3 ? 'bg-orange-50 dark:bg-orange-500/5 hover:bg-orange-100/60' :
+                      'hover:bg-muted/15'
+                    }`}>
                       {/* Rank Cell */}
                       <TableCell className="text-center font-bold">
                         {row.rank === 1 ? (
-                          <div className="flex justify-center" title="1st Place">
-                            <Trophy className="w-5 h-5 text-amber-500" />
+                          <div className="flex flex-col items-center" title="Hạng 1">
+                            <Trophy className="w-6 h-6 text-amber-500" />
+                            <span className="text-[10px] font-extrabold text-amber-600">TOP 1</span>
                           </div>
                         ) : row.rank === 2 ? (
-                          <div className="flex justify-center" title="2nd Place">
-                            <Medal className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                          <div className="flex flex-col items-center" title="Hạng 2">
+                            <Medal className="w-6 h-6 text-slate-400" />
+                            <span className="text-[10px] font-extrabold text-slate-500">TOP 2</span>
                           </div>
                         ) : row.rank === 3 ? (
-                          <div className="flex justify-center" title="3rd Place">
-                            <Medal className="w-5 h-5 text-amber-700" />
+                          <div className="flex flex-col items-center" title="Hạng 3">
+                            <Medal className="w-6 h-6 text-orange-600" />
+                            <span className="text-[10px] font-extrabold text-orange-600">TOP 3</span>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-muted text-slate-400 text-xs font-bold">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-muted text-slate-400 text-sm font-bold">
                             {row.rank}
                           </span>
                         )}

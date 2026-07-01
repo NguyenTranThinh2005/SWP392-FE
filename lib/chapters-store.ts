@@ -6,7 +6,7 @@
 import { fetchAPI } from '@/services/api'
 import { API_BASE_URL } from '@/lib/constants'
 
-export type ChapterStatus = 'Draft' | 'In Progress' | 'Ready for Editor' | 'Published'
+export type ChapterStatus = 'Draft' | 'In Progress' | 'Submitted' | 'Ready for Editor' | 'Published'
 
 export type TaskStatus = 'Unassigned' | 'Pending' | 'In-Progress' | 'Submitted' | 'Approved' | 'Rejected'
 
@@ -37,6 +37,7 @@ export interface Task {
   assistantName: string
   status: TaskStatus
   submittedWorkUrl?: string // Mock image url submitted by assistant
+  prevSubmittedWorkUrl?: string
   feedback?: string // Feedback comments from Mangaka
   assignedAt?: string
   updatedAt?: string
@@ -48,6 +49,7 @@ export interface Task {
   submitDescription?: string // Lá»i nháº¯n hoáº·c mÃ´ táº£ chá»‰nh sá»­a tá»« Assistant khi ná»™p bÃ i
   submissionId?: string // to support backend approve/reject calls
   submittedFileAssetId?: string
+  submissionCount?: number
   referenceFiles?: { fileAssetId: string; publicUrl: string; originalFileName: string; mimeType?: string }[]
 }
 
