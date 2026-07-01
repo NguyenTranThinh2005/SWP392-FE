@@ -2357,18 +2357,43 @@ const openEditTask = (task: Task) => {
 
                 {activeTaskToReview.prevSubmittedWorkUrl && (
                   <div className="space-y-2">
-                    <button
+                   <button
                       onClick={handleCompareSubmissions}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors"
                     >
                       So sánh với lần nộp trước
                     </button>
-                    {subCompareLoading && <p className="text-xs text-muted-foreground text-center">Đang so sánh...</p>}
-                    {subCompareError && <p className="text-xs text-red-600">{subCompareError}</p>}
+                    {subCompareLoading && (
+                      <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                        <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                        Đang so sánh ảnh...
+                      </div>
+                    )}
+                    {subCompareError && (
+                      <div className="text-xs text-red-600 bg-red-500/5 border border-red-500/20 rounded-lg p-2">
+                        {subCompareError}
+                      </div>
+                    )}
                     {subCompareResult && (
-                      <div className="border border-border rounded-xl p-2 text-xs">
-                        <p className="font-bold mb-1">Mức thay đổi: <span className="text-indigo-600">{subCompareResult.percent}%</span></p>
-                        {subCompareResult.diff && <img src={subCompareResult.diff} alt="diff" className="w-full max-w-xs border border-border rounded-lg" />}
+                      <div className="border border-border rounded-xl p-3 space-y-2 bg-muted/20">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-foreground">Mức thay đổi so với lần trước</span>
+                          <span className={`text-sm font-extrabold ${subCompareResult.percent > 20 ? 'text-red-600' : subCompareResult.percent > 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {subCompareResult.percent}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${subCompareResult.percent > 20 ? 'bg-red-500' : subCompareResult.percent > 5 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                            style={{ width: `${Math.min(subCompareResult.percent, 100)}%` }}
+                          />
+                        </div>
+                        {subCompareResult.diff && (
+                          <div className="space-y-1">
+                            <img src={subCompareResult.diff} alt="Vùng thay đổi" className="w-full border border-border rounded-lg" />
+                            <p className="text-[10px] text-muted-foreground text-center">🔴 Vùng màu đỏ là chỗ có thay đổi so với lần nộp trước</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
