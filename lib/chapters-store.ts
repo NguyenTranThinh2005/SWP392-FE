@@ -5,7 +5,7 @@
 
 import { fetchAPI } from '@/services/api'
 
-export type ChapterStatus = 'Draft' | 'In Progress' | 'Ready for Editor' | 'Published'
+export type ChapterStatus = 'Draft' | 'In Progress' | 'Submitted' | 'Ready for Editor' | 'Published'
 
 export type TaskStatus = 'Unassigned' | 'Pending' | 'In-Progress' | 'Submitted' | 'Approved' | 'Rejected'
 
