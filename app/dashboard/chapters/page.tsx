@@ -2298,15 +2298,24 @@ const openEditTask = (task: Task) => {
                   className="relative border border-border rounded-xl overflow-hidden bg-muted min-h-[400px] max-h-[600px] flex items-center justify-center group shadow-inner cursor-crosshair"
                   onClick={() => { if (activeTaskToReview.submittedWorkUrl) openPinOverlay() }}
                 >
-                  {activeTaskToReview.submittedWorkUrl ? (
+                  {!activeTaskToReview.submittedWorkUrl ? (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground/50">
+                      <ImageIcon className="w-12 h-12" />
+                      <span className="text-xs">Chưa có bài nộp</span>
+                    </div>
+                  ) : /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) ? (
+                    <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
+                      <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">📦</div>
+                      <span className="text-sm font-bold text-foreground">File nén nhiều trang</span>
+                      <span className="text-xs">Bấm vào đây để xem & góp ý từng trang</span>
+                    </div>
+                  ) : (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={activeTaskToReview.submittedWorkUrl}
-                      alt="Work deliverable"
+                      alt="Bài nộp"
                       className="w-full h-full object-contain pointer-events-none"
                     />
-                  ) : (
-                    <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
                   )}
                   {imagePins.map((pin, idx) => (
                     <div
