@@ -86,7 +86,7 @@ export default function RankingPage() {
   const [formChapterId, setFormChapterId] = useState('')
   const [formReaderCount, setFormReaderCount] = useState<number>(0)
   const [formVoteCount, setFormVoteCount] = useState<number>(0)
-  const [formPeriod, setFormPeriod] = useState('2026-Q2')
+  const [formPeriod, setFormPeriod] = useState('2026-Q1')
   
   const periods = ['2026-Q2', '2026-Q1', '2025-Q4']
 
