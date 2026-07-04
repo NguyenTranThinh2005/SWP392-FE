@@ -126,6 +126,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
   const [newTaskDesc, setNewTaskDesc] = useState('')
   const [newTaskAssistantId, setNewTaskAssistantId] = useState('Unassigned')
   const [newTaskDueDate, setNewTaskDueDate] = useState<string>('')
+  const [newTaskRate, setNewTaskRate] = useState<number>(0)
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false)
   const [editTaskId, setEditTaskId] = useState<string>('')
   const [editTaskPageStart, setEditTaskPageStart] = useState<number>(1)
@@ -256,6 +257,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
             dueDate: t.dueDate || undefined,
             pageStart: t.pageStart,
             pageEnd: t.pageEnd,
+            ratePerPage: t.ratePerPage ?? 0,
             submittedWorkUrl: latestSub?.submittedFileAssetUrl || undefined,
             prevSubmittedWorkUrl: sortedSubs.length >= 2 ? sortedSubs[sortedSubs.length - 2]?.submittedFileAssetUrl : undefined,
             submittedFileAssetId: latestSub?.submittedFileAssetId || undefined,
@@ -731,6 +733,7 @@ const openEditTask = (task: Task) => {
         pageStart: newTaskPageStart,
         pageEnd: newTaskPageEnd,
         taskType: newTaskType.trim(),
+        ratePerPage: newTaskRate,
         description: newTaskDesc,
         dueDate: newTaskDueDate ? new Date(newTaskDueDate).toISOString() : null
       }
@@ -755,6 +758,7 @@ const openEditTask = (task: Task) => {
       }
       showToast(`Đã tạo task và giao việc thành công!`)
       setNewTaskAttachments([])
+      setNewTaskRate(0)
       setIsTaskModalOpen(false)
       setNewTaskDesc('')
       setNewTaskType('Line Art')

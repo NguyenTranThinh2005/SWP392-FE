@@ -35,6 +35,7 @@ export interface Task {
   assistantName: string
   status: TaskStatus
   submittedWorkUrl?: string // Mock image url submitted by assistant
+  ratePerPage?: number // don gia/trang cho task nay (Mangaka nhap)
   prevSubmittedWorkUrl?: string
   feedback?: string // Feedback comments from Mangaka
   assignedAt?: string
