@@ -134,6 +134,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
   const [editTaskDescription, setEditTaskDescription] = useState<string>('')
   const [editTaskDueDate, setEditTaskDueDate] = useState<string>('')
   const [editTaskAssistantId, setEditTaskAssistantId] = useState('')
+  const [editTaskRate, setEditTaskRate] = useState<number>(0)
   const [isSubmitManuscriptOpen, setIsSubmitManuscriptOpen] = useState(false)
   const [submitManuscriptFile, setSubmitManuscriptFile] = useState<File | null>(null)
   const [submitManuscriptNotes, setSubmitManuscriptNotes] = useState<string>('')
@@ -645,6 +646,7 @@ const openEditTask = (task: Task) => {
     setEditTaskDescription(task.description || '')
     setEditTaskDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '')
     setEditTaskAssistantId(task.assistantId || '')
+    setEditTaskRate(task.ratePerPage || 0)
     setIsEditTaskOpen(true)
   }
 
@@ -660,7 +662,8 @@ const openEditTask = (task: Task) => {
           pageStart: editTaskPageStart,
           pageEnd: editTaskPageEnd,
           description: editTaskDescription,
-          dueDate: editTaskDueDate,
+          dueDate: editTaskDueDate || null,
+          ratePerPage: editTaskRate,
           assistantId: editTaskAssistantId || undefined,
         })
       })
@@ -2068,7 +2071,17 @@ const openEditTask = (task: Task) => {
                   </select>
                 </div>
               </div>
-
+                  <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground">Đơn giá / trang (VNĐ)</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="VD: 50000"
+                  value={newTaskRate === 0 ? '' : newTaskRate}
+                  onChange={(e) => setNewTaskRate(e.target.value === '' ? 0 : Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
+                />
+              </div>
               {/* Instructions / Description */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-muted-foreground">Mô tả & Hướng dẫn chi tiết</label>
@@ -2158,6 +2171,10 @@ const openEditTask = (task: Task) => {
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">Hạn nộp</label>
               <input type="date" value={editTaskDueDate} onChange={(e) => setEditTaskDueDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground">Đơn giá / trang (VNĐ)</label>
+              <input type="number" min={0} value={editTaskRate === 0 ? '' : editTaskRate} onChange={(e) => setEditTaskRate(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">Giao cho (đổi trợ lý)</label>
