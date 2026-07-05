@@ -34,7 +34,7 @@ export function ImageCommentLayer({ imageUrl, pageNo, annotations, onAddAnnotati
     return (
         <div className="w-full space-y-4">
             {/* Image Container with Pins */}
-            <div className="relative w-full overflow-hidden rounded-xl border border-border bg-muted shadow-inner">
+            <div className="relative w-full overflow-hidden rounded-xl bg-muted">
                 <img
                     src={imageUrl}
                     alt={`Page ${pageNo}`}
@@ -121,7 +121,7 @@ export function ImageCommentLayer({ imageUrl, pageNo, annotations, onAddAnnotati
             {filteredAnnotations.length > 0 && (
                 <div className="space-y-2">
                     <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        📝 Danh sách ghi chú ({filteredAnnotations.length})
+                        Danh sách ghi chú ({filteredAnnotations.length})
                     </h4>
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {filteredAnnotations.map((annotation, index) => (
@@ -132,7 +132,7 @@ export function ImageCommentLayer({ imageUrl, pageNo, annotations, onAddAnnotati
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-baseline mb-0.5">
                                         <span className="font-bold text-foreground truncate">{annotation.authorName || 'Reviewer'}</span>
-                                        <span className="text-[9px] text-muted-foreground shrink-0">{new Date(annotation.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                        <span className="text-[9px] text-muted-foreground shrink-0">{new Date(annotation.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                     <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{annotation.text}</p>
                                 </div>

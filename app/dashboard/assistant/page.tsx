@@ -19,6 +19,8 @@ import {
   ExternalLink,
   ChevronRight,
   BookOpen,
+  Eye,
+  X,
 } from 'lucide-react'
 import { useRole } from '@/context/RoleContext'
 import {
@@ -32,6 +34,10 @@ import { userService } from '@/services/userService'
 import { chapterService, type Chapter } from '@/services/chapterService'
 import { seriesService } from '@/services/seriesService'
 import { toast } from 'sonner'
+
+import type { Annotation } from '@/types/manuscript'
+import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
+import { extractImagesFromZip } from '@/lib/imageCompare'
 
 export default function AssistantDashboardPage() {
   const { role } = useRole()
@@ -58,6 +64,86 @@ export default function AssistantDashboardPage() {
   // Task Detail Modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
+  const [taskAnnotations, setTaskAnnotations] = useState<Annotation[]>([])
+
+  // Zip pages states for modal
+  const [zipPages, setZipPages] = useState<{ name: string; dataUrl: string }[]>([])
+  const [currentPage, setCurrentPage] = useState(0)
+  const [zipLoading, setZipLoading] = useState(false)
+
+  const getTaskPageNo = (task: Task | null | undefined, pageIndex = 0) => {
+    const start = task?.pageStart || 1
+    return start + pageIndex
+  }
+
+  useEffect(() => {
+    if (!activeTaskToView?.submissionId) {
+      setTaskAnnotations([])
+      setZipPages([])
+      setCurrentPage(0)
+      return
+    }
+
+    let cancelled = false
+
+    // Fetch annotations
+    fetchAPI<any>(`/api/submissions/${activeTaskToView.submissionId}/annotations`)
+      .then((response) => {
+        if (cancelled) return
+        const raw = response.data || response.annotations || (Array.isArray(response) ? response : [])
+        if (!Array.isArray(raw)) {
+          setTaskAnnotations([])
+          return
+        }
+
+        const anns: Annotation[] = raw.map((a: any) => ({
+          id: a.annotationId || a.id,
+          manuscriptId: a.manuscriptId || '',
+          versionName: a.versionName || (a.versionNo ? `v${a.versionNo}` : undefined),
+          pageNo: a.pageNo || 1,
+          positionX: Number(a.positionX ?? 0),
+          positionY: Number(a.positionY ?? 0),
+          text: a.content || a.text || '',
+          authorName: a.authorName,
+          createdAt: a.createdAt || new Date().toISOString()
+        }))
+
+        setTaskAnnotations(anns)
+      })
+      .catch(() => {
+        if (!cancelled) setTaskAnnotations([])
+      })
+
+    // If it's a zip file, extract zip images
+    const url = activeTaskToView.submittedWorkUrl
+    setCurrentPage(0)
+    if (url) {
+      if (/\.zip(\?|$)/i.test(url)) {
+        setZipLoading(true)
+        setZipPages([])
+        extractImagesFromZip(url)
+          .then((imgs) => {
+            if (cancelled) return
+            setZipPages(imgs.length ? imgs : [])
+          })
+          .catch(() => {
+            if (cancelled) return
+            setZipPages([])
+          })
+          .finally(() => {
+            if (!cancelled) setZipLoading(false)
+          })
+      } else {
+        setZipPages([{ name: 'image', dataUrl: url }])
+      }
+    } else {
+      setZipPages([])
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeTaskToView])
 
   const getSubmissionStatus = (submission: any) => String(submission?.status).trim().toUpperCase()
 
@@ -312,10 +398,10 @@ export default function AssistantDashboardPage() {
   const pendingTasks = tasks.filter(t => t.status === 'Pending')
   const inProgressTasks = tasks.filter(t => t.status === 'In-Progress' || t.status === 'Rejected')
   const completedTasks = tasks.filter(t => t.status === 'Submitted' || t.status === 'Approved')
-const totalSalary = calcTotalSalary(tasks)
-const salaryRows = getSalaryBreakdown(tasks)
+  const totalSalary = calcTotalSalary(tasks)
+  const salaryRows = getSalaryBreakdown(tasks)
   const stats = {
-    
+
     total: tasks.length,
     pending: pendingTasks.length,
     working: inProgressTasks.length,
@@ -401,7 +487,7 @@ const salaryRows = getSalaryBreakdown(tasks)
       </div>
 
       {/* Main Content Layout */}
-      
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
         {/* Active & Pending Tasks */}
@@ -469,11 +555,13 @@ const salaryRows = getSalaryBreakdown(tasks)
                     )}
                     {/* Rejections & Feedback Box */}
                     {task.status === 'Rejected' && task.feedback && (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-600 dark:text-red-400 space-y-1">
-                        <p className="font-bold flex items-center gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5" /> Phản hồi yêu cầu sửa đổi
-                        </p>
-                        <p className="italic">"{task.feedback}"</p>
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-600 dark:text-red-400 space-y-2">
+                        <div>
+                          <p className="font-bold flex items-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5" /> Phản hồi yêu cầu sửa đổi
+                          </p>
+                          <p className="italic">"{task.feedback}"</p>
+                        </div>
                       </div>
                     )}
 
@@ -492,14 +580,25 @@ const salaryRows = getSalaryBreakdown(tasks)
                             <Play className="w-3.5 h-3.5" /> Bắt đầu vẽ
                           </button>
                         ) : (
-                         <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            {task.submissionId && (
+                              <button
+                                onClick={() => {
+                                  setActiveTaskToView(task)
+                                  setIsDetailModalOpen(true)
+                                }}
+                                className="flex items-center gap-1 px-3 py-2 border border-border text-foreground hover:bg-muted text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> Xem bài nộp & Góp ý
+                              </button>
+                            )}
                             <span className="text-xs font-bold text-muted-foreground">
                               Lần nộp {(task.submissionCount || 0)}/{MAX_SUBMISSIONS}
                             </span>
                             <button
                               onClick={() => handleOpenSubmit(task.id)}
                               disabled={(task.submissionCount || 0) >= MAX_SUBMISSIONS}
-                              className="flex items-center gap-1 px-4.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex items-center gap-1 px-4.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                               <Send className="w-3.5 h-3.5" />
                               {(task.submissionCount || 0) >= MAX_SUBMISSIONS ? 'Hết lượt nộp' : 'Nộp sản phẩm'}
@@ -548,14 +647,23 @@ const salaryRows = getSalaryBreakdown(tasks)
                         alt="Submitted Work"
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity"
                       />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
+                        <button
+                          onClick={() => {
+                            setActiveTaskToView(task)
+                            setIsDetailModalOpen(true)
+                          }}
+                          className="p-1.5 bg-card rounded-lg text-foreground text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Chi tiết & Góp ý
+                        </button>
                         <a
                           href={task.submittedWorkUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="p-1.5 bg-card rounded-lg text-foreground text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1"
                         >
-                          <FileImage className="w-3.5 h-3.5" /> Xem toàn bộ
+                          <ExternalLink className="w-3.5 h-3.5" /> File gốc
                         </a>
                       </div>
                     </div>
@@ -672,7 +780,186 @@ const salaryRows = getSalaryBreakdown(tasks)
           </div>
         </div>
       )}
+
+      {/* View Task Details & Annotations Modal */}
+      {isDetailModalOpen && activeTaskToView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
+                <Eye className="w-5 h-5 text-primary" /> Chi tiết Nhiệm vụ & Góp ý sửa đổi
+              </h3>
+              <button
+                onClick={() => {
+                  setIsDetailModalOpen(false)
+                  setActiveTaskToView(null)
+                }}
+                className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column: Image Preview with Comments */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-muted-foreground">Sản phẩm đã nộp & Chú thích</label>
+                  {activeTaskToView.submittedWorkUrl && (
+                    <a
+                      href={activeTaskToView.submittedWorkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Tải file gốc
+                    </a>
+                  )}
+                </div>
+
+                {!activeTaskToView.submittedWorkUrl ? (
+                  <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground/50">
+                    <FileImage className="w-12 h-12 mb-2" />
+                    <span className="text-xs">Chưa nộp sản phẩm nào</span>
+                  </div>
+                ) : zipLoading ? (
+                  <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground">
+                    <span className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
+                    <span className="text-xs">Đang giải nén tệp tin zip...</span>
+                  </div>
+                ) : zipPages.length > 0 ? (
+                  <div className="space-y-3">
+                    {zipPages.length > 1 && (
+                      <div className="flex items-center justify-between bg-muted/40 border border-border p-2 rounded-xl">
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                          disabled={currentPage === 0}
+                          className="px-2.5 py-1 bg-card hover:bg-muted border border-border rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          ‹ Trước
+                        </button>
+                        <span className="text-xs font-bold text-foreground">Trang {currentPage + 1}/{zipPages.length}: {zipPages[currentPage].name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage(p => Math.min(zipPages.length - 1, p + 1))}
+                          disabled={currentPage === zipPages.length - 1}
+                          className="px-2.5 py-1 bg-card hover:bg-muted border border-border rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Sau ›
+                        </button>
+                      </div>
+                    )}
+                    <div className="overflow-hidden">
+                      <ImageCommentLayer
+                        imageUrl={zipPages[currentPage].dataUrl}
+                        pageNo={getTaskPageNo(activeTaskToView, currentPage)}
+                        annotations={taskAnnotations}
+                        readOnly={true}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground">
+                    <AlertTriangle className="w-8 h-8 text-amber-500 mb-2" />
+                    <span className="text-xs text-center px-4">Không thể tải trước ảnh của tệp tin. Vui lòng bấm "Tải file gốc" để kiểm tra trực tiếp.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Task Details and Rejection Feedback */}
+              <div className="space-y-4 flex flex-col justify-between">
+                <div className="space-y-4">
+                  {/* Manga/Chapter Info */}
+                  <div className="p-3.5 bg-muted/40 border border-border rounded-xl space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Thông tin chương</p>
+                    <p className="font-bold text-foreground text-sm">{getChapterInfo(activeTaskToView.chapterId)}</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Nhiệm vụ: {activeTaskToView.type} (Trang {activeTaskToView.pages})</p>
+                  </div>
+
+                  {/* Task details */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-muted-foreground">Hạn nộp</p>
+                      <p className="font-semibold text-amber-600 bg-amber-500/5 border border-amber-500/10 px-2.5 py-1.5 rounded-lg inline-block text-xs">
+                        {activeTaskToView.dueDate ? new Date(activeTaskToView.dueDate).toLocaleDateString() : 'Không giới hạn'}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-muted-foreground">Trạng thái</p>
+                      <div className="inline-block">
+                        {getStatusBadge(activeTaskToView.status)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description from Mangaka */}
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground">Yêu cầu & Hướng dẫn vẽ từ Tác giả</p>
+                    <div className="p-3 bg-muted/30 border border-border rounded-xl text-foreground text-xs leading-relaxed whitespace-pre-line">
+                      {activeTaskToView.description}
+                    </div>
+                  </div>
+
+                  {/* Reference Files */}
+                  {activeTaskToView.referenceFiles && activeTaskToView.referenceFiles.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-bold text-muted-foreground">Tài liệu hướng dẫn đính kèm</p>
+                      <div className="space-y-1">
+                        {activeTaskToView.referenceFiles.map((f) => (
+                          <a
+                            key={f.fileAssetId}
+                            href={f.publicUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-primary hover:underline p-2 bg-muted/20 border border-border/40 rounded-xl"
+                          >
+                            <span className="truncate flex-1">{f.originalFileName}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rejections & Feedback Box */}
+                  {activeTaskToView.status === 'Rejected' && activeTaskToView.feedback && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 text-xs text-red-600 dark:text-red-400 space-y-1.5">
+                      <p className="font-bold flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4" /> Yêu cầu sửa đổi từ Tác giả
+                      </p>
+                      <p className="italic bg-card/40 p-2.5 rounded-lg border border-red-500/10">"{activeTaskToView.feedback}"</p>
+                    </div>
+                  )}
+
+                  {/* Assistant Submission notes */}
+                  {activeTaskToView.submitDescription && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-muted-foreground">Ghi chú nộp bài của bạn</p>
+                      <div className="p-3 bg-muted/20 border border-border rounded-xl text-foreground text-xs italic leading-relaxed">
+                        "{activeTaskToView.submitDescription}"
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end pt-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDetailModalOpen(false)
+                      setActiveTaskToView(null)
+                    }}
+                    className="px-5 py-2.5 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl transition-all cursor-pointer"
+                  >
+                    Đóng chi tiết
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-   
+
