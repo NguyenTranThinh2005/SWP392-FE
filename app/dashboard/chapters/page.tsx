@@ -2023,8 +2023,9 @@ const payload = {
                     type="number"
                     min={1}
                     max={selectedChapter?.totalPages || 100}
-                    value={newTaskPageStart}
-                    onChange={(e) => setNewTaskPageStart(Math.max(1, parseInt(e.target.value) || 1))}
+                    value={newTaskPageStart === 0 ? '' : newTaskPageStart}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setNewTaskPageStart(e.target.value === '' ? 0 : Math.max(1, parseInt(e.target.value)))}
                     className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                     required
                   />
@@ -2035,8 +2036,9 @@ const payload = {
                     type="number"
                     min={newTaskPageStart}
                     max={selectedChapter?.totalPages || 100}
-                    value={newTaskPageEnd}
-                    onChange={(e) => setNewTaskPageEnd(Math.max(newTaskPageStart, parseInt(e.target.value) || newTaskPageStart))}
+                    value={newTaskPageEnd === 0 ? '' : newTaskPageEnd}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setNewTaskPageEnd(e.target.value === '' ? 0 : parseInt(e.target.value))}
                     className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                     required
                   />
