@@ -137,6 +137,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
   const [editTaskDescription, setEditTaskDescription] = useState<string>('')
   const [editTaskDueDate, setEditTaskDueDate] = useState<string>('')
   const [editTaskAssistantId, setEditTaskAssistantId] = useState('')
+  const [editTaskOriginalAssistantId, setEditTaskOriginalAssistantId] = useState('')
   const [editTaskRate, setEditTaskRate] = useState<number>(0)
   const [isSubmitManuscriptOpen, setIsSubmitManuscriptOpen] = useState(false)
   const [submitManuscriptFile, setSubmitManuscriptFile] = useState<File | null>(null)
@@ -674,6 +675,7 @@ ratePerPage: t.ratePerPage ?? 0,
     setEditTaskDescription(task.description || '')
     setEditTaskDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '')
     setEditTaskAssistantId(task.assistantId || '')
+    setEditTaskOriginalAssistantId(task.assistantId || '')
     setEditTaskRate(task.ratePerPage || 0)
     setIsEditTaskOpen(true)
   }
@@ -684,18 +686,23 @@ ratePerPage: t.ratePerPage ?? 0,
       return
     }
     try {
+     // Neu chi doi assistant -> chi gui assistantId (tranh BE chan "khong sua duoc khi da co submission")
+      const onlyChangeAssistant = editTaskAssistantId && editTaskAssistantId !== editTaskOriginalAssistantId
+      const body = onlyChangeAssistant
+        ? { assistantId: editTaskAssistantId }
+        : {
+            pageStart: editTaskPageStart,
+            pageEnd: editTaskPageEnd,
+            description: editTaskDescription,
+            dueDate: editTaskDueDate || null,
+            ratePerPage: editTaskRate,
+            assistantId: editTaskAssistantId || undefined,
+          }
       await fetchAPI(`/api/page-tasks/${editTaskId}`, {
         method: 'PUT',
-       body: JSON.stringify({
-          pageStart: editTaskPageStart,
-          pageEnd: editTaskPageEnd,
-          description: editTaskDescription,
-          dueDate: editTaskDueDate || null,
-          ratePerPage: editTaskRate,
-          assistantId: editTaskAssistantId || undefined,
-        })
+        body: JSON.stringify(body)
       })
-      showToast('Đã cập nhật task!')
+      showToast(onlyChangeAssistant ? 'Đã giao lại nhiệm vụ cho trợ lý mới. Các lần nộp trước đã được xóa.' : 'Đã cập nhật task!')
       setIsEditTaskOpen(false)
       refreshData()
     } catch (err: any) {
@@ -841,7 +848,24 @@ const payload = {
     fetchAPI(`/api/page-tasks/submissions/${task.submissionId}/reject`, {
       method: 'POST',
       body: JSON.stringify({ feedback: fullFeedback })
-    }).then(() => {
+    }).then(async () => {
+      // Luu tung pin vao BE (annotation tren submission) de assistant xem lai truc quan
+      const pinsToSave = imagePins.filter(p => p.note.trim())
+      for (const p of pinsToSave) {
+        try {
+          await fetchAPI(`/api/submissions/${task.submissionId}/annotations`, {
+            method: 'POST',
+            body: JSON.stringify({
+              pageNo: p.page + 1,
+              positionX: Math.min(1, Math.max(0, p.x / 100)),
+              positionY: Math.min(1, Math.max(0, p.y / 100)),
+              content: p.note.trim(),
+            })
+          })
+        } catch (e) {
+          console.warn('Khong luu duoc pin:', e)
+        }
+      }
       showToast(`Đã từ chối và gửi phản hồi yêu cầu sửa đổi!`, 'error')
       setIsReviewModalOpen(false)
       setActiveTaskToReview(null)

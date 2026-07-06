@@ -614,13 +614,30 @@ export default function AssistantDashboardPage() {
                 <label className="text-[10px] uppercase font-bold text-muted-foreground">File bài nộp</label>
                 <input
                   type="file"
-                  required
                   multiple
-                  onChange={(e) => setSubmitFiles(e.target.files ? Array.from(e.target.files) : [])}
+                 onChange={(e) => {
+                    const picked = e.target.files ? Array.from(e.target.files) : []
+                    setSubmitFiles(prev => [...prev, ...picked])
+                    e.target.value = ''
+                  }}
                   className="w-full p-2.5 bg-muted/50 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
                 {submitFiles.length > 0 && (
-                  <p className="text-[10px] text-muted-foreground">Đã chọn {submitFiles.length} file</p>
+                  <div className="space-y-1 mt-1">
+                    <p className="text-[10px] text-muted-foreground">Đã chọn {submitFiles.length} file:</p>
+                    {submitFiles.map((f, i) => (
+                      <div key={i} className="flex items-center justify-between text-[11px] bg-muted/40 rounded-lg px-2 py-1">
+                        <span className="truncate">{f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSubmitFiles(prev => prev.filter((_, idx) => idx !== i))}
+                          className="text-red-500 font-bold ml-2 shrink-0"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 

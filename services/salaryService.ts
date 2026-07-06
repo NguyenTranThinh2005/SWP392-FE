@@ -19,8 +19,9 @@ export const salaryService = {
   async getSalaryRecords(assistantId?: string): Promise<SalaryRecord[]> {
     const query = assistantId ? `?assistantId=${assistantId}` : ''
     try {
-      const res = await fetchAPI<SalaryRecord[]>(`/api/salary-records${query}`)
-      return Array.isArray(res) ? res : []
+      const res = await fetchAPI<any>(`/api/salary-records${query}`)
+      const list = res?.data ?? res
+      return Array.isArray(list) ? list : []
     } catch (err) {
       console.warn('Khong tai duoc lich su luong:', err)
       return []
