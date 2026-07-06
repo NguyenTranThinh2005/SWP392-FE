@@ -49,7 +49,7 @@ export default function AssistantDashboardPage() {
   const [activeTaskToSubmit, setActiveTaskToSubmit] = useState<Task | null>(null)
   const [submitDescription, setSubmitDescription] = useState('')
   const [submitUrl, setSubmitUrl] = useState('')
-  const [submitFile, setSubmitFile] = useState<File | null>(null)
+  const [submitFiles, setSubmitFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; size: string; type: string }[]>([])
 
@@ -242,22 +242,22 @@ export default function AssistantDashboardPage() {
   const handleOpenSubmit = (taskId: string) => {
     setSubmittingTaskId(taskId)
     setSubmitDescription('')
-    setSubmitFile(null)
+    setSubmitFiles([])
   }
 
   const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!submittingTaskId) return
-    if (!submitFile) {
+   if (submitFiles.length === 0) {
       toast.error('Vui lòng chọn file để nộp.')
       return
     }
     try {
       setUploading(true)
-      // 1) Upload file thật, lấy fileAssetId
+      // 1) Upload nhieu file, lay danh sach fileAssetId
       const formData = new FormData()
       formData.append('category', 'TaskSubmission')
-      formData.append('files', submitFile)
+      submitFiles.forEach((f) => formData.append('files', f))
       const uploadRes = await fetchAPI<{ data: { files: { fileAssetId: string }[] } }>('/api/files', {
         method: 'POST',
         body: formData
@@ -274,7 +274,7 @@ export default function AssistantDashboardPage() {
       })
       toast.success('Nộp bài thành công! Mangaka đã được thông báo.')
       setSubmittingTaskId(null)
-      setSubmitFile(null)
+      setSubmitFiles([])
       loadData()
     } catch (err: any) {
       toast.error(err.message || 'Không thể nộp sản phẩm.')
@@ -599,9 +599,13 @@ export default function AssistantDashboardPage() {
                 <input
                   type="file"
                   required
-                  onChange={(e) => setSubmitFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={(e) => setSubmitFiles(e.target.files ? Array.from(e.target.files) : [])}
                   className="w-full p-2.5 bg-muted/50 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
+                {submitFiles.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground">Đã chọn {submitFiles.length} file</p>
+                )}
               </div>
 
 
