@@ -752,15 +752,6 @@ ratePerPage: t.ratePerPage ?? 0,
       showToast('Vui lòng chọn một assistant để giao việc!', 'error')
       return
     }
-    const payload = {
-      chapterId: selectedChapterId,
-      assistantId: newTaskAssistantId,
-      pageStart: newTaskPageStart,
-      pageEnd: newTaskPageEnd,
-      taskType: newTaskType.trim(),
-      description: newTaskDesc,
-      dueDate: newTaskDueDate ? new Date(newTaskDueDate).toISOString() : null
-    }
 
 const payload = {
         chapterId: selectedChapterId,
