@@ -1,5 +1,4 @@
 'use client'
-import { calcTotalSalary, formatVND, getSalaryBreakdown } from '@/lib/salary'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
@@ -287,8 +286,6 @@ export default function AssistantDashboardPage() {
   const pendingTasks = tasks.filter(t => t.status === 'Pending')
   const inProgressTasks = tasks.filter(t => t.status === 'In-Progress' || t.status === 'Rejected')
   const completedTasks = tasks.filter(t => t.status === 'Submitted' || t.status === 'Approved')
-const totalSalary = calcTotalSalary(tasks)
-const salaryRows = getSalaryBreakdown(tasks)
   const stats = {
     
     total: tasks.length,
@@ -376,11 +373,9 @@ const salaryRows = getSalaryBreakdown(tasks)
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Đã nộp / Hoàn thành', value: stats.completed, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-          { label: 'Lương ước tính', value: formatVND(totalSalary), icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-600/10' },
           { label: 'Nhiệm vụ được giao', value: stats.total, icon: ClipboardList, color: 'text-foreground', bg: 'bg-primary/10' },
           { label: 'Chờ bắt đầu', value: stats.pending, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
           { label: 'Đang thực hiện', value: stats.working, icon: Play, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-          { label: 'Đã nộp / Hoàn thành', value: stats.completed, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-card border border-border rounded-2xl p-5 space-y-3 shadow-sm hover:border-primary/10 transition-colors">
             <div className={`w-9 h-9 ${bg} ${color} rounded-xl flex items-center justify-center`}>
@@ -632,41 +627,8 @@ const salaryRows = getSalaryBreakdown(tasks)
           </div>
         </div>
       )}
-
-      {salaryRows.length > 0 && (
-        <div className="bg-card border border-border rounded-2xl p-5 mt-6">
-          <h3 className="text-sm font-bold mb-3 text-foreground">Chi tiết lương của bạn (task đã duyệt)</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left text-muted-foreground border-b border-border">
-                  <th className="py-2 font-bold">Loại task</th>
-                  <th className="py-2 font-bold text-center">Số trang</th>
-                  <th className="py-2 font-bold text-right">Đơn giá/trang</th>
-                  <th className="py-2 font-bold text-right">Thành tiền</th>
-                </tr>
-              </thead>
-              <tbody>
-                {salaryRows.map((row) => (
-                  <tr key={row.taskId} className="border-b border-border/50">
-                    <td className="py-2 font-semibold">{row.type}</td>
-                    <td className="py-2 text-center">{row.pages}</td>
-                    <td className="py-2 text-right">{formatVND(row.rate)}</td>
-                    <td className="py-2 text-right font-bold">{formatVND(row.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-border">
-                  <td className="py-2 font-extrabold" colSpan={3}>Tổng cộng</td>
-                  <td className="py-2 text-right font-extrabold text-green-600">{formatVND(totalSalary)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+</div>    
+  )           
+}            
+      
    
