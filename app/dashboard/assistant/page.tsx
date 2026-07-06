@@ -26,6 +26,7 @@ import {
   type Assistant
 } from '@/lib/chapters-store'
 import { fetchAPI } from '@/services/api'
+import { API_BASE_URL } from '@/lib/constants'
 import { userService } from '@/services/userService'
 import { chapterService, type Chapter } from '@/services/chapterService'
 import { seriesService } from '@/services/seriesService'
@@ -57,14 +58,39 @@ export default function AssistantDashboardPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
 
+  const getSubmissionStatus = (submission: any) => String(submission?.status).trim().toUpperCase()
+
+  const getLatestSubmission = (submissions?: any[]) => {
+    if (!Array.isArray(submissions) || submissions.length === 0) return null
+
+    const sorted = [...submissions].sort((a, b) => {
+      const bVersion = Number(b?.versionNo ?? b?.VersionNo ?? 0)
+      const aVersion = Number(a?.versionNo ?? a?.VersionNo ?? 0)
+      if (bVersion !== aVersion) return bVersion - aVersion
+
+      const bSubmittedAt = new Date(b?.submittedAt ?? b?.SubmittedAt ?? 0).getTime()
+      const aSubmittedAt = new Date(a?.submittedAt ?? a?.SubmittedAt ?? 0).getTime()
+      return bSubmittedAt - aSubmittedAt
+    })
+
+    return sorted.find(s => {
+      const status = getSubmissionStatus(s)
+      return status === '0' || status === 'SUBMITTED'
+    }) || sorted[0]
+  }
+
+  const getSubmissionFileUrl = (submission: any) => {
+    const directUrl = submission?.submittedFileAssetUrl || submission?.publicUrl || submission?.PublicUrl
+    if (directUrl) return directUrl
+
+    const fileAssetId = submission?.submittedFileAssetId || submission?.SubmittedFileAssetId
+    return fileAssetId ? `${API_BASE_URL}/api/files/${fileAssetId}` : undefined
+  }
+
   const mapBackendTaskStatus = (status: any, submissions?: any[]): TaskStatus => {
     const statusStr = String(status).trim().toUpperCase();
-    const latestSubmission = submissions && submissions.length > 0
-      ? submissions[submissions.length - 1]
-      : null;
-    const latestSubStatus = latestSubmission
-      ? String(latestSubmission.status).trim().toUpperCase()
-      : '';
+    const latestSubmission = getLatestSubmission(submissions);
+    const latestSubStatus = getSubmissionStatus(latestSubmission);
 
     if (statusStr === '3' || statusStr === 'APPROVED') {
       return 'Approved';
@@ -91,9 +117,7 @@ export default function AssistantDashboardPage() {
 
       if (Array.isArray(data)) {
         return data.map((t: any) => {
-          const latestSub = t.submissions && t.submissions.length > 0
-            ? t.submissions[t.submissions.length - 1]
-            : null;
+          const latestSub = getLatestSubmission(t.submissions);
 
           let uiStatus = mapBackendTaskStatus(t.status, t.submissions)
           if (uiStatus === 'Pending') {
@@ -117,7 +141,8 @@ export default function AssistantDashboardPage() {
             dueDate: t.dueDate || undefined,
             pageStart: t.pageStart,
             pageEnd: t.pageEnd,
-            submittedWorkUrl: latestSub?.submittedFileAssetUrl,
+            submittedWorkUrl: getSubmissionFileUrl(latestSub),
+            submittedFileAssetId: latestSub?.submittedFileAssetId || latestSub?.SubmittedFileAssetId || undefined,
             submitDescription: latestSub?.note || undefined,
             submissionId: latestSub?.submissionId || latestSub?.id || undefined,
             feedback: latestSub?.feedback || latestSub?.rejectReason || undefined,
@@ -324,7 +349,7 @@ export default function AssistantDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Top Welcome Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 rounded-3xl p-6 sm:p-8">
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 rounded-2xl p-6 sm:p-8">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -337,25 +362,6 @@ export default function AssistantDashboardPage() {
             <p className="text-sm text-muted-foreground max-w-lg">
               Quản lý và thực hiện các nhiệm vụ vẽ do tác giả giao. Bắt đầu làm việc, nộp các trang vẽ và xem phản hồi.
             </p>
-          </div>
-
-          {/* Interactive Simulation Switcher */}
-          <div className="bg-card border border-border p-3.5 rounded-2xl shadow-sm space-y-2 shrink-0">
-            <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Mô phỏng tài khoản Trợ lý</p>
-            <div className="flex flex-wrap gap-1.5">
-              {assistants.map(ast => (
-                <button
-                  key={ast.id}
-                  onClick={() => setSelectedAssistantId(ast.id)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${selectedAssistantId === ast.id
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                >
-                  {ast.name.split(' ')[0]}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>

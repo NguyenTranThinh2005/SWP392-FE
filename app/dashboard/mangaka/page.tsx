@@ -99,7 +99,7 @@ export default function MangakaDashboardPage() {
     <div className="space-y-8">
 
       {/* Welcome header */}
-      <div className="relative overflow-hidden border-primary/15 rounded-3xl p-7">
+      <div className="relative overflow-hidden border-primary/15 rounded-2xl p-7">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">

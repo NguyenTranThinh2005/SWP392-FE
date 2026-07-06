@@ -11,7 +11,6 @@ import {
   Layers,
   ClipboardList,
   BarChart3,
-  LogOut,
   Menu,
   X,
   ChevronDown,
@@ -29,13 +28,11 @@ function SidebarInner() {
   const searchParams = useSearchParams()
   const { role, setRole } = useRole()
   const [isOpen, setIsOpen] = useState(false)
-  const [showRoleSelector, setShowRoleSelector] = useState(false)
-
-  const roles = ['Mangaka', 'Assistant', 'TantouEditor', 'EditorialBoard', 'EditorInChief', 'Admin'] as const
 
   const menuItems = {
     Mangaka: [
       { label: 'Bảng điều khiển', href: '/dashboard/mangaka', icon: LayoutDashboard },
+      { label: 'Danh sách truyện', href: '/dashboard/manga-list', icon: BookOpen },
       { label: 'Đề xuất của tôi', href: '/dashboard/series', icon: PencilLine },
       { label: 'Tạo đề xuất mới', href: '/dashboard/series/new', icon: UserPlus },
       { label: 'Bản thảo', href: '/dashboard/manuscripts', icon: Layers },
@@ -75,41 +72,6 @@ function SidebarInner() {
 
   const currentLinks = menuItems[role] || []
 
-  const handleRoleChange = (newRole: typeof roles[number]) => {
-    setRole(newRole)
-    setShowRoleSelector(false)
-
-    // Redirect to the landing page of the new role
-    switch (newRole) {
-      case 'Admin':
-        router.push('/dashboard/admin')
-        break
-      case 'Mangaka':
-        router.push('/dashboard/mangaka')
-        break
-      case 'Assistant':
-        router.push('/dashboard/assistant')
-        break
-      case 'TantouEditor':
-        router.push('/dashboard/tantou-editor')
-        break
-      case 'EditorialBoard':
-        router.push('/dashboard/manga-list')
-        break
-      case 'EditorInChief':
-        router.push('/dashboard/editor-in-chief')
-        break
-      default:
-        router.push('/dashboard')
-        break
-    }
-  }
-
-  const handleLogout = () => {
-    router.push('/login')
-  }
-
-
   const SidebarContent = () => (
     <div className="flex flex-col h-full justify-between bg-card text-foreground p-5 border-r border-border">
       <div className="space-y-6">
@@ -147,7 +109,7 @@ function SidebarInner() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all group ${isActive
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-all group ${isActive
                     ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
@@ -182,7 +144,7 @@ function SidebarInner() {
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
         >
           {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

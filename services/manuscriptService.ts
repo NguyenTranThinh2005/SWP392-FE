@@ -4,10 +4,11 @@ import type { ManuscriptItem, Annotation, ManuscriptVersion } from '@/types/manu
 let memoryManuscripts: ManuscriptItem[] = []
 let memoryAnnotations: Annotation[] = []
 
-const mapBackendManuscriptStatus = (status: string): 'SUBMITTED' | 'APPROVED' | 'REVISION REQUIRED' => {
+const mapBackendManuscriptStatus = (status: string): ManuscriptItem['status'] => {
   if (!status) return 'SUBMITTED'
   const clean = status.trim().toUpperCase()
   if (clean === 'APPROVED') return 'APPROVED'
+  if (clean === 'PUBLISHED') return 'PUBLISHED'
   if (clean === 'REJECTED' || clean === 'REVISION REQUIRED' || clean === 'REVISIONREQUIRED') return 'REVISION REQUIRED'
   return 'SUBMITTED'
 }
@@ -25,10 +26,10 @@ export const manuscriptService = {
     return memoryAnnotations.filter(a => a.manuscriptId === manuscriptId && a.versionName === versionName)
   },
 
-  // BR-80: Manuscript Approval Lock / Status Transitions
+  // Manuscript Approval Lock / Status Transitions
   async updateManuscriptStatus(
     id: string,
-    newStatus: 'APPROVED' | 'REVISION REQUIRED',
+    newStatus: ManuscriptItem['status'],
     feedbackText: string
   ): Promise<boolean> {
     const idx = memoryManuscripts.findIndex(m => m.id === id)
@@ -36,9 +37,23 @@ export const manuscriptService = {
       memoryManuscripts[idx].status = newStatus
     }
 
+    const backendStatus =
+      newStatus === 'APPROVED'
+        ? 'Approved'
+        : newStatus === 'PUBLISHED'
+          ? 'Published'
+          : 'RevisionRequired'
+
+    const defaultFeedback =
+      newStatus === 'APPROVED'
+        ? 'Manuscript approved.'
+        : newStatus === 'PUBLISHED'
+          ? 'Manuscript published.'
+          : 'Revision required.'
+
     const payload = {
-      status: newStatus === 'APPROVED' ? 'Approved' : 'Rejected',
-      feedback: feedbackText || (newStatus === 'APPROVED' ? 'Bản vẽ đã được phê duyệt.' : 'Cần sửa đổi bản vẽ.')
+      status: backendStatus,
+      feedback: feedbackText || defaultFeedback
     }
 
     try {
@@ -53,27 +68,34 @@ export const manuscriptService = {
     }
   },
 
-  // BR-78: Annotation Version Binding
-  async addAnnotation(manuscriptId: string, versionName: string, text: string): Promise<Annotation> {
+  // Annotation Version Binding
+  async addAnnotation(manuscriptId: string, versionName: string, pageNo: number, positionX: number, positionY: number, text: string): Promise<Annotation> {
     const payload = {
-      pageNo: 1, // Default page coordinate fallback
-      positionX: 50.00,
-      positionY: 50.00,
+      manuscriptId,
+      pageNo,
+      positionX,
+      positionY,
       content: text
     }
 
     try {
-      const res = await fetchAPI<{ id: string; annotationId: string }>(`/api/manuscripts/${manuscriptId}/annotations`, {
+      const res = await fetchAPI<any>(`/api/manuscripts/${manuscriptId}/annotations`, {
         method: 'POST',
         body: JSON.stringify(payload)
       })
 
+      const data = res.data || res
+
       const newAnn: Annotation = {
-        id: res.id || res.annotationId || `A${Date.now()}`,
+        id: data.annotationId || data.id || `A${Date.now()}`,
         manuscriptId,
         versionName,
-        text,
-        createdAt: new Date().toISOString()
+        pageNo: data.pageNo,
+        positionX: Number(data.positionX ?? positionX),
+        positionY: Number(data.positionY ?? positionY),
+        text: data.content ?? text,
+        authorName: data.authorName,
+        createdAt: data.createdAt || new Date().toISOString()
       }
 
       memoryAnnotations.push(newAnn)
@@ -90,7 +112,7 @@ export const manuscriptService = {
       const chaptersList = (chaptersRes as any).data || chaptersRes || []
 
       // Fetch all series to resolve correct series titles (e.g. mapping seriesId -> title)
-      let seriesMap = new Map<string, string>()
+      const seriesMap = new Map<string, string>()
       try {
         const seriesRes = await fetchAPI<{ data: any[] } | any[]>('/api/series')
         const seriesList = (seriesRes as any).data || seriesRes || []
@@ -157,6 +179,7 @@ export const manuscriptService = {
 
           return {
             id: m.manuscriptId || m.id,
+            chapterId: m.chapterId,
             seriesId: m.seriesId || 'S01',
             seriesTitle: m.seriesTitle || seriesMap.get(m.seriesId) || 'Sakura Knights',
             chapterNumber: m.chapterNumber || 1,
@@ -189,13 +212,17 @@ export const manuscriptService = {
   async syncAnnotationsFromBackend(manuscriptId: string): Promise<Annotation[]> {
     try {
       const response = await fetchAPI<{ annotations: any[] } | any>(`/api/manuscripts/${manuscriptId}/annotations`)
-      const rawAnns = response.annotations || (Array.isArray(response) ? response : [])
+      const rawAnns = response.data || response.annotations || (Array.isArray(response) ? response : [])
       if (Array.isArray(rawAnns)) {
         const backendAnns: Annotation[] = rawAnns.map(a => ({
           id: a.annotationId || a.id,
           manuscriptId: a.manuscriptId || manuscriptId,
           versionName: `v${a.versionNo || 1}`,
+          pageNo: a.pageNo || 1,
+          positionX: Number(a.positionX ?? 0),
+          positionY: Number(a.positionY ?? 0),
           text: a.content || a.text,
+          authorName: a.authorName,
           createdAt: a.createdAt || new Date().toISOString()
         }))
 

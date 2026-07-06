@@ -115,9 +115,6 @@ export function LoginForm({
           </form>
         </CardContent>
       </Card>
-      <FieldDescription className="px-6 text-center">
-        Bằng cách nhấp tiếp tục, bạn đồng ý với <a href="#">Điều khoản Dịch vụ</a> và <a href="#">Chính sách Bảo mật</a> của chúng tôi.
-      </FieldDescription>
     </div>
   )
 }

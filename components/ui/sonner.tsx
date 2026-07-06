@@ -11,7 +11,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
-      className="toaster group"
       icons={{
         success: (
           <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-4" />
@@ -29,18 +28,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
           <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="size-4 animate-spin" />
         ),
       }}
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-         "--border-radius": "var(--radius)",
-          zIndex: 99999,
-        } as React.CSSProperties
-      }
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          title: "!text-black dark:!text-white",
+          description: "!text-black/80 dark:!text-white/80",
         },
       }}
       {...props}
