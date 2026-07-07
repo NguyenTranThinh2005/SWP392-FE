@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { SubmissionFeedbackView } from '@/components/annotations/submission-feedback-view'
 import {
   ClipboardList,
   Clock,
@@ -472,13 +473,18 @@ export default function AssistantDashboardPage() {
                         ))}
                       </div>
                     )}
-                    {/* Rejections & Feedback Box */}
-                    {task.status === 'Rejected' && task.feedback && (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-600 dark:text-red-400 space-y-1">
-                        <p className="font-bold flex items-center gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5" /> Phản hồi yêu cầu sửa đổi
-                        </p>
-                        <p className="italic">"{task.feedback}"</p>
+                   {/* Rejections & Feedback Box */}
+                    {task.status === 'Rejected' && (task.feedback || task.submittedWorkUrl) && (
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-600 dark:text-red-400 space-y-3">
+                        {task.feedback && (
+                          <div className="space-y-1">
+                            <p className="font-bold flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5" /> Phản hồi yêu cầu sửa đổi
+                            </p>
+                            <p className="italic">"{task.feedback}"</p>
+                          </div>
+                        )}
+                        <SubmissionFeedbackView submissionId={task.submissionId} imageUrl={task.submittedWorkUrl} />
                       </div>
                     )}
 
