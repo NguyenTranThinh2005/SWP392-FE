@@ -461,9 +461,14 @@ ratePerPage: t.ratePerPage ?? 0,
         setChapterTasks([])
       }
 
-      // 3. Load Assistant list from backend
-      const usersRes = await userService.getAssistants()
-      const assistantsList = (usersRes.data || []).filter(u => u.roleName?.toLowerCase() === 'assistant')
+     // 3. Load Assistant list from backend (bọc try/catch: Assistant bị 403, không được kéo sập refreshData)
+      let assistantsList: any[] = []
+      try {
+        const usersRes = await userService.getAssistants()
+        assistantsList = (usersRes.data || []).filter((u: any) => u.roleName?.toLowerCase() === 'assistant')
+      } catch (e) {
+        console.warn('Khong lay duoc danh sach assistant (co the do role Assistant):', e)
+      }
 
       // Load all tasks to calculate active tasks per assistant
       const allTasksList = await fetchTasks()
