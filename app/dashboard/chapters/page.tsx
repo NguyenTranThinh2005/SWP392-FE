@@ -129,6 +129,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
   const [newTaskDesc, setNewTaskDesc] = useState('')
   const [newTaskAssistantId, setNewTaskAssistantId] = useState('')
   const [newTaskDueDate, setNewTaskDueDate] = useState<string>('')
+  const [newTaskRate, setNewTaskRate] = useState<number>(0)
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false)
   const [editTaskId, setEditTaskId] = useState<string>('')
   const [editTaskPageStart, setEditTaskPageStart] = useState<number>(1)
@@ -136,6 +137,8 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
   const [editTaskDescription, setEditTaskDescription] = useState<string>('')
   const [editTaskDueDate, setEditTaskDueDate] = useState<string>('')
   const [editTaskAssistantId, setEditTaskAssistantId] = useState('')
+  const [editTaskOriginalAssistantId, setEditTaskOriginalAssistantId] = useState('')
+  const [editTaskRate, setEditTaskRate] = useState<number>(0)
   const [isSubmitManuscriptOpen, setIsSubmitManuscriptOpen] = useState(false)
   const [submitManuscriptFile, setSubmitManuscriptFile] = useState<File | null>(null)
   const [submitManuscriptNotes, setSubmitManuscriptNotes] = useState<string>('')
@@ -384,6 +387,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
             dueDate: t.dueDate || undefined,
             pageStart: t.pageStart,
             pageEnd: t.pageEnd,
+ratePerPage: t.ratePerPage ?? 0,
             submittedWorkUrl: getSubmissionFileUrl(latestSub),
             prevSubmittedWorkUrl: getSubmissionFileUrl(prevSub),
             submittedFileAssetId: latestSub?.submittedFileAssetId || latestSub?.SubmittedFileAssetId || undefined,
@@ -457,9 +461,14 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
         setChapterTasks([])
       }
 
-      // 3. Load Assistant list from backend
-      const usersRes = await userService.getAssistants()
-      const assistantsList = (usersRes.data || []).filter(u => u.roleName?.toLowerCase() === 'assistant')
+     // 3. Load Assistant list from backend (bọc try/catch: Assistant bị 403, không được kéo sập refreshData)
+      let assistantsList: any[] = []
+      try {
+        const usersRes = await userService.getAssistants()
+        assistantsList = (usersRes.data || []).filter((u: any) => u.roleName?.toLowerCase() === 'assistant')
+      } catch (e) {
+        console.warn('Khong lay duoc danh sach assistant (co the do role Assistant):', e)
+      }
 
       // Load all tasks to calculate active tasks per assistant
       const allTasksList = await fetchTasks()
@@ -671,6 +680,8 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
     setEditTaskDescription(task.description || '')
     setEditTaskDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '')
     setEditTaskAssistantId(task.assistantId || '')
+    setEditTaskOriginalAssistantId(task.assistantId || '')
+    setEditTaskRate(task.ratePerPage || 0)
     setIsEditTaskOpen(true)
   }
 
@@ -680,17 +691,23 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
       return
     }
     try {
+     // Neu chi doi assistant -> chi gui assistantId (tranh BE chan "khong sua duoc khi da co submission")
+      const onlyChangeAssistant = editTaskAssistantId && editTaskAssistantId !== editTaskOriginalAssistantId
+      const body = onlyChangeAssistant
+        ? { assistantId: editTaskAssistantId }
+        : {
+            pageStart: editTaskPageStart,
+            pageEnd: editTaskPageEnd,
+            description: editTaskDescription,
+            dueDate: editTaskDueDate || null,
+            ratePerPage: editTaskRate,
+            assistantId: editTaskAssistantId || undefined,
+          }
       await fetchAPI(`/api/page-tasks/${editTaskId}`, {
         method: 'PUT',
-       body: JSON.stringify({
-          pageStart: editTaskPageStart,
-          pageEnd: editTaskPageEnd,
-          description: editTaskDescription,
-          dueDate: editTaskDueDate,
-          assistantId: editTaskAssistantId || undefined,
-        })
+        body: JSON.stringify(body)
       })
-      showToast('Đã cập nhật task!')
+      showToast(onlyChangeAssistant ? 'Đã giao lại nhiệm vụ cho trợ lý mới. Các lần nộp trước đã được xóa.' : 'Đã cập nhật task!')
       setIsEditTaskOpen(false)
       refreshData()
     } catch (err: any) {
@@ -747,19 +764,21 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
       showToast('Vui lòng chọn một assistant để giao việc!', 'error')
       return
     }
-    const payload = {
-      chapterId: selectedChapterId,
-      assistantId: newTaskAssistantId,
-      pageStart: newTaskPageStart,
-      pageEnd: newTaskPageEnd,
-      taskType: newTaskType.trim(),
-      description: newTaskDesc,
-      dueDate: newTaskDueDate ? new Date(newTaskDueDate).toISOString() : null
-    }
 
-    fetchAPI('/api/page-tasks', {
-      method: 'POST',
-      body: JSON.stringify(payload)
+const payload = {
+        chapterId: selectedChapterId,
+        assistantId: newTaskAssistantId,
+        pageStart: newTaskPageStart,
+        pageEnd: newTaskPageEnd,
+        taskType: newTaskType.trim(),
+        ratePerPage: newTaskRate,
+        description: newTaskDesc,
+        dueDate: newTaskDueDate ? new Date(newTaskDueDate).toISOString() : null
+      }
+
+      return fetchAPI('/api/page-tasks', {
+        method: 'POST',
+        body: JSON.stringify(payload)
     }).then(async (taskRes: any) => {
       const created = (taskRes as any)?.data || taskRes
       const newTaskId = created?.pageTaskId || created?.id
@@ -776,6 +795,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
       }
       showToast(`Đã tạo task và giao việc thành công!`)
       setNewTaskAttachments([])
+      setNewTaskRate(0)
       setIsTaskModalOpen(false)
       setNewTaskDesc('')
       setNewTaskType('Line Art')
@@ -833,7 +853,24 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
     fetchAPI(`/api/page-tasks/submissions/${task.submissionId}/reject`, {
       method: 'POST',
       body: JSON.stringify({ feedback: fullFeedback })
-    }).then(() => {
+    }).then(async () => {
+      // Luu tung pin vao BE (annotation tren submission) de assistant xem lai truc quan
+      const pinsToSave = imagePins.filter(p => p.note.trim())
+      for (const p of pinsToSave) {
+        try {
+          await fetchAPI(`/api/submissions/${task.submissionId}/annotations`, {
+            method: 'POST',
+            body: JSON.stringify({
+              pageNo: p.page + 1,
+              positionX: Math.min(1, Math.max(0, p.x / 100)),
+              positionY: Math.min(1, Math.max(0, p.y / 100)),
+              content: p.note.trim(),
+            })
+          })
+        } catch (e) {
+          console.warn('Khong luu duoc pin:', e)
+        }
+      }
       showToast(`Đã từ chối và gửi phản hồi yêu cầu sửa đổi!`, 'error')
       setIsReviewModalOpen(false)
       setActiveTaskToReview(null)
@@ -2015,8 +2052,9 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
                     type="number"
                     min={1}
                     max={selectedChapter?.totalPages || 100}
-                    value={newTaskPageStart}
-                    onChange={(e) => setNewTaskPageStart(Math.max(1, parseInt(e.target.value) || 1))}
+                    value={newTaskPageStart === 0 ? '' : newTaskPageStart}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setNewTaskPageStart(e.target.value === '' ? 0 : Math.max(1, parseInt(e.target.value)))}
                     className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                     required
                   />
@@ -2027,8 +2065,9 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
                     type="number"
                     min={newTaskPageStart}
                     max={selectedChapter?.totalPages || 100}
-                    value={newTaskPageEnd}
-                    onChange={(e) => setNewTaskPageEnd(Math.max(newTaskPageStart, parseInt(e.target.value) || newTaskPageStart))}
+                    value={newTaskPageEnd === 0 ? '' : newTaskPageEnd}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setNewTaskPageEnd(e.target.value === '' ? 0 : parseInt(e.target.value))}
                     className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                     required
                   />
@@ -2064,7 +2103,17 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
                   </select>
                 </div>
               </div>
-
+                  <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground">Đơn giá / trang (VNĐ)</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="VD: 50000"
+                  value={newTaskRate === 0 ? '' : newTaskRate}
+                  onChange={(e) => setNewTaskRate(e.target.value === '' ? 0 : Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
+                />
+              </div>
               {/* Instructions / Description */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-muted-foreground">Mô tả & Hướng dẫn chi tiết</label>
@@ -2154,6 +2203,10 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">Hạn nộp</label>
               <input type="date" value={editTaskDueDate} onChange={(e) => setEditTaskDueDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground">Đơn giá / trang (VNĐ)</label>
+              <input type="number" min={0} value={editTaskRate === 0 ? '' : editTaskRate} onChange={(e) => setEditTaskRate(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">Giao cho (đổi trợ lý)</label>

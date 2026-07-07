@@ -18,6 +18,7 @@ import {
   UserPlus,
   LayoutDashboard,
   Trophy,
+  Wallet,
   Users
 } from 'lucide-react'
 
@@ -37,12 +38,14 @@ function SidebarInner() {
       { label: 'Bản thảo', href: '/dashboard/manuscripts', icon: Layers },
       { label: 'Chương & Nhiệm vụ', href: '/dashboard/chapters', icon: ClipboardList },
       { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Lịch sử lương', href: '/dashboard/salary', icon: Wallet },
     ],
     Assistant: [
       { label: 'Bảng điều khiển', href: '/dashboard/assistant', icon: LayoutDashboard },
       { label: 'Danh sách truyện', href: '/dashboard/manga-list', icon: BookOpen },
       { label: 'Nhiệm vụ của tôi', href: '/dashboard/chapters', icon: ClipboardList },
       { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Lịch sử lương', href: '/dashboard/salary', icon: Wallet },
     ],
     TantouEditor: [
       { label: 'Bảng điều khiển', href: '/dashboard/tantou-editor?tab=dashboard', icon: LayoutDashboard },

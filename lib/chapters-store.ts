@@ -1,4 +1,4 @@
-export type ChapterStatus = 'Draft' | 'In Progress' | 'Submitted' | 'Ready for Editor' | 'Published'
+﻿export type ChapterStatus = 'Draft' | 'In Progress' | 'Submitted' | 'Ready for Editor' | 'Published'
 
 export type TaskStatus = 'Pending' | 'In-Progress' | 'Submitted' | 'Approved' | 'Rejected'
 
@@ -28,7 +28,8 @@ export interface Task {
   assistantId: string
   assistantName: string
   status: TaskStatus
-  submittedWorkUrl?: string
+  submittedWorkUrl?: string // Mock image url submitted by assistant
+  ratePerPage?: number // don gia/trang cho task nay (Mangaka nhap)
   prevSubmittedWorkUrl?: string
   feedback?: string // Feedback comments from Mangaka
   assignedAt?: string

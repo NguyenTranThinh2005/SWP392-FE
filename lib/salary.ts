@@ -24,7 +24,8 @@ export function getRate(taskType?: string): number {
 
 export function calcTaskSalary(task: Task): number {
   if (task.status !== 'Approved') return 0
-  return getTaskPageCount(task) * getRate(task.type)
+  const rate = task.ratePerPage && task.ratePerPage > 0 ? task.ratePerPage : getRate(task.type)
+  return getTaskPageCount(task) * rate
 }
 
 export function calcTotalSalary(tasks: Task[]): number {
@@ -49,7 +50,7 @@ export function getSalaryBreakdown(tasks: Task[]): SalaryRow[] {
     .filter(t => t.status === 'Approved')
     .map(t => {
       const pages = Math.max((t.pageEnd ?? 0) - (t.pageStart ?? 0) + 1, 0)
-      const rate = getRate(t.type)
+      const rate = t.ratePerPage && t.ratePerPage > 0 ? t.ratePerPage : getRate(t.type)
       return { taskId: t.id, type: t.type || 'Khác', pages, rate, amount: pages * rate }
     })
 }
@@ -67,7 +68,7 @@ export function getSalaryByAssistant(tasks: Task[]): AssistantSalary[] {
   tasks.filter(t => t.status === 'Approved').forEach(t => {
     const name = t.assistantName || 'Assistant'
     const pages = Math.max((t.pageEnd ?? 0) - (t.pageStart ?? 0) + 1, 0)
-    const amount = pages * getRate(t.type)
+    const amount = pages * (t.ratePerPage && t.ratePerPage > 0 ? t.ratePerPage : getRate(t.type))
     const cur = map.get(name) || { assistantName: name, taskCount: 0, totalPages: 0, amount: 0 }
     cur.taskCount += 1
     cur.totalPages += pages

@@ -1,7 +1,7 @@
 'use client'
-import { calcTotalSalary, formatVND, getSalaryBreakdown } from '@/lib/salary'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { SubmissionFeedbackView } from '@/components/annotations/submission-feedback-view'
 import {
   ClipboardList,
   Clock,
@@ -57,7 +57,7 @@ export default function AssistantDashboardPage() {
   const [activeTaskToSubmit, setActiveTaskToSubmit] = useState<Task | null>(null)
   const [submitDescription, setSubmitDescription] = useState('')
   const [submitUrl, setSubmitUrl] = useState('')
-  const [submitFile, setSubmitFile] = useState<File | null>(null)
+  const [submitFiles, setSubmitFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; size: string; type: string }[]>([])
 
@@ -354,22 +354,27 @@ export default function AssistantDashboardPage() {
   const handleOpenSubmit = (taskId: string) => {
     setSubmittingTaskId(taskId)
     setSubmitDescription('')
-    setSubmitFile(null)
+    setSubmitFiles([])
   }
 
   const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!submittingTaskId) return
-    if (!submitFile) {
+   if (submitFiles.length === 0) {
       toast.error('Vui lòng chọn file để nộp.')
       return
     }
     try {
-      setUploading(true)
-      // 1) Upload file thật, lấy fileAssetId
+    setUploading(true)
+      // Luon gop thanh 1 zip (ke ca 1 file) -> dinh dang bai nop nhat quan -> luon so sanh duoc
+      const JSZip = (await import('jszip')).default
+      const zip = new JSZip()
+      submitFiles.forEach((f) => zip.file(f.name, f))
+      const blob = await zip.generateAsync({ type: 'blob' })
+      const fileToUpload = new File([blob], `bai_nop_${Date.now()}.zip`, { type: 'application/zip' })
       const formData = new FormData()
       formData.append('category', 'TaskSubmission')
-      formData.append('files', submitFile)
+      formData.append('files', fileToUpload)
       const uploadRes = await fetchAPI<{ data: { files: { fileAssetId: string }[] } }>('/api/files', {
         method: 'POST',
         body: formData
@@ -386,7 +391,7 @@ export default function AssistantDashboardPage() {
       })
       toast.success('Nộp bài thành công! Mangaka đã được thông báo.')
       setSubmittingTaskId(null)
-      setSubmitFile(null)
+      setSubmitFiles([])
       loadData()
     } catch (err: any) {
       toast.error(err.message || 'Không thể nộp sản phẩm.')
@@ -398,8 +403,6 @@ export default function AssistantDashboardPage() {
   const pendingTasks = tasks.filter(t => t.status === 'Pending')
   const inProgressTasks = tasks.filter(t => t.status === 'In-Progress' || t.status === 'Rejected')
   const completedTasks = tasks.filter(t => t.status === 'Submitted' || t.status === 'Approved')
-  const totalSalary = calcTotalSalary(tasks)
-  const salaryRows = getSalaryBreakdown(tasks)
   const stats = {
 
     total: tasks.length,
@@ -468,11 +471,9 @@ export default function AssistantDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Đã nộp / Hoàn thành', value: stats.completed, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-          { label: 'Lương ước tính', value: formatVND(totalSalary), icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-600/10' },
           { label: 'Nhiệm vụ được giao', value: stats.total, icon: ClipboardList, color: 'text-foreground', bg: 'bg-primary/10' },
           { label: 'Chờ bắt đầu', value: stats.pending, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
           { label: 'Đang thực hiện', value: stats.working, icon: Play, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-          { label: 'Đã nộp / Hoàn thành', value: stats.completed, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-card border border-border rounded-2xl p-5 space-y-3 shadow-sm hover:border-primary/10 transition-colors">
             <div className={`w-9 h-9 ${bg} ${color} rounded-xl flex items-center justify-center`}>
@@ -553,15 +554,18 @@ export default function AssistantDashboardPage() {
                         ))}
                       </div>
                     )}
-                    {/* Rejections & Feedback Box */}
-                    {task.status === 'Rejected' && task.feedback && (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-600 dark:text-red-400 space-y-2">
-                        <div>
-                          <p className="font-bold flex items-center gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5" /> Phản hồi yêu cầu sửa đổi
-                          </p>
-                          <p className="italic">"{task.feedback}"</p>
-                        </div>
+                   {/* Rejections & Feedback Box */}
+                    {task.status === 'Rejected' && (task.feedback || task.submittedWorkUrl) && (
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-600 dark:text-red-400 space-y-3">
+                        {task.feedback && (
+                          <div className="space-y-1">
+                            <p className="font-bold flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5" /> Phản hồi yêu cầu sửa đổi
+                            </p>
+                            <p className="italic">"{task.feedback}"</p>
+                          </div>
+                        )}
+                        <SubmissionFeedbackView submissionId={task.submissionId} imageUrl={task.submittedWorkUrl} />
                       </div>
                     )}
 
@@ -717,10 +721,31 @@ export default function AssistantDashboardPage() {
                 <label className="text-[10px] uppercase font-bold text-muted-foreground">File bài nộp</label>
                 <input
                   type="file"
-                  required
-                  onChange={(e) => setSubmitFile(e.target.files?.[0] || null)}
+                  multiple
+                 onChange={(e) => {
+                    const picked = e.target.files ? Array.from(e.target.files) : []
+                    setSubmitFiles(prev => [...prev, ...picked])
+                    e.target.value = ''
+                  }}
                   className="w-full p-2.5 bg-muted/50 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
+                {submitFiles.length > 0 && (
+                  <div className="space-y-1 mt-1">
+                    <p className="text-[10px] text-muted-foreground">Đã chọn {submitFiles.length} file:</p>
+                    {submitFiles.map((f, i) => (
+                      <div key={i} className="flex items-center justify-between text-[11px] bg-muted/40 rounded-lg px-2 py-1">
+                        <span className="truncate">{f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSubmitFiles(prev => prev.filter((_, idx) => idx !== i))}
+                          className="text-red-500 font-bold ml-2 shrink-0"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
 
@@ -743,40 +768,6 @@ export default function AssistantDashboardPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {salaryRows.length > 0 && (
-        <div className="bg-card border border-border rounded-2xl p-5 mt-6">
-          <h3 className="text-sm font-bold mb-3 text-foreground">Chi tiết lương của bạn (task đã duyệt)</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left text-muted-foreground border-b border-border">
-                  <th className="py-2 font-bold">Loại task</th>
-                  <th className="py-2 font-bold text-center">Số trang</th>
-                  <th className="py-2 font-bold text-right">Đơn giá/trang</th>
-                  <th className="py-2 font-bold text-right">Thành tiền</th>
-                </tr>
-              </thead>
-              <tbody>
-                {salaryRows.map((row) => (
-                  <tr key={row.taskId} className="border-b border-border/50">
-                    <td className="py-2 font-semibold">{row.type}</td>
-                    <td className="py-2 text-center">{row.pages}</td>
-                    <td className="py-2 text-right">{formatVND(row.rate)}</td>
-                    <td className="py-2 text-right font-bold">{formatVND(row.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-border">
-                  <td className="py-2 font-extrabold" colSpan={3}>Tổng cộng</td>
-                  <td className="py-2 text-right font-extrabold text-green-600">{formatVND(totalSalary)}</td>
-                </tr>
-              </tfoot>
-            </table>
           </div>
         </div>
       )}
@@ -962,4 +953,3 @@ export default function AssistantDashboardPage() {
     </div>
   )
 }
-
