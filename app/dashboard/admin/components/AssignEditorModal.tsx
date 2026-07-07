@@ -1,0 +1,193 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Link as LinkIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
+import { type User } from '@/types/user'
+import { userService, type UserAssignmentResponse } from '@/services/userService'
+
+interface AssignEditorModalProps {
+  isOpen: boolean
+  onClose: () => void
+  mangaka: User | null
+  editors: User[]
+  getEditorName: (editorId?: string) => string
+  onSuccess: () => void
+}
+
+export default function AssignEditorModal({
+  isOpen,
+  onClose,
+  mangaka,
+  editors,
+  getEditorName,
+  onSuccess
+}: AssignEditorModalProps) {
+  const [selectedEditorId, setSelectedEditorId] = useState('')
+  const [isReassigning, setIsReassigning] = useState(false)
+  const [assignmentHistory, setAssignmentHistory] = useState<UserAssignmentResponse[]>([])
+  const [activeAssignmentId, setActiveAssignmentId] = useState('')
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
+  useEffect(() => {
+    if (mangaka && isOpen) {
+      setSelectedEditorId(mangaka.editorId || '')
+      setActiveAssignmentId('')
+      setAssignmentHistory([])
+      setLoadingHistory(true)
+
+      userService.getMyAssignment(mangaka.id)
+        .then((history) => {
+          const sortedHistory = [...history].sort((a, b) =>
+            new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime()
+          )
+          const activeAssignment = sortedHistory.find(item => !item.unassignedAt) || sortedHistory[0]
+          setAssignmentHistory(sortedHistory)
+          setActiveAssignmentId(activeAssignment?.assignmentId || '')
+          setSelectedEditorId(activeAssignment?.fromUserId || mangaka.editorId || '')
+        })
+        .catch((err: any) => {
+          toast.error(err.message || 'Không thể tải lịch sử gán Editor.')
+        })
+        .finally(() => {
+          setLoadingHistory(false)
+        })
+    }
+  }, [mangaka, isOpen])
+
+  const handleConfirmAssignment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!mangaka) return
+    if (!selectedEditorId) {
+      toast.error('Vui lòng chọn Tantou Editor mới.')
+      return
+    }
+    if (!activeAssignmentId) {
+      toast.error('Không tìm thấy assignment hiện tại để đổi Editor.')
+      return
+    }
+
+    setIsReassigning(true)
+    try {
+      await userService.assignEditorToMangaka(mangaka.id, selectedEditorId, activeAssignmentId)
+      toast.success(`Đã gán Editor thành công cho Mangaka ${mangaka.name}!`)
+      onSuccess()
+      onClose()
+    } catch (err: any) {
+      toast.error(err.message || 'Đã xảy ra lỗi khi gán Editor.')
+    } finally {
+      setIsReassigning(false)
+    }
+  }
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return '—'
+    return new Date(value).toLocaleString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  if (!mangaka) return null
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="bg-card border border-border rounded-xl max-w-2xl p-6">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold text-foreground">
+            Gán Tantou Editor Phụ Trách
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleConfirmAssignment} className="space-y-4 pt-3">
+          <div className="bg-muted/40 p-3.5 rounded-xl border border-border/50 text-xs space-y-1.5">
+            <p className="text-muted-foreground">Mangaka được chọn:</p>
+            <p className="font-bold text-foreground text-sm">{mangaka.name} ({mangaka.email})</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Chọn Tantou Editor
+            </label>
+            <select
+              value={selectedEditorId}
+              onChange={(e) => setSelectedEditorId(e.target.value)}
+              disabled={isReassigning || loadingHistory}
+              className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
+            >
+              <option value="" disabled>-- Chọn Tantou Editor mới --</option>
+              {editors.map(ed => (
+                <option key={ed.id} value={ed.id}>{ed.name} ({ed.username})</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Lịch sử gán Editor
+              </p>
+              {activeAssignmentId && (
+                <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-bold">
+                  Active
+                </Badge>
+              )}
+            </div>
+
+            {loadingHistory ? (
+              <p className="text-xs text-muted-foreground">Đang tải lịch sử gán...</p>
+            ) : assignmentHistory.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Chưa có dữ liệu assignment cho Mangaka này.
+              </p>
+            ) : (
+              <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                {assignmentHistory.map((item) => {
+                  const isActive = !item.unassignedAt
+                  return (
+                    <div
+                      key={item.assignmentId}
+                      className="rounded-lg border border-border/70 bg-background px-3 py-2 text-xs"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-bold text-foreground truncate">
+                            {item.fromUserName || getEditorName(item.fromUserId)}
+                          </p>
+                        </div>
+                        <Badge className={isActive
+                          ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-bold"
+                          : "bg-muted text-muted-foreground border border-border text-[10px] font-bold"
+                        }>
+                          {isActive ? 'Đang gán' : 'Đã kết thúc'}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-muted-foreground">
+                        <span>Gán: {formatDateTime(item.assignedAt)}</span>
+                        <span>Kết thúc: {formatDateTime(item.unassignedAt)}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <Button type="submit" disabled={isReassigning || loadingHistory || !selectedEditorId || !activeAssignmentId} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl mt-2 cursor-pointer transition-all">
+            {isReassigning ? 'Đang đổi Editor...' : 'Xác nhận đổi Editor'}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
