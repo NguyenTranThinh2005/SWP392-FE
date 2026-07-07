@@ -280,17 +280,12 @@ export default function AssistantDashboardPage() {
     }
     try {
     setUploading(true)
-      // 1) Neu nhieu file -> gop thanh 1 zip; 1 file -> upload truc tiep
-      let fileToUpload: File
-      if (submitFiles.length === 1) {
-        fileToUpload = submitFiles[0]
-      } else {
-        const JSZip = (await import('jszip')).default
-        const zip = new JSZip()
-        submitFiles.forEach((f) => zip.file(f.name, f))
-        const blob = await zip.generateAsync({ type: 'blob' })
-        fileToUpload = new File([blob], `bai_nop_${Date.now()}.zip`, { type: 'application/zip' })
-      }
+      // Luon gop thanh 1 zip (ke ca 1 file) -> dinh dang bai nop nhat quan -> luon so sanh duoc
+      const JSZip = (await import('jszip')).default
+      const zip = new JSZip()
+      submitFiles.forEach((f) => zip.file(f.name, f))
+      const blob = await zip.generateAsync({ type: 'blob' })
+      const fileToUpload = new File([blob], `bai_nop_${Date.now()}.zip`, { type: 'application/zip' })
       const formData = new FormData()
       formData.append('category', 'TaskSubmission')
       formData.append('files', fileToUpload)
