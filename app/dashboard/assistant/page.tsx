@@ -1,26 +1,18 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { SubmissionFeedbackView } from '@/components/annotations/submission-feedback-view'
+import { useRouter } from 'next/navigation'
 import {
   ClipboardList,
   Clock,
   Play,
-  Send,
   CheckCircle2,
   XCircle,
   AlertTriangle,
   Sparkles,
-  User,
-  Calendar,
   Layers,
-  FileImage,
-  TrendingUp,
-  ExternalLink,
-  ChevronRight,
-  BookOpen,
+  ArrowRight,
   Eye,
-  X,
 } from 'lucide-react'
 import { useRole } from '@/context/RoleContext'
 import {
@@ -29,18 +21,13 @@ import {
   type Assistant
 } from '@/lib/chapters-store'
 import { fetchAPI } from '@/services/api'
-import { API_BASE_URL } from '@/lib/constants'
 import { userService } from '@/services/userService'
 import { chapterService, type Chapter } from '@/services/chapterService'
 import { seriesService } from '@/services/seriesService'
-import { toast } from 'sonner'
-
-import type { Annotation } from '@/types/manuscript'
-import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
-import { extractImagesFromZip } from '@/lib/imageCompare'
 
 export default function AssistantDashboardPage() {
   const { role } = useRole()
+  const router = useRouter()
   const [mounted, setMounted] = useState(false)
 
   // Simulation states
@@ -50,106 +37,8 @@ export default function AssistantDashboardPage() {
   const [allChapters, setAllChapters] = useState<Chapter[]>([])
   const [allSeries, setAllSeries] = useState<any[]>([])
 
-  // Submit modal states
-  const [submittingTaskId, setSubmittingTaskId] = useState<string | null>(null)
-  const MAX_SUBMISSIONS = 3 // gioi han so lan nop / task
-  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
-  const [activeTaskToSubmit, setActiveTaskToSubmit] = useState<Task | null>(null)
-  const [submitDescription, setSubmitDescription] = useState('')
-  const [submitUrl, setSubmitUrl] = useState('')
-  const [submitFiles, setSubmitFiles] = useState<File[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [attachedFiles, setAttachedFiles] = useState<{ name: string; size: string; type: string }[]>([])
-
-  // Task Detail Modal states
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
-  const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
-  const [taskAnnotations, setTaskAnnotations] = useState<Annotation[]>([])
-
-  // Zip pages states for modal
-  const [zipPages, setZipPages] = useState<{ name: string; dataUrl: string }[]>([])
-  const [currentPage, setCurrentPage] = useState(0)
-  const [zipLoading, setZipLoading] = useState(false)
-
-  const getTaskPageNo = (task: Task | null | undefined, pageIndex = 0) => {
-    const start = task?.pageStart || 1
-    return start + pageIndex
-  }
-
-  useEffect(() => {
-    if (!activeTaskToView?.submissionId) {
-      setTaskAnnotations([])
-      setZipPages([])
-      setCurrentPage(0)
-      return
-    }
-
-    let cancelled = false
-
-    // Fetch annotations
-    fetchAPI<any>(`/api/submissions/${activeTaskToView.submissionId}/annotations`)
-      .then((response) => {
-        if (cancelled) return
-        const raw = response.data || response.annotations || (Array.isArray(response) ? response : [])
-        if (!Array.isArray(raw)) {
-          setTaskAnnotations([])
-          return
-        }
-
-        const anns: Annotation[] = raw.map((a: any) => ({
-          id: a.annotationId || a.id,
-          manuscriptId: a.manuscriptId || '',
-          versionName: a.versionName || (a.versionNo ? `v${a.versionNo}` : undefined),
-          pageNo: a.pageNo || 1,
-          positionX: Number(a.positionX ?? 0),
-          positionY: Number(a.positionY ?? 0),
-          text: a.content || a.text || '',
-          authorName: a.authorName,
-          createdAt: a.createdAt || new Date().toISOString()
-        }))
-
-        setTaskAnnotations(anns)
-      })
-      .catch(() => {
-        if (!cancelled) setTaskAnnotations([])
-      })
-
-    // If it's a zip file, extract zip images
-    const url = activeTaskToView.submittedWorkUrl
-    setCurrentPage(0)
-    if (url) {
-      if (/\.zip(\?|$)/i.test(url)) {
-        setZipLoading(true)
-        setZipPages([])
-        extractImagesFromZip(url)
-          .then((imgs) => {
-            if (cancelled) return
-            setZipPages(imgs.length ? imgs : [])
-          })
-          .catch(() => {
-            if (cancelled) return
-            setZipPages([])
-          })
-          .finally(() => {
-            if (!cancelled) setZipLoading(false)
-          })
-      } else {
-        setZipPages([{ name: 'image', dataUrl: url }])
-      }
-    } else {
-      setZipPages([])
-    }
-
-    return () => {
-      cancelled = true
-    }
-  }, [activeTaskToView])
-
-  const getSubmissionStatus = (submission: any) => String(submission?.status).trim().toUpperCase()
-
   const getLatestSubmission = (submissions?: any[]) => {
     if (!Array.isArray(submissions) || submissions.length === 0) return null
-
     const sorted = [...submissions].sort((a, b) => {
       const bVersion = Number(b?.versionNo ?? b?.VersionNo ?? 0)
       const aVersion = Number(a?.versionNo ?? a?.VersionNo ?? 0)
@@ -160,39 +49,20 @@ export default function AssistantDashboardPage() {
       return bSubmittedAt - aSubmittedAt
     })
 
-    return sorted.find(s => {
-      const status = getSubmissionStatus(s)
-      return status === '0' || status === 'SUBMITTED'
-    }) || sorted[0]
-  }
-
-  const getSubmissionFileUrl = (submission: any) => {
-    const directUrl = submission?.submittedFileAssetUrl || submission?.publicUrl || submission?.PublicUrl
-    if (directUrl) return directUrl
-
-    const fileAssetId = submission?.submittedFileAssetId || submission?.SubmittedFileAssetId
-    return fileAssetId ? `${API_BASE_URL}/api/files/${fileAssetId}` : undefined
+    const status = String(sorted[0]?.status).trim().toUpperCase()
+    return sorted.find(s => status === '0' || status === 'SUBMITTED') || sorted[0]
   }
 
   const mapBackendTaskStatus = (status: any, submissions?: any[]): TaskStatus => {
     const statusStr = String(status).trim().toUpperCase();
     const latestSubmission = getLatestSubmission(submissions);
-    const latestSubStatus = getSubmissionStatus(latestSubmission);
+    const latestSubStatus = String(latestSubmission?.status).trim().toUpperCase();
 
-    if (statusStr === '3' || statusStr === 'APPROVED') {
-      return 'Approved';
-    }
-    if (statusStr === '2' || statusStr === 'COMPLETED') {
-      return 'Submitted';
-    }
+    if (statusStr === '3' || statusStr === 'APPROVED') return 'Approved';
+    if (statusStr === '2' || statusStr === 'COMPLETED') return 'Submitted';
     if (statusStr === '1' || statusStr === 'INPROGRESS' || statusStr === 'IN-PROGRESS') {
-      if (latestSubStatus === '2' || latestSubStatus === 'REJECTED') {
-        return 'Rejected';
-      }
+      if (latestSubStatus === '2' || latestSubStatus === 'REJECTED') return 'Rejected';
       return 'In-Progress';
-    }
-    if (statusStr === '0' || statusStr === 'ASSIGNED') {
-      return 'Pending';
     }
     return 'Pending';
   }
@@ -205,16 +75,7 @@ export default function AssistantDashboardPage() {
       if (Array.isArray(data)) {
         return data.map((t: any) => {
           const latestSub = getLatestSubmission(t.submissions);
-
-          let uiStatus = mapBackendTaskStatus(t.status, t.submissions)
-          if (uiStatus === 'Pending') {
-            try {
-              const started = JSON.parse(localStorage.getItem('started_tasks') || '[]')
-              if (started.includes(t.pageTaskId || t.id)) {
-                uiStatus = 'In-Progress'
-              }
-            } catch { }
-          }
+          const uiStatus = mapBackendTaskStatus(t.status, t.submissions)
 
           return {
             id: t.pageTaskId || t.id,
@@ -228,13 +89,6 @@ export default function AssistantDashboardPage() {
             dueDate: t.dueDate || undefined,
             pageStart: t.pageStart,
             pageEnd: t.pageEnd,
-            submittedWorkUrl: getSubmissionFileUrl(latestSub),
-            submittedFileAssetId: latestSub?.submittedFileAssetId || latestSub?.SubmittedFileAssetId || undefined,
-            submitDescription: latestSub?.note || undefined,
-            submissionId: latestSub?.submissionId || latestSub?.id || undefined,
-            feedback: latestSub?.feedback || latestSub?.rejectReason || undefined,
-            referenceFiles: t.taskReferences || t.referenceFiles || [],
-            submissionCount: t.submissions?.length || 0
           }
         })
       }
@@ -245,7 +99,6 @@ export default function AssistantDashboardPage() {
   }
 
   const loadData = useCallback(() => {
-    // Lấy id assistant đang đăng nhập từ localStorage (không phụ thuộc /api/users)
     if (typeof window !== 'undefined' && !selectedAssistantId) {
       const userInfo = localStorage.getItem('user-info')
       if (userInfo) {
@@ -256,7 +109,6 @@ export default function AssistantDashboardPage() {
         } catch { }
       }
     }
-    // Load static and dynamic assistant metadata
     userService.getUsers().then((res) => {
       const list = (res.data || []).filter(u => u.roleName?.toLowerCase() === 'assistant')
       const mapped = list.map(u => ({
@@ -268,7 +120,6 @@ export default function AssistantDashboardPage() {
       }))
       setAssistants(mapped)
 
-      // Auto-set the assistant ID to the logged in assistant if available, or first in the list
       if (typeof window !== 'undefined') {
         const userInfo = localStorage.getItem('user-info')
         if (userInfo) {
@@ -286,7 +137,6 @@ export default function AssistantDashboardPage() {
       }
     }).catch(() => { })
 
-    // Load helper lookups
     chapterService.listChapters().then((chaps) => setAllChapters(chaps)).catch(() => { })
     seriesService.listSeries().then((list) => setAllSeries(list)).catch(() => { })
 
@@ -304,7 +154,6 @@ export default function AssistantDashboardPage() {
 
   if (!mounted) return null
 
-  // Role Guard
   if (role !== 'Assistant') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
@@ -314,9 +163,6 @@ export default function AssistantDashboardPage() {
         <h2 className="text-xl font-bold">Từ chối truy cập</h2>
         <p className="text-muted-foreground text-sm max-w-md">
           Chỉ người dùng có vai trò <strong>Trợ lý</strong> mới được quyền truy cập bảng điều khiển này.
-        </p>
-        <p className="text-xs text-muted-foreground bg-muted p-3 rounded-lg border border-border">
-          💡 <strong>Mẹo:</strong> Sử dụng bộ chuyển đổi vai trò ở thanh bên trái để đổi vai trò của bạn thành <strong>Assistant</strong>.
         </p>
         <Link
           href="/dashboard/manga-list"
@@ -338,73 +184,12 @@ export default function AssistantDashboardPage() {
     return `${seriesTitle} - Ch. ${chapter.number || (chapter as any).chapterNo || 1}: ${chapter.title}`
   }
 
-  // Handlers
-  const handleStartTask = (taskId: string) => {
-    toast.success('Đã bắt đầu công việc! Trạng thái được cập nhật thành Đang thực hiện.')
-    try {
-      const started = JSON.parse(localStorage.getItem('started_tasks') || '[]')
-      if (!started.includes(taskId)) {
-        started.push(taskId)
-        localStorage.setItem('started_tasks', JSON.stringify(started))
-      }
-    } catch { }
-    loadData()
-  }
-
-  const handleOpenSubmit = (taskId: string) => {
-    setSubmittingTaskId(taskId)
-    setSubmitDescription('')
-    setSubmitFiles([])
-  }
-
-  const handleSubmitWork = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!submittingTaskId) return
-   if (submitFiles.length === 0) {
-      toast.error('Vui lòng chọn file để nộp.')
-      return
-    }
-    try {
-    setUploading(true)
-      // Luon gop thanh 1 zip (ke ca 1 file) -> dinh dang bai nop nhat quan -> luon so sanh duoc
-      const JSZip = (await import('jszip')).default
-      const zip = new JSZip()
-      submitFiles.forEach((f) => zip.file(f.name, f))
-      const blob = await zip.generateAsync({ type: 'blob' })
-      const fileToUpload = new File([blob], `bai_nop_${Date.now()}.zip`, { type: 'application/zip' })
-      const formData = new FormData()
-      formData.append('category', 'TaskSubmission')
-      formData.append('files', fileToUpload)
-      const uploadRes = await fetchAPI<{ data: { files: { fileAssetId: string }[] } }>('/api/files', {
-        method: 'POST',
-        body: formData
-      })
-      const fileAssetId = uploadRes.data.files[0].fileAssetId
-
-      // 2) Nộp bài với fileAssetId thật
-      await fetchAPI(`/api/page-tasks/${submittingTaskId}/submissions`, {
-        method: 'POST',
-        body: JSON.stringify({
-          submittedFileAssetId: fileAssetId,
-          note: submitDescription || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'
-        })
-      })
-      toast.success('Nộp bài thành công! Mangaka đã được thông báo.')
-      setSubmittingTaskId(null)
-      setSubmitFiles([])
-      loadData()
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể nộp sản phẩm.')
-    } finally {
-      setUploading(false)
-    }
-  }
-  // Task lists
   const pendingTasks = tasks.filter(t => t.status === 'Pending')
   const inProgressTasks = tasks.filter(t => t.status === 'In-Progress' || t.status === 'Rejected')
   const completedTasks = tasks.filter(t => t.status === 'Submitted' || t.status === 'Approved')
-  const stats = {
+  const activeTasks = [...pendingTasks, ...inProgressTasks]
 
+  const stats = {
     total: tasks.length,
     pending: pendingTasks.length,
     working: inProgressTasks.length,
@@ -417,10 +202,6 @@ export default function AssistantDashboardPage() {
         return <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> Chờ bắt đầu</span>
       case 'In-Progress':
         return <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Play className="w-3 h-3 animate-pulse" /> Đang thực hiện</span>
-      case 'Submitted':
-        return <span className="bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Send className="w-3 h-3" /> Đã nộp</span>
-      case 'Approved':
-        return <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Đã duyệt</span>
       case 'Rejected':
         return <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><XCircle className="w-3 h-3" /> Yêu cầu sửa đổi</span>
       default:
@@ -429,7 +210,7 @@ export default function AssistantDashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-300">
       {/* Top Welcome Banner */}
       <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 rounded-2xl p-6 sm:p-8">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
@@ -442,7 +223,7 @@ export default function AssistantDashboardPage() {
               Bảng điều khiển Trợ lý
             </h1>
             <p className="text-sm text-muted-foreground max-w-lg">
-              Quản lý và thực hiện các nhiệm vụ vẽ do tác giả giao. Bắt đầu làm việc, nộp các trang vẽ và xem phản hồi.
+              Chào mừng bạn đến với không gian làm việc. Theo dõi trạng thái các nhiệm vụ được giao và chuyển đến tab Nhiệm vụ để bắt đầu vẽ.
             </p>
           </div>
         </div>
@@ -487,469 +268,59 @@ export default function AssistantDashboardPage() {
         ))}
       </div>
 
-      {/* Main Content Layout */}
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-        {/* Active & Pending Tasks */}
-        <div className="xl:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
+      {/* Active Tasks Overview */}
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
             <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Layers className="w-5 h-5 text-primary" />
-              Nhiệm vụ đang hoạt động của tôi ({stats.pending + stats.working})
+              Nhiệm vụ đang hoạt động ({activeTasks.length})
             </h2>
+            <p className="text-xs text-muted-foreground mt-1">Các nhiệm vụ cần bạn xử lý.</p>
           </div>
-
-          <div className="space-y-4">
-            {tasks.filter(t => t.status !== 'Approved' && t.status !== 'Submitted').length === 0 ? (
-              <div className="bg-card border border-border rounded-2xl p-10 text-center space-y-3">
-                <CheckCircle2 className="w-10 h-10 text-emerald-500/50 mx-auto" />
-                <h3 className="font-bold text-sm text-foreground">Không có nhiệm vụ hoạt động nào</h3>
-                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  Tất cả các nhiệm vụ được giao đã được hoàn thành. Hãy tiếp tục theo dõi các kịch bản phân công mới của tác giả.
-                </p>
-              </div>
-            ) : (
-              tasks.filter(t => t.status !== 'Approved' && t.status !== 'Submitted').map((task) => {
-                const isWorking = task.status === 'In-Progress' || task.status === 'Rejected'
-
-                return (
-                  <div
-                    key={task.id}
-                    className={`bg-card border rounded-2xl p-5 transition-all space-y-4 ${task.status === 'Rejected'
-                      ? 'border-red-500/30 bg-gradient-to-br from-card to-red-500/5'
-                      : 'border-border hover:border-primary/20'
-                      }`}
-                  >
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
-                            {task.id}
-                          </span>
-                          <h3 className="font-bold text-sm text-foreground">
-                            {task.type} (Trang {task.pages})
-                          </h3>
-                        </div>
-                        <p className="text-xs text-muted-foreground font-semibold mt-1">
-                          {getChapterInfo(task.chapterId)}
-                        </p>
-                      </div>
-
-                      {getStatusBadge(task.status)}
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-xl border border-border/40">
-                      {task.description}
-                    </p>
-                    {task.referenceFiles && task.referenceFiles.length > 0 && (
-                      <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground">📎 Tài liệu hướng dẫn</p>
-                        {task.referenceFiles.map((f: any) => (
-                          <a key={f.fileAssetId} href={f.publicUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline truncate">
-                            📄 {f.originalFileName}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                   {/* Rejections & Feedback Box */}
-                    {task.status === 'Rejected' && (task.feedback || task.submittedWorkUrl) && (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-600 dark:text-red-400 space-y-3">
-                        {task.feedback && (
-                          <div className="space-y-1">
-                            <p className="font-bold flex items-center gap-1.5">
-                              <AlertTriangle className="w-3.5 h-3.5" /> Phản hồi yêu cầu sửa đổi
-                            </p>
-                            <p className="italic">"{task.feedback}"</p>
-                          </div>
-                        )}
-                        <SubmissionFeedbackView submissionId={task.submissionId} imageUrl={task.submittedWorkUrl} />
-                      </div>
-                    )}
-
-                    {/* Footer Actions */}
-                    <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/40">
-                      <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-muted-foreground/60" /> Hạn chót: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Ngay lập tức'}
-                      </span>
-
-                      <div>
-                        {!isWorking ? (
-                          <button
-                            onClick={() => handleStartTask(task.id)}
-                            className="flex items-center gap-1 px-4.5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all"
-                          >
-                            <Play className="w-3.5 h-3.5" /> Bắt đầu vẽ
-                          </button>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            {task.submissionId && (
-                              <button
-                                onClick={() => {
-                                  setActiveTaskToView(task)
-                                  setIsDetailModalOpen(true)
-                                }}
-                                className="flex items-center gap-1 px-3 py-2 border border-border text-foreground hover:bg-muted text-xs font-semibold rounded-xl transition-all cursor-pointer"
-                              >
-                                <Eye className="w-3.5 h-3.5" /> Xem bài nộp & Góp ý
-                              </button>
-                            )}
-                            <span className="text-xs font-bold text-muted-foreground">
-                              Lần nộp {(task.submissionCount || 0)}/{MAX_SUBMISSIONS}
-                            </span>
-                            <button
-                              onClick={() => handleOpenSubmit(task.id)}
-                              disabled={(task.submissionCount || 0) >= MAX_SUBMISSIONS}
-                              className="flex items-center gap-1 px-4.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                              {(task.submissionCount || 0) >= MAX_SUBMISSIONS ? 'Hết lượt nộp' : 'Nộp sản phẩm'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
+          <button
+            onClick={() => router.push('/dashboard/chapters')}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all"
+          >
+            Đến trang Nhiệm vụ <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        {/* Task Archives / Finished Work */}
-        <div className="space-y-6">
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-            Đã nộp & Hoàn thành ({stats.completed})
-          </h2>
-
-          <div className="space-y-4">
-            {completedTasks.length === 0 ? (
-              <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-2">
-                <Clock className="w-8 h-8 text-muted-foreground/20 mx-auto" />
-                <p className="text-xs text-muted-foreground">Chưa có nhiệm vụ hoàn thành nào</p>
-              </div>
-            ) : (
-              completedTasks.map((task) => (
-                <div key={task.id} className="bg-card border border-border/60 rounded-2xl p-4.5 space-y-3.5 hover:border-primary/10 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h4 className="font-bold text-xs text-foreground">{task.type} (Trang {task.pages})</h4>
-                      <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">{getChapterInfo(task.chapterId)}</p>
-                    </div>
+        <div className="divide-y divide-border">
+          {activeTasks.length === 0 ? (
+            <div className="py-12 text-center space-y-3">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500/50 mx-auto" />
+              <h3 className="font-bold text-sm text-foreground">Bạn không có nhiệm vụ hoạt động nào</h3>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                Tất cả nhiệm vụ đã được gửi hoặc duyệt. Hãy nghỉ ngơi hoặc liên hệ Mangaka để nhận kịch bản mới!
+              </p>
+            </div>
+          ) : (
+            activeTasks.map((task) => (
+              <div key={task.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
+                      {task.id}
+                    </span>
+                    <span className="text-sm font-bold text-foreground">{task.type} (Trang {task.pages})</span>
                     {getStatusBadge(task.status)}
                   </div>
-
-                  {/* Submitted mockup file preview */}
-                  {task.submittedWorkUrl && (
-                    <div className="relative h-20 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center group">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={task.submittedWorkUrl}
-                        alt="Submitted Work"
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
-                        <button
-                          onClick={() => {
-                            setActiveTaskToView(task)
-                            setIsDetailModalOpen(true)
-                          }}
-                          className="p-1.5 bg-card rounded-lg text-foreground text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> Chi tiết & Góp ý
-                        </button>
-                        <a
-                          href={task.submittedWorkUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-1.5 bg-card rounded-lg text-foreground text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" /> File gốc
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Feedback summary */}
-                  {task.status === 'Approved' && task.feedback && (
-                    <div className="bg-emerald-500/8 border border-emerald-500/15 rounded-xl p-2.5 text-[11px] text-emerald-600 dark:text-emerald-400">
-                      <span className="font-bold">Phản hồi của Tác giả: </span>
-                      <span className="italic">"{task.feedback}"</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between text-[9px] text-muted-foreground font-semibold pt-1">
-                    <span>Mã nhiệm vụ: {task.id}</span>
-                    <span>Cập nhật: {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString() : 'N/A'}</span>
-                  </div>
+                  <p className="text-xs text-muted-foreground font-semibold">{getChapterInfo(task.chapterId)}</p>
+                  <p className="text-xs text-muted-foreground/80 line-clamp-1 italic">"{task.description}"</p>
                 </div>
-              ))
-            )}
-          </div>
+                <button
+                  onClick={() => router.push('/dashboard/chapters')}
+                  className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-all cursor-pointer"
+                  title="Đi tới chi tiết nhiệm vụ"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
-
-      {/* Submit Work Dialog Backdrop/Modal */}
-      {submittingTaskId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSubmittingTaskId(null)} />
-
-          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6 overflow-hidden">
-            <h3 className="text-base font-extrabold text-foreground flex items-center gap-2">
-              <Send className="w-5 h-5 text-indigo-500" /> Nộp sản phẩm hoàn thành
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1.5">
-              Gửi sản phẩm và ghi chú bản vẽ cho tác giả. Họ sẽ xét duyệt để phê duyệt hoặc yêu cầu bạn điều chỉnh thêm.
-            </p>
-
-            <form onSubmit={handleSubmitWork} className="space-y-4 mt-4">
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-muted-foreground">Mô tả sản phẩm nộp</label>
-                <textarea
-                  required
-                  placeholder="Ví dụ: Đã vẽ xong bối cảnh nền và screentone. Thêm chi tiết đổ nát ở trang 5."
-                  value={submitDescription}
-                  onChange={(e) => setSubmitDescription(e.target.value)}
-                  className="w-full p-2.5 bg-muted/50 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all h-24 resize-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-muted-foreground">File bài nộp</label>
-                <input
-                  type="file"
-                  multiple
-                 onChange={(e) => {
-                    const picked = e.target.files ? Array.from(e.target.files) : []
-                    setSubmitFiles(prev => [...prev, ...picked])
-                    e.target.value = ''
-                  }}
-                  className="w-full p-2.5 bg-muted/50 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-                {submitFiles.length > 0 && (
-                  <div className="space-y-1 mt-1">
-                    <p className="text-[10px] text-muted-foreground">Đã chọn {submitFiles.length} file:</p>
-                    {submitFiles.map((f, i) => (
-                      <div key={i} className="flex items-center justify-between text-[11px] bg-muted/40 rounded-lg px-2 py-1">
-                        <span className="truncate">{f.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => setSubmitFiles(prev => prev.filter((_, idx) => idx !== i))}
-                          className="text-red-500 font-bold ml-2 shrink-0"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setSubmittingTaskId(null)}
-                  className="px-4 py-2 border border-border text-foreground hover:bg-muted text-xs font-semibold rounded-xl transition-all"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {uploading ? 'Đang nộp...' : 'Nộp bài'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* View Task Details & Annotations Modal */}
-      {isDetailModalOpen && activeTaskToView && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between pb-2 border-b border-border">
-              <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary" /> Chi tiết Nhiệm vụ & Góp ý sửa đổi
-              </h3>
-              <button
-                onClick={() => {
-                  setIsDetailModalOpen(false)
-                  setActiveTaskToView(null)
-                }}
-                className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column: Image Preview with Comments */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-muted-foreground">Sản phẩm đã nộp & Chú thích</label>
-                  {activeTaskToView.submittedWorkUrl && (
-                    <a
-                      href={activeTaskToView.submittedWorkUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> Tải file gốc
-                    </a>
-                  )}
-                </div>
-
-                {!activeTaskToView.submittedWorkUrl ? (
-                  <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground/50">
-                    <FileImage className="w-12 h-12 mb-2" />
-                    <span className="text-xs">Chưa nộp sản phẩm nào</span>
-                  </div>
-                ) : zipLoading ? (
-                  <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground">
-                    <span className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-                    <span className="text-xs">Đang giải nén tệp tin zip...</span>
-                  </div>
-                ) : zipPages.length > 0 ? (
-                  <div className="space-y-3">
-                    {zipPages.length > 1 && (
-                      <div className="flex items-center justify-between bg-muted/40 border border-border p-2 rounded-xl">
-                        <button
-                          type="button"
-                          onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                          disabled={currentPage === 0}
-                          className="px-2.5 py-1 bg-card hover:bg-muted border border-border rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          ‹ Trước
-                        </button>
-                        <span className="text-xs font-bold text-foreground">Trang {currentPage + 1}/{zipPages.length}: {zipPages[currentPage].name}</span>
-                        <button
-                          type="button"
-                          onClick={() => setCurrentPage(p => Math.min(zipPages.length - 1, p + 1))}
-                          disabled={currentPage === zipPages.length - 1}
-                          className="px-2.5 py-1 bg-card hover:bg-muted border border-border rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          Sau ›
-                        </button>
-                      </div>
-                    )}
-                    <div className="overflow-hidden">
-                      <ImageCommentLayer
-                        imageUrl={zipPages[currentPage].dataUrl}
-                        pageNo={getTaskPageNo(activeTaskToView, currentPage)}
-                        annotations={taskAnnotations}
-                        readOnly={true}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground">
-                    <AlertTriangle className="w-8 h-8 text-amber-500 mb-2" />
-                    <span className="text-xs text-center px-4">Không thể tải trước ảnh của tệp tin. Vui lòng bấm "Tải file gốc" để kiểm tra trực tiếp.</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column: Task Details and Rejection Feedback */}
-              <div className="space-y-4 flex flex-col justify-between">
-                <div className="space-y-4">
-                  {/* Manga/Chapter Info */}
-                  <div className="p-3.5 bg-muted/40 border border-border rounded-xl space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Thông tin chương</p>
-                    <p className="font-bold text-foreground text-sm">{getChapterInfo(activeTaskToView.chapterId)}</p>
-                    <p className="text-xs text-muted-foreground font-semibold">Nhiệm vụ: {activeTaskToView.type} (Trang {activeTaskToView.pages})</p>
-                  </div>
-
-                  {/* Task details */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground">Hạn nộp</p>
-                      <p className="font-semibold text-amber-600 bg-amber-500/5 border border-amber-500/10 px-2.5 py-1.5 rounded-lg inline-block text-xs">
-                        {activeTaskToView.dueDate ? new Date(activeTaskToView.dueDate).toLocaleDateString() : 'Không giới hạn'}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground">Trạng thái</p>
-                      <div className="inline-block">
-                        {getStatusBadge(activeTaskToView.status)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Description from Mangaka */}
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground">Yêu cầu & Hướng dẫn vẽ từ Tác giả</p>
-                    <div className="p-3 bg-muted/30 border border-border rounded-xl text-foreground text-xs leading-relaxed whitespace-pre-line">
-                      {activeTaskToView.description}
-                    </div>
-                  </div>
-
-                  {/* Reference Files */}
-                  {activeTaskToView.referenceFiles && activeTaskToView.referenceFiles.length > 0 && (
-                    <div className="space-y-1.5">
-                      <p className="text-xs font-bold text-muted-foreground">Tài liệu hướng dẫn đính kèm</p>
-                      <div className="space-y-1">
-                        {activeTaskToView.referenceFiles.map((f) => (
-                          <a
-                            key={f.fileAssetId}
-                            href={f.publicUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs text-primary hover:underline p-2 bg-muted/20 border border-border/40 rounded-xl"
-                          >
-                            <span className="truncate flex-1">{f.originalFileName}</span>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Rejections & Feedback Box */}
-                  {activeTaskToView.status === 'Rejected' && activeTaskToView.feedback && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 text-xs text-red-600 dark:text-red-400 space-y-1.5">
-                      <p className="font-bold flex items-center gap-1.5">
-                        <AlertTriangle className="w-4 h-4" /> Yêu cầu sửa đổi từ Tác giả
-                      </p>
-                      <p className="italic bg-card/40 p-2.5 rounded-lg border border-red-500/10">"{activeTaskToView.feedback}"</p>
-                    </div>
-                  )}
-
-                  {/* Assistant Submission notes */}
-                  {activeTaskToView.submitDescription && (
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground">Ghi chú nộp bài của bạn</p>
-                      <div className="p-3 bg-muted/20 border border-border rounded-xl text-foreground text-xs italic leading-relaxed">
-                        "{activeTaskToView.submitDescription}"
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-end pt-3 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDetailModalOpen(false)
-                      setActiveTaskToView(null)
-                    }}
-                    className="px-5 py-2.5 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl transition-all cursor-pointer"
-                  >
-                    Đóng chi tiết
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
