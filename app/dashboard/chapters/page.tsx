@@ -2113,6 +2113,12 @@ const payload = {
                   onChange={(e) => setNewTaskRate(e.target.value === '' ? 0 : Number(e.target.value))}
                   className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
                 />
+                {newTaskRate > 0 && newTaskPageEnd >= newTaskPageStart && (
+                  <p className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                    Ước tính lương: {formatVND((newTaskPageEnd - newTaskPageStart + 1) * newTaskRate)}
+                    <span className="font-normal text-muted-foreground">({newTaskPageEnd - newTaskPageStart + 1} trang × {formatVND(newTaskRate)})</span>
+                  </p>
+                )}
               </div>
               {/* Instructions / Description */}
               <div className="space-y-1.5">
