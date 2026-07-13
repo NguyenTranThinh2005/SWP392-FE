@@ -2533,7 +2533,28 @@ const payload = {
                     className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
                   />
                 </div>
-
+               {(() => {
+                  const pages = (activeTaskToReview.pageEnd || 0) - (activeTaskToReview.pageStart || 0) + 1
+                  const rate = activeTaskToReview.ratePerPage || 0
+                  const total = pages * rate
+                  return (
+                    <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 text-xs space-y-1">
+                      <p className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                         Xem trước lương khi duyệt
+                      </p>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Số trang:</span><span className="font-semibold text-foreground">{pages}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Đơn giá/trang:</span><span className="font-semibold text-foreground">{formatVND(rate)}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-emerald-500/20 pt-1 mt-1">
+                        <span className="font-bold text-foreground">Tổng lương:</span>
+                        <span className="font-extrabold text-emerald-600">{formatVND(total)}</span>
+                      </div>
+                    </div>
+                  )
+                })()}
                 <div className="flex items-center gap-2.5 justify-end pt-2 border-t border-border">
                   <button
                     onClick={() => handleRejectTask(activeTaskToReview)}
