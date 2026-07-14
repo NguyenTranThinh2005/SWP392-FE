@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle, WifiOff } from 'lucide-react'
+import { ArrowLeft, CheckCircle, WifiOff, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { SeriesProposalForm } from '@/components/forms/series-proposal-form'
 import type { SeriesProposalInput } from '@/lib/validation'
@@ -10,6 +10,7 @@ import { proposalService } from '@/services/proposalService'
 import type { Proposal } from '@/types/proposal'
 import { useRole } from '@/context/RoleContext'
 import { notificationStore } from '@/store/notificationStore'
+import { toast } from 'sonner'
 
 const { hasPendingProposal, isTitleDuplicate, saveDraft, submitProposal, getProposalById, updateDraft } = proposalService
 
@@ -65,11 +66,23 @@ export default function NewProposalPage() {
     }
   }, [mangakaId])
 
+  // Show toast notification when blocked
+  useEffect(() => {
+    if (blockedByBR19) {
+      toast.warning('Bạn hiện đang có đề xuất khác đang chờ duyệt. Không thể tạo thêm đề xuất mới.')
+    }
+  }, [blockedByBR19])
+
   const handleSubmit = useCallback(
     async (data: SeriesProposalInput, action: 'draft' | 'submit') => {
       setIsLoading(true)
 
       try {
+        const isBlockedNow = await hasPendingProposal(mangakaId)
+        if (isBlockedNow) {
+          throw new Error('Bạn đang có đề xuất ở trạng thái chờ duyệt hoặc đang duyệt. Không thể thực hiện hành động này.')
+        }
+
         if (action === 'draft') {
           if (editId) {
             await updateDraft(editId, {
@@ -194,6 +207,19 @@ export default function NewProposalPage() {
           Fill in the details below. Your proposal will be reviewed by the Editorial Board after submission.
         </p>
       </div>
+
+      {/* Blocked by BR19 Warning banner */}
+      {blockedByBR19 && (
+        <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/25 rounded-lg text-sm animate-in fade-in duration-200">
+          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-amber-600">Bạn đã có đề xuất đang trong quá trình xét duyệt</p>
+            <p className="text-muted-foreground text-xs mt-0.5">
+              Bạn chỉ có thể gửi hoặc lưu bản nháp đề xuất mới sau khi đề xuất hiện tại (trạng thái: Chờ duyệt hoặc Đang duyệt) đã được xử lý bởi Hội đồng Biên tập.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Success overlay */}
       {successMessage && (
