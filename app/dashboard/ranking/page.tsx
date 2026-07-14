@@ -77,6 +77,7 @@ export default function RankingPage() {
   const [rankings, setRankings] = useState<RankingRow[]>([])
   const [allSeries, setAllSeries] = useState<any[]>([])
   const [availableChapters, setAvailableChapters] = useState<any[]>([])
+  const [votedSeries, setVotedSeries] = useState<Record<string, 'Discontinue' | 'Continue'>>({})
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -252,6 +253,97 @@ export default function RankingPage() {
     })
   }
 
+  // Handle Excel (.xlsx) file import
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = async (evt) => {
+      try {
+        const data = evt.target?.result
+        if (!data) return
+        const XLSX = await import('xlsx')
+        const workbook = XLSX.read(data, { type: 'array' })
+        const sheetName = workbook.SheetNames[0]
+        const sheet = workbook.Sheets[sheetName]
+        const rows = XLSX.utils.sheet_to_json(sheet) as any[]
+
+        if (rows.length === 0) {
+          toast.error("The selected file contains no data.")
+          return
+        }
+
+        // Validate and import rows
+        let importedCount = 0
+        let errorsCount = 0
+
+        for (const row of rows) {
+          // Expected columns: Series Title, Period, Readers, Votes
+          const seriesTitle = row["Series Title"] || row["SeriesTitle"] || row["Title"]
+          const period = row["Period"]
+          const readerCount = parseInt(row["Readers"] || row["ReaderCount"] || row["Reader Count"] || "0", 10)
+          const voteCount = parseInt(row["Votes"] || row["VoteCount"] || row["Vote Count"] || "0", 10)
+
+          if (!seriesTitle || !period) {
+            errorsCount++
+            continue
+          }
+
+          // Match series title (case insensitive, trim spaces)
+          const matchedSeries = allSeries.find(
+            (s) => s.title.toLowerCase().trim() === seriesTitle.toString().toLowerCase().trim()
+          )
+
+          if (!matchedSeries) {
+            console.warn(`Series not found for title: ${seriesTitle}`)
+            errorsCount++
+            continue
+          }
+
+          if (readerCount < 0 || voteCount < 0 || voteCount > readerCount) {
+            console.warn(`Invalid counts for ${seriesTitle}: Readers=${readerCount}, Votes=${voteCount}`)
+            errorsCount++
+            continue
+          }
+
+          const payload = {
+            seriesId: matchedSeries.id,
+            period: period.toString(),
+            readerCount,
+            voteCount
+          }
+
+          try {
+            await fetchAPI('/api/vote-records', {
+              method: 'POST',
+              body: JSON.stringify(payload)
+            })
+            importedCount++
+          } catch (err) {
+            console.error(`Failed to import row for ${seriesTitle}:`, err)
+            errorsCount++
+          }
+        }
+
+        if (importedCount > 0) {
+          toast.success(`Successfully imported ${importedCount} vote records!`)
+          refreshData()
+        }
+
+        if (errorsCount > 0) {
+          toast.warning(`Skipped ${errorsCount} invalid rows. Double check series titles or counts.`)
+        }
+
+      } catch (err) {
+        console.error("Failed to parse Excel file:", err)
+        toast.error("Failed to parse Excel file. Ensure it is a valid .xlsx file.")
+      }
+    }
+    reader.readAsArrayBuffer(file)
+    e.target.value = ''
+  }
+
   // Handle vote confirmation
   const handleConfirmVote = (id: string, title: string) => {
     fetchAPI(`/api/vote-records/${id}/confirm`, {
@@ -261,6 +353,33 @@ export default function RankingPage() {
       refreshData()
     }).catch(() => {
       toast.error('Failed to confirm vote record.')
+    })
+  }
+
+  // Handle Chief Editor Veto / Discontinuation of Series
+  const handleDiscontinueSeries = (seriesId: string, title: string) => {
+    if (confirm(`Are you sure you want to discontinue the publication of "${title}"? This action is irreversible.`)) {
+      seriesService.deleteSeries(seriesId).then(() => {
+        toast.success(`"${title}" has been discontinued from publication!`)
+        // Filter out from rankings locally
+        setRankings(prev => prev.filter(r => r.seriesId !== seriesId))
+      }).catch((err: any) => {
+        toast.error(err.message || 'Failed to discontinue publication.')
+      })
+    }
+  }
+
+  // Handle Editorial Board Member Vote on Discontinuation
+  const handleVoteDiscontinue = (seriesId: string, vote: 'Approved' | 'Rejected', title: string) => {
+    seriesService.voteSeries(seriesId, vote).then(() => {
+      const voteLabel = vote === 'Rejected' ? 'Discontinue' : 'Continue'
+      toast.success(`Successfully cast vote to "${voteLabel}" for "${title}".`)
+      setVotedSeries(prev => ({
+        ...prev,
+        [seriesId]: voteLabel
+      }))
+    }).catch(() => {
+      toast.error('Failed to cast vote.')
     })
   }
 
@@ -280,14 +399,30 @@ export default function RankingPage() {
           </p>
         </div>
 
-        {/* Import Button: only visible to Editorial Board or Editor-in-Chief */}
+        {/* Import Buttons: only visible to Editorial Board or Editor-in-Chief */}
         {isAuthorized ? (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-md cursor-pointer transition-all">
-                <Plus className="w-4 h-4" /> Enter Vote Data
-              </Button>
-            </DialogTrigger>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            {/* Hidden File Input for Excel Import */}
+            <input
+              type="file"
+              id="excel-import-file"
+              accept=".xlsx, .xls"
+              className="hidden"
+              onChange={handleExcelImport}
+            />
+            <label
+              htmlFor="excel-import-file"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-md cursor-pointer transition-all"
+            >
+              <FileSpreadsheet className="w-4 h-4" /> Import Excel (.xlsx)
+            </label>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-md cursor-pointer transition-all">
+                  <Plus className="w-4 h-4" /> Enter Vote Data
+                </Button>
+              </DialogTrigger>
             <DialogContent className="bg-card border border-border rounded-xl max-w-md p-6">
               <DialogHeader>
                 <DialogTitle className="text-lg font-bold text-foreground">
@@ -380,6 +515,7 @@ export default function RankingPage() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         ) : (
           <div className="text-[11px] bg-muted/50 border border-border p-2 rounded-lg text-muted-foreground max-w-xs text-center">
             💡 <strong>Read-Only Mode:</strong> Only the Editorial Board is authorized to import ranking vote data.
@@ -467,12 +603,15 @@ export default function RankingPage() {
                 <TableHead className="text-right font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Readers</TableHead>
                 <TableHead className="text-right font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Score</TableHead>
                 <TableHead className="w-48 text-center font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                {isAuthorized && (
+                  <TableHead className="w-64 text-center font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Board Decisions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-border">
               {rankings.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="p-12 text-center text-muted-foreground space-y-2">
+                  <TableCell colSpan={isAuthorized ? 8 : 7} className="p-12 text-center text-muted-foreground space-y-2">
                     <Users className="w-8 h-8 mx-auto text-muted-foreground/30" />
                     <p className="text-xs">No ranking data confirmed for period {selectedPeriod}.</p>
                   </TableCell>
@@ -551,6 +690,48 @@ export default function RankingPage() {
                           <span className="text-muted-foreground/30 text-xs">—</span>
                         )}
                       </TableCell>
+
+                      {isAuthorized && (
+                        <TableCell className="text-center">
+                          {row.status === 'BOTTOM 20%' ? (
+                            <div className="flex items-center justify-center gap-1.5">
+                              {role === 'EditorInChief' ? (
+                                <Button
+                                  onClick={() => handleDiscontinueSeries(row.seriesId, row.seriesTitle)}
+                                  className="bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                                >
+                                  Discontinue
+                                </Button>
+                              ) : (
+                                <>
+                                  {votedSeries[row.seriesId] ? (
+                                    <span className="text-[10px] text-muted-foreground font-semibold italic">
+                                      Voted: {votedSeries[row.seriesId]}
+                                    </span>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        onClick={() => handleVoteDiscontinue(row.seriesId, 'Rejected', row.seriesTitle)}
+                                        className="bg-red-600 hover:bg-red-700 text-white font-bold text-[9px] px-2 py-1 rounded cursor-pointer transition-colors mr-1"
+                                      >
+                                        Vote Discontinue
+                                      </Button>
+                                      <Button
+                                        onClick={() => handleVoteDiscontinue(row.seriesId, 'Approved', row.seriesTitle)}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] px-2 py-1 rounded cursor-pointer transition-colors"
+                                      >
+                                        Vote Continue
+                                      </Button>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground/30 text-xs">—</span>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   )
                 })
