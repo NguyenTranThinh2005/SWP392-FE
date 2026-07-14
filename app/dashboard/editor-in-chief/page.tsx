@@ -1,3 +1,9 @@
+/**
+ * EDITOR-IN-CHIEF WORKSPACE: Executive control panel for active serializations and board vote management.
+ * Main features:
+ * 1. Vote Tracking: Monitor Approve/Reject vote counts from the Editorial Board for each proposal.
+ * 2. Veto Override: Direct action to Approve or Reject proposals immediately, bypassing board voting.
+ */
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
@@ -39,6 +45,7 @@ export default function EditorInChiefDashboard() {
   const [mounted, setMounted] = useState(false)
   const [proposalVotes, setProposalVotes] = useState<Record<string, { approve: number; reject: number }>>({})
 
+  // FEATURE: Load series proposals list and count votes cast by the Editorial Board
   const loadProposals = useCallback(async () => {
     const list = await getProposals()
     setProposals(list)
@@ -77,7 +84,7 @@ export default function EditorInChiefDashboard() {
     setMounted(true)
   }, [loadProposals])
 
-  // Chief Override function
+  // FEATURE: Executive Veto Decision - Directly Approve or Reject a proposal bypassing Editorial Board voting
   const handleVetoDecision = async (id: string, newStatus: 'Approved' | 'Rejected') => {
     const proposal = proposals.find(p => p.id === id)
     if (!proposal) return

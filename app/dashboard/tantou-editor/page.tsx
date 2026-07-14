@@ -1,3 +1,11 @@
+/**
+ * TANTOU EDITOR WORKSPACE: Manage assigned series and creators (Mangakas).
+ * Main features:
+ * 1. Dashboard: Overview of active metrics and list of supervised creators.
+ * 2. Series Management: Manage supervised series and edit chapters list.
+ * 3. Approve Proposals: Accept, reject, or forward new series proposals to the Board.
+ * 4. Manuscripts Review: Review submitted drafts (Approve / Reject / Request Revision) with comments.
+ */
 'use client'
 
 import { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
@@ -37,7 +45,7 @@ function TantouEditorWorkspace() {
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [manuscripts, setManuscripts] = useState<ManuscriptItem[]>([])
 
-  // Load Data function
+  // FEATURE: Load all related workspace data (series, assigned creators, chapters, manuscripts)
   const loadData = useCallback(async (editorId?: string) => {
     const targetEditorId = editorId || currentUserId
     let list: any[] = []
@@ -131,7 +139,7 @@ function TantouEditorWorkspace() {
     }
   }, [loadData, currentUserId])
 
-  // Filters manuscript dashboard to show only works of creators supervised by the active editor.
+  // FEATURE: Filter series supervised by the current editor
   const supervisedSeries = useMemo(() => {
     const assignedIds = new Set(assignedMangakas.map(m => m.id.toLowerCase()))
     const filteredList = seriesList.filter(
@@ -144,7 +152,7 @@ function TantouEditorWorkspace() {
     })
   }, [seriesList, assignedMangakas])
 
-  // Stats Counters
+  // FEATURE: Calculate count of pending items (manuscripts submitted, chapters ready for editor)
   const pendingReviewsCount = useMemo(() => {
     const manuscriptsSubmitted = manuscripts.filter(
       (m) =>
@@ -159,7 +167,7 @@ function TantouEditorWorkspace() {
     return manuscriptsSubmitted + chaptersReadyForReview
   }, [manuscripts, chapters, supervisedSeries])
 
-  // Render stats summary helper
+  // FEATURE: Summarize general workspace statistics
   const stats = useMemo(() => {
     return {
       seriesCount: supervisedSeries.length,

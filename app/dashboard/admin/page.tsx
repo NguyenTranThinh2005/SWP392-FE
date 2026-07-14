@@ -1,3 +1,10 @@
+/**
+ * ADMIN PAGE: Manage member accounts and system configuration.
+ * Main features:
+ * 1. View user accounts list with search, filter by role and status.
+ * 2. Create new accounts and assign responsible editors (Tantou Editors) to authors (Mangakas).
+ * 3. System Management: Manage genres list and system settings.
+ */
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -30,7 +37,7 @@ export default function AdminPage() {
   const [genresList, setGenresList] = useState<GenreResponse[]>([])
   const [systemLoading, setSystemLoading] = useState(false)
 
-  // Fetch Roles and Genres from Backend
+  // FEATURE: Fetch system roles and genres from backend
   const refreshRolesAndGenres = useCallback(async () => {
     setSystemLoading(true)
     try {
@@ -50,6 +57,7 @@ export default function AdminPage() {
     }
   }, [])
 
+  // FEATURE: Fetch user accounts list and map profile structures
   const refreshUsers = useCallback(async () => {
     try {
       const response = await userService.getUsers()
@@ -94,12 +102,12 @@ export default function AdminPage() {
     refreshRolesAndGenres()
   }, [refreshUsers, refreshRolesAndGenres])
 
-  // Get available Editors for dropdown
+  // FEATURE: Filter active editors (TantouEditor) for assigning mangakas
   const editors = useMemo(() => {
     return usersList.filter(u => u.role === 'TantouEditor' && u.status === 'Active')
   }, [usersList])
 
-  // Look up editor name helper
+  // FEATURE: Look up editor display name by responsible editor ID
   const getEditorName = useCallback((editorId?: string) => {
     if (!editorId) return 'Unassigned'
     const ed = usersList.find(u => u.id === editorId)

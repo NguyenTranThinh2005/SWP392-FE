@@ -53,7 +53,7 @@ export function LoginForm({
       await authService.login(data)
       router.push("/dashboard")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Thông tin đăng nhập không hợp lệ. Vui lòng thử lại.")
+      setError(err instanceof Error ? err.message : "Invalid login information. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -63,7 +63,7 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Chào mừng quay trở lại</CardTitle>
+          <CardTitle className="text-xl">Welcome back</CardTitle>
         </CardHeader>
         <CardContent>
           {error && (
@@ -88,13 +88,13 @@ export function LoginForm({
               </Field>
               <Field>
                 <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
                   <a
                     href="#"
                     className="ml-auto text-sm underline-offset-4 hover:underline"
                     onClick={(e) => e.preventDefault()}
                   >
-                    Quên mật khẩu?
+                    Forgot your password?
                   </a>
                 </div>
                 <Input
@@ -108,7 +108,7 @@ export function LoginForm({
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+                  {isLoading ? "Logging in..." : "Login"}
                 </Button>
               </Field>
             </FieldGroup>

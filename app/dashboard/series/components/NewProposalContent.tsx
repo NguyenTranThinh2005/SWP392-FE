@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 
 const { hasPendingProposal, isTitleDuplicate, saveDraft, submitProposal, getProposalById, updateDraft } = proposalService
 
-export default function NewProposalPage() {
+export default function NewProposalContent() {
   const router = useRouter()
   const { role } = useRole()
   const [isLoading, setIsLoading] = useState(false)
@@ -69,10 +69,11 @@ export default function NewProposalPage() {
   // Show toast notification when blocked
   useEffect(() => {
     if (blockedByBR19) {
-      toast.warning('You currently have another proposal awaiting approval. Cannot create a new proposal.')
+      toast.warning('Bạn hiện đang có đề xuất khác đang chờ duyệt. Không thể tạo thêm đề xuất mới.')
     }
   }, [blockedByBR19])
 
+  // FEATURE: Handle saving as draft or submitting for editorial review
   const handleSubmit = useCallback(
     async (data: SeriesProposalInput, action: 'draft' | 'submit') => {
       setIsLoading(true)
@@ -80,7 +81,7 @@ export default function NewProposalPage() {
       try {
         const isBlockedNow = await hasPendingProposal(mangakaId)
         if (isBlockedNow) {
-          throw new Error('You have a proposal that is pending or under review. Cannot perform this action.')
+          throw new Error('Bạn đang có đề xuất ở trạng thái chờ duyệt hoặc đang duyệt. Không thể thực hiện hành động này.')
         }
 
         if (action === 'draft') {
@@ -171,8 +172,6 @@ export default function NewProposalPage() {
     [router, mangakaId, mangakaName, editId],
   )
 
-
-
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       {/* Page header */}
@@ -194,9 +193,9 @@ export default function NewProposalPage() {
         <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/25 rounded-lg text-sm animate-in fade-in duration-200">
           <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-amber-600">Bạn đã có đề xuất đang trong quá trình xét duyệt</p>
+            <p className="font-bold text-amber-600">You already had a pending proposal</p>
             <p className="text-muted-foreground text-xs mt-0.5">
-              Bạn chỉ có thể gửi hoặc lưu bản nháp đề xuất mới sau khi đề xuất hiện tại (trạng thái: Chờ duyệt hoặc Đang duyệt) đã được xử lý bởi Hội đồng Biên tập.
+              You can only submit or save a new draft after the current proposal (status: Pending Review or Under Review) has been processed by the Editorial Board.
             </p>
           </div>
         </div>
@@ -228,13 +227,13 @@ export default function NewProposalPage() {
       <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-sm">
         {/* BR info callout */}
         <div className="mb-6 p-3 bg-primary/5 border border-primary/15 rounded-lg text-xs text-muted-foreground space-y-1">
-          <p className="font-bold text-primary text-[11px] uppercase tracking-wide">Quy tắc nộp đề xuất</p>
+          <p className="font-bold text-primary text-[11px] uppercase tracking-wide">Proposal Submission Rules</p>
           <ul className="list-disc list-inside space-y-0.5">
-            <li>Tiêu đề truyện: bắt buộc, tối đa 100 ký tự</li>
-            <li>Thể loại: bắt buộc chọn ít nhất một thể loại</li>
-            <li>Tóm tắt nội dung: từ 200 đến 2000 ký tự</li>
-            <li>Bản thảo (ZIP): bắt buộc tải lên tệp tin ZIP khi nộp phê duyệt</li>
-            <li>Tiêu đề truyện không được trùng lặp với tác phẩm đã hoạt động</li>
+            <li>Title: required, max 100 characters</li>
+            <li>Genre: required, at least one genre</li>
+            <li>Synopsis: 200 to 2000 characters</li>
+            <li>Sample (ZIP): required to upload a ZIP file when submitting for review</li>
+            <li>Title cannot duplicate with active works</li>
           </ul>
         </div>
 
