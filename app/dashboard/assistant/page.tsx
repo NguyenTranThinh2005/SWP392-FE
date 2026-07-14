@@ -74,10 +74,19 @@ export default function AssistantDashboardPage() {
       if (Array.isArray(data)) {
         return data.map((t: any) => {
           const latestSub = getLatestSubmission(t.submissions);
-          const uiStatus = mapBackendTaskStatus(t.status, t.submissions)
+          let uiStatus = mapBackendTaskStatus(t.status, t.submissions)
+          const taskId = t.pageTaskId || t.id
+          if (uiStatus === 'Pending' && typeof window !== 'undefined') {
+            try {
+              const started = JSON.parse(localStorage.getItem('started_tasks') || '[]')
+              if (started.includes(taskId)) {
+                uiStatus = 'In-Progress'
+              }
+            } catch {}
+          }
 
           return {
-            id: t.pageTaskId || t.id,
+            id: taskId,
             chapterId: t.chapterId,
             type: t.taskType,
             pages: `${t.pageStart}-${t.pageEnd}`,

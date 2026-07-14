@@ -58,18 +58,26 @@ export default function ChaptersPage() {
   const { role } = useRole()
   const [mounted, setMounted] = useState(false)
   const [mangakaId, setMangakaId] = useState('')
+  const [selectedAssistantId, setSelectedAssistantId] = useState<string>('A01') // Sato Takashi by default (demo fallback)
+  const [assistantTasks, setAssistantTasks] = useState<Task[]>([])
 
   useEffect(() => {
     const saved = localStorage.getItem('user-info')
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        if (parsed?.id) {
-          setMangakaId(parsed.id)
+        const myId = parsed?.id || parsed?.userId
+        if (myId) {
+          setMangakaId(myId)
+          // Nếu role là Assistant, tự động gán selectedAssistantId bằng ID của chính mình
+          const activeRole = parsed.role || localStorage.getItem('user-role') || role
+          if (activeRole?.toLowerCase() === 'assistant') {
+            setSelectedAssistantId(myId)
+          }
         }
       } catch { }
     }
-  }, [])
+  }, [role])
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   // --- State for Mangaka Role ---
@@ -283,8 +291,6 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
     }
   }
   // --- State for Assistant Role ---
-  const [selectedAssistantId, setSelectedAssistantId] = useState<string>('A01') // Sato Takashi by default
-  const [assistantTasks, setAssistantTasks] = useState<Task[]>([])
   const [isSubmitWorkModalOpen, setIsSubmitWorkModalOpen] = useState(false)
   const [activeTaskToSubmit, setActiveTaskToSubmit] = useState<Task | null>(null)
   const [submitWorkUrl, setSubmitWorkUrl] = useState('')
@@ -412,10 +418,19 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
           })
           const prevSub = sortedSubs.length >= 2 ? sortedSubs[sortedSubs.length - 2] : null;
 
-          const uiStatus = mapBackendTaskStatus(t.status, t.submissions)
+          let uiStatus = mapBackendTaskStatus(t.status, t.submissions)
+          const taskId = t.pageTaskId || t.id
+          if (uiStatus === 'Pending' && typeof window !== 'undefined') {
+            try {
+              const started = JSON.parse(localStorage.getItem('started_tasks') || '[]')
+              if (started.includes(taskId)) {
+                uiStatus = 'In-Progress'
+              }
+            } catch {}
+          }
 
           return {
-            id: t.pageTaskId || t.id,
+            id: taskId,
             chapterId: t.chapterId,
             type: t.taskType,
             pages: `${t.pageStart}-${t.pageEnd}`,
@@ -1278,19 +1293,6 @@ const payload = {
                     <div className="flex flex-wrap items-center justify-between pt-2 gap-3">
                       <span className="text-xs text-muted-foreground font-semibold">Manage Chapter Status:</span>
                       <div className="flex items-center gap-2">
-                        {selectedChapter.status === 'Draft' && (
-                          <button
-                            onClick={() => {
-                              chapterService.updateChapter(selectedChapterId, { status: 'In Progress' }).then(() => {
-                                refreshData()
-                                showToast('Chapter status updated to In Progress')
-                              })
-                            }}
-                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                          >
-                            Set In Progress
-                          </button>
-                        )}
 
                        {progressPercent >= 100 && selectedChapter.status !== 'Submitted' && selectedChapter.status !== 'Ready for Editor' && selectedChapter.status !== 'Published' && (
                           <button
