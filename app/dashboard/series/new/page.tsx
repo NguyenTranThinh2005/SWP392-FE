@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle, WifiOff, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { SeriesProposalForm } from '@/components/forms/series-proposal-form'
 import type { SeriesProposalInput } from '@/lib/validation'
@@ -171,26 +171,7 @@ export default function NewProposalPage() {
     [router, mangakaId, mangakaName, editId],
   )
 
-  // Only Mangaka can access this page
-  if (role !== 'Mangaka') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
-        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
-          <WifiOff className="w-8 h-8 text-destructive" />
-        </div>
-        <h2 className="text-xl font-bold">Access Denied</h2>
-        <p className="text-muted-foreground text-sm max-w-xs">
-          Only <strong>Mangaka</strong> can create series proposals.
-        </p>
-        <Link
-          href="/dashboard/manga-list"
-          className="mt-2 text-sm font-semibold text-primary hover:underline"
-        >
-          Return to Dashboard
-        </Link>
-      </div>
-    )
-  }
+
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">

@@ -8,7 +8,6 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   CalendarDays,
   ArrowUpRight,
   User,
@@ -126,26 +125,7 @@ export default function EditorInChiefDashboard() {
 
   if (!mounted) return null
 
-  // Editor-in-Chief Access Guard
-  if (role !== 'EditorInChief') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
-        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-8 h-8 text-destructive" />
-        </div>
-        <h2 className="text-xl font-bold">Access Denied</h2>
-        <p className="text-muted-foreground text-sm max-w-md">
-          Only the <strong>Editor-in-Chief</strong> is authorized to view this control panel.
-        </p>
-        <Link
-          href="/dashboard/mangaka"
-          className="mt-2 text-sm font-semibold text-primary hover:underline"
-        >
-          Return to Mangaka Dashboard
-        </Link>
-      </div>
-    )
-  }
+
 
   // Filter lists
   const pendingOverrideProposals = proposals.filter(

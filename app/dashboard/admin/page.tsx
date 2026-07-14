@@ -5,7 +5,6 @@ import { useRole } from '@/context/RoleContext'
 import {
   Users,
   UserPlus,
-  Shield,
   Layers
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -109,20 +108,7 @@ export default function AdminPage() {
 
   if (!mounted) return null
 
-  // Security Gate: Ensure user role is Admin to access
-  if (role !== 'Admin') {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 bg-card border border-border rounded-xl max-w-md mx-auto text-center space-y-5 shadow-lg my-12">
-        <div className="w-16 h-16 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-          <Shield className="w-10 h-10 animate-pulse" />
-        </div>
-        <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Only active accounts with the <strong>Admin</strong> role are allowed to access this page.
-        </p>
-      </div>
-    )
-  }
+
 
   return (
     <div className="space-y-6">

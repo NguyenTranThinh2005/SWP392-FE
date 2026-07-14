@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
   Sparkles,
-  AlertTriangle,
 } from 'lucide-react'
 import { useRole } from '@/context/RoleContext'
 import {
@@ -168,29 +167,7 @@ function TantouEditorWorkspace() {
     }
   }, [supervisedSeries, pendingReviewsCount])
 
-  // Role Guard check
-  if (role !== 'TantouEditor') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
-        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-8 h-8 text-destructive" />
-        </div>
-        <h2 className="text-xl font-bold">Access Denied</h2>
-        <p className="text-muted-foreground text-sm max-w-md">
-          Only users with the <strong>Tantou Editor</strong> role are authorized to view this dashboard.
-        </p>
-        <p className="text-xs text-muted-foreground bg-muted p-3 rounded-md border border-border">
-          💡 <strong>Tip:</strong> Use the role switcher in the bottom left of the sidebar to change your active role to <strong>Tantou Editor</strong>.
-        </p>
-        <Link
-          href="/dashboard/manga-list"
-          className="mt-2 text-sm font-semibold text-primary hover:underline"
-        >
-          Go to Manga List
-        </Link>
-      </div>
-    )
-  }
+
 
   const triggerRefresh = () => {
     loadData()

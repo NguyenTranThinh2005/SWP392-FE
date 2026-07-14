@@ -8,7 +8,6 @@ import {
   Play,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Sparkles,
   Layers,
   ArrowRight,
@@ -154,25 +153,7 @@ export default function AssistantDashboardPage() {
 
   if (!mounted) return null
 
-  if (role !== 'Assistant') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
-        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-8 h-8 text-destructive" />
-        </div>
-        <h2 className="text-xl font-bold">Access Denied</h2>
-        <p className="text-muted-foreground text-sm max-w-md">
-          Only users with the <strong>Assistant</strong> role are authorized to view this dashboard.
-        </p>
-        <Link
-          href="/dashboard/manga-list"
-          className="mt-2 text-sm font-semibold text-primary hover:underline"
-        >
-          Go to Manga List
-        </Link>
-      </div>
-    )
-  }
+
 
   const activeAssistant = assistants.find(a => a.id === selectedAssistantId)
 
