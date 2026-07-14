@@ -81,10 +81,10 @@ export default function UserListTab({
     if (currentStatus === 'Active') {
       try {
         await userService.deleteUser(userId)
-        toast.success('Đã khóa tài khoản thành công!')
+        toast.success('Account locked successfully!')
         onRefreshUsers()
       } catch (err: any) {
-        toast.error(err.message || 'Khóa tài khoản thất bại.')
+        toast.error(err.message || 'Failed to lock account.')
       }
     }
   }
@@ -98,7 +98,7 @@ export default function UserListTab({
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo tên, tài khoản hoặc email..."
+            placeholder="Search by name, username, or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground placeholder:text-muted-foreground/60 focus:border-primary/50 transition-colors"
@@ -113,13 +113,13 @@ export default function UserListTab({
             onChange={(e) => setRoleFilter(e.target.value)}
             className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
           >
-            <option value="all">Tất cả Vai trò</option>
+            <option value="all">All Roles</option>
             <option value="Admin">Admin</option>
             <option value="Mangaka">Mangaka</option>
             <option value="TantouEditor">Tantou Editor</option>
-            <option value="EditorialBoard">Ban biên tập</option>
-            <option value="EditorInChief">Tổng biên tập</option>
-            <option value="Assistant">Trợ lý</option>
+            <option value="EditorialBoard">Editorial Board</option>
+            <option value="EditorInChief">Editor in Chief</option>
+            <option value="Assistant">Assistant</option>
           </select>
         </div>
 
@@ -131,8 +131,8 @@ export default function UserListTab({
             onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
           >
-            <option value="all">Tất cả Trạng thái</option>
-            <option value="Active">Hoạt động</option>
+            <option value="all">All Statuses</option>
+            <option value="Active">Active</option>
           </select>
         </div>
       </Card>
@@ -143,15 +143,15 @@ export default function UserListTab({
           <Table>
             <TableHeader className="bg-muted/30 border-b border-border">
               <TableRow>
-                <TableHead className="w-16 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Ảnh</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Nhân viên / ID</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Tài khoản</TableHead>
+                <TableHead className="w-16 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Avatar</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">User / ID</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Username</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Email</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Vai trò</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Ngày tạo</TableHead>
-                {role === 'Admin' && <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Biên tập viên phụ trách</TableHead>}
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Trạng thái</TableHead>
-                <TableHead className="w-32 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Hành động</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Role</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Created Date</TableHead>
+                {role === 'Admin' && <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Responsible Editor</TableHead>}
+                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Status</TableHead>
+                <TableHead className="w-32 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-border">
@@ -159,7 +159,7 @@ export default function UserListTab({
                 <TableRow>
                   <TableCell colSpan={role === 'Admin' ? 9 : 8} className="p-12 text-center text-muted-foreground space-y-2">
                     <Users className="w-8 h-8 mx-auto text-muted-foreground/30" />
-                    <p className="text-xs">Không tìm thấy tài khoản nào phù hợp với bộ lọc.</p>
+                    <p className="text-xs">No accounts found matching the filters.</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -204,7 +204,7 @@ export default function UserListTab({
                       </TableCell>
 
                       <TableCell className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN', {
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: '2-digit',
                           day: '2-digit'
@@ -220,7 +220,7 @@ export default function UserListTab({
                                 onClick={() => setAssigningMangaka(user)}
                                 className="text-[10px] text-primary hover:underline font-bold"
                               >
-                                (Thay đổi)
+                                (Change)
                               </button>
                             </div>
                           ) : (
@@ -232,11 +232,11 @@ export default function UserListTab({
                       <TableCell className="text-center">
                         {user.status === 'Active' ? (
                           <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20 font-bold text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Hoạt động
+                            <CheckCircle2 className="w-3 h-3" /> Active
                           </Badge>
                         ) : (
                           <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-500 border border-rose-500/20 font-bold text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                            <XCircle className="w-3 h-3" /> Đã khóa
+                            <XCircle className="w-3 h-3" /> Locked
                           </Badge>
                         )}
                       </TableCell>
@@ -251,7 +251,7 @@ export default function UserListTab({
                               variant="outline"
                               size="icon"
                               className="w-8 h-8 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-                              title="Xem chi tiết"
+                              title="View Details"
                             >
                               <Info className="w-3.5 h-3.5" />
                             </Button>
@@ -261,7 +261,7 @@ export default function UserListTab({
                               variant="outline"
                               size="icon"
                               className="w-8 h-8 rounded-xl border border-border hover:bg-primary/10 hover:text-primary cursor-pointer"
-                              title="Chỉnh sửa tài khoản"
+                              title="Edit Account"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </Button>
@@ -272,12 +272,12 @@ export default function UserListTab({
                                 variant="outline"
                                 size="icon"
                                 className="w-8 h-8 rounded-xl border border-rose-500/20 hover:bg-rose-500/10 text-rose-500/80 hover:text-rose-600 cursor-pointer"
-                                title="Khóa tài khoản"
+                                title="Lock Account"
                               >
                                 <UserX className="w-3.5 h-3.5" />
                               </Button>
                             ) : (
-                              <span className="text-[10px] text-rose-600/85 font-semibold px-1">Đã khóa</span>
+                              <span className="text-[10px] text-rose-600/85 font-semibold px-1">Locked</span>
                             )}
                           </div>
                         )}

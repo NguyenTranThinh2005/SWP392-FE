@@ -56,14 +56,14 @@ export default function MyProposalsPage() {
       try {
         const success = await deleteDraft(deleteConfirmId)
         if (success) {
-          toast.success('Xóa bản thảo thành công!')
+          toast.success('Draft deleted successfully!')
         } else {
           toast.error(
-            'Xóa bản thảo thất bại. Có thể do giới hạn phân quyền API (AdminOnly).'
+            'Failed to delete draft. It might be due to API role restrictions (AdminOnly).'
           )
         }
       } catch (err: any) {
-        toast.error(err?.message || 'Có lỗi xảy ra khi xóa bản thảo.')
+        toast.error(err?.message || 'An error occurred while deleting the draft.')
       }
       setDeleteConfirmId(null)
       await reload(mangakaId)
@@ -99,10 +99,10 @@ export default function MyProposalsPage() {
           <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-amber-600">
-              Bạn đang có đề xuất trong quá trình xét duyệt
+              You currently have a proposal under review
             </p>
             <p className="text-muted-foreground text-xs mt-0.5">
-              Bạn chỉ có thể gửi đề xuất mới sau khi đề xuất hiện tại (trạng thái: Chờ duyệt hoặc Đang duyệt) được xử lý bởi Hội đồng Biên tập.
+              You can only submit a new proposal after the current one (status: Pending or Under Review) is processed by the Editorial Board.
             </p>
           </div>
         </div>

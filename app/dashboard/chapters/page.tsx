@@ -98,13 +98,13 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
   const handleCompareSubmissions = async () => {
     const cur = activeTaskToReview?.submittedWorkUrl
     const prev = activeTaskToReview?.prevSubmittedWorkUrl
-    if (!cur || !prev) { setSubCompareError('Cần ít nhất 2 lần nộp để so sánh.'); setSubCompareResult(null); return }
+    if (!cur || !prev) { setSubCompareError('Needs at least 2 submissions to compare.'); setSubCompareResult(null); return }
     setSubCompareError(''); setSubCompareLoading(true); setSubCompareResult(null)
     try {
       const r = await compareAny(prev, cur)
       setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl })
     } catch (e: any) {
-      setSubCompareError('Lỗi khi so sánh: ' + (e?.message || 'không đọc được file'))
+      setSubCompareError('Comparison error: ' + (e?.message || 'cannot read file'))
     } finally { setSubCompareLoading(false) }
   }
   // Form states for creating chapter (Matching SubmitChapterPage.jsx)
@@ -551,16 +551,16 @@ ratePerPage: t.ratePerPage ?? 0,
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    if (pub <= today) return 'Ngày xuất bản dự kiến phải nằm trong tương lai'
+    if (pub <= today) return 'Expected publication date must be in the future'
 
     const deadline = new Date(pub)
-    deadline.setDate(deadline.getDate() - 14) // Hạn nộp bản thảo là 14 ngày trước xuất bản
+    deadline.setDate(deadline.getDate() - 14) // Submission deadline is 14 days before publication
 
     const minDeadline = new Date(created)
-    minDeadline.setDate(minDeadline.getDate() + 3) // Tối thiểu trợ lý/mangaka phải có 3 ngày làm việc
+    minDeadline.setDate(minDeadline.getDate() + 3) // Assistant/Mangaka must have at least 3 working days
 
     if (deadline < minDeadline) {
-      return 'Ngày xuất bản phải cách ngày hiện tại ít nhất 17 ngày (do hạn nộp bản thảo là 14 ngày trước xuất bản + tối thiểu 3 ngày làm việc)'
+      return 'Publication date must be at least 17 days from current date (due to manuscript deadline being 14 days before publication + minimum 3 working days)'
     }
     return null
   }
@@ -570,7 +570,7 @@ ratePerPage: t.ratePerPage ?? 0,
     return series.mangakaId === userId && series.status === 'Active'
   }
 
-  // Xóa file giả lập
+  // Delete file giả lập
   const removeFile = (field: 'storyboardFiles' | 'manuscriptFiles', index: number) => {
     if (field === 'storyboardFiles') {
       setNewChapterStoryboardFiles(prev => prev.filter((_, i) => i !== index))
@@ -608,7 +608,7 @@ ratePerPage: t.ratePerPage ?? 0,
   const openEditChapter = () => {
     const chap = chapters.find(c => c.id === selectedChapterId) as any
     if (!chap) {
-      showToast('Chưa chọn chapter để sửa!', 'error')
+      showToast('No chapter selected to edit!', 'error')
       return
     }
     setEditChapterId(chap.id)
@@ -621,7 +621,7 @@ ratePerPage: t.ratePerPage ?? 0,
 
   const handleSaveEditChapter = async () => {
     if (!editChapterTitle.trim()) {
-      showToast('Tiêu đề không được để trống!', 'error')
+      showToast('Title cannot be empty!', 'error')
       return
     }
     try {
@@ -631,11 +631,11 @@ ratePerPage: t.ratePerPage ?? 0,
         publicationDate: editChapterPubDate || undefined,
         deadline: editChapterDeadline || undefined
       })
-      showToast('Đã cập nhật chapter!', 'success')
+      showToast('Chapter updated!', 'success')
       setIsEditChapterOpen(false)
       refreshData()
     } catch {
-      showToast('Cập nhật thất bại.', 'error')
+      showToast('Failed to update.', 'error')
     }
   }
   // 1. Tạo Chapter mới
@@ -643,29 +643,29 @@ ratePerPage: t.ratePerPage ?? 0,
     e.preventDefault()
     const errs: Record<string, string> = {}
 
-    if (!newChapterSeriesId) errs.seriesId = 'Vui lòng chọn tác phẩm'
-    if (!newChapterNo) errs.chapterNo = 'Vui lòng nhập số chương'
-    if (!newChapterTitle.trim()) errs.title = 'Vui lòng nhập tiêu đề chương'
+    if (!newChapterSeriesId) errs.seriesId = 'Please select a series'
+    if (!newChapterNo) errs.chapterNo = 'Please enter chapter number'
+    if (!newChapterTitle.trim()) errs.title = 'Please enter chapter title'
     if (!newChapterPubDate) {
-      errs.publicationDate = 'Vui lòng chọn ngày xuất bản dự kiến'
+      errs.publicationDate = 'Please select expected publication date'
     } else {
       const dateError = validatePublicationDate(newChapterPubDate)
       if (dateError) errs.publicationDate = dateError
     }
 
     if (newChapterManuscriptFiles.length === 0) {
-      errs.manuscriptFiles = 'Tối thiểu phải đính kèm 1 file bản thảo tranh thô'
+      errs.manuscriptFiles = 'Must attach at least 1 rough manuscript file'
     }
 
     // Eligibility check
     const selectedSeries = mangakaSeries.find(s => s.id === newChapterSeriesId)
     if (selectedSeries && !canCreateChapter(mangakaId, selectedSeries)) {
-      errs.seriesId = 'Chỉ Mangaka chủ sở hữu của series đang Active mới được tạo chapter'
+      errs.seriesId = 'Only the Mangaka owner of an Active series can create a chapter'
     }
 
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
-      showToast('Vui lòng kiểm tra lại thông tin.', 'error')
+      showToast('Please check the information again.', 'error')
       return
     }
 
@@ -715,9 +715,9 @@ ratePerPage: t.ratePerPage ?? 0,
     }).catch((err: any) => {
       const msg = err?.message || ''
       if (msg.includes('Conflict') || msg.includes('already exists') || msg.includes('409')) {
-        showToast('Số chương này đã tồn tại trong tác phẩm. Vui lòng chọn số chương khác.', 'error')
+        showToast('This chapter number already exists in the series. Please choose another.', 'error')
       } else {
-        showToast(msg || 'Tạo chapter thất bại.', 'error')
+        showToast(msg || 'Failed to create chapter.', 'error')
       }
     })
   }
@@ -735,7 +735,7 @@ ratePerPage: t.ratePerPage ?? 0,
 
   const handleSaveEditTask = async () => {
     if (editTaskPageStart > editTaskPageEnd) {
-      showToast('Trang bắt đầu phải nhỏ hơn hoặc bằng trang kết thúc.', 'error')
+      showToast('Start page must be less than or equal to end page.', 'error')
       return
     }
     try {
@@ -755,21 +755,21 @@ ratePerPage: t.ratePerPage ?? 0,
         method: 'PUT',
         body: JSON.stringify(body)
       })
-      showToast(onlyChangeAssistant ? 'Đã giao lại nhiệm vụ cho trợ lý mới. Các lần nộp trước đã được xóa.' : 'Đã cập nhật task!')
+      showToast(onlyChangeAssistant ? 'Reassigned task to the new assistant. Previous submissions have been deleted.' : 'Task updated!')
       setIsEditTaskOpen(false)
       refreshData()
     } catch (err: any) {
       const msg = err?.message || ''
       if (msg.includes('Conflict') || msg.includes('overlap') || msg.includes('409')) {
-        showToast('Khoảng trang này đã được giao cho task khác. Vui lòng chọn khoảng trang khác.', 'error')
+        showToast('This page range has been assigned to another task. Please choose a different range.', 'error')
       } else {
-        showToast(msg || 'Cập nhật task thất bại.', 'error')
+        showToast(msg || 'Failed to update task.', 'error')
       }
     }
   }
   const handleSubmitManuscript = async () => {
     if (!submitManuscriptFile) {
-      showToast('Vui lòng chọn file bản thảo.', 'error')
+      showToast('Please select a manuscript file.', 'error')
       return
     }
     try {
@@ -779,19 +779,19 @@ ratePerPage: t.ratePerPage ?? 0,
       formData.append('files', submitManuscriptFile)
       const uploadRes = await fetchAPI<{ data: { files: { publicUrl?: string }[] } }>('/api/files', { method: 'POST', body: formData })
       const fileUrl = uploadRes?.data?.files?.[0]?.publicUrl
-      if (!fileUrl) { showToast('Upload file thất bại.', 'error'); return }
+      if (!fileUrl) { showToast('File upload failed.', 'error'); return }
       await fetchAPI('/api/manuscripts', {
         method: 'POST',
         body: JSON.stringify({ chapterId: selectedChapterId, fileUrl, notes: submitManuscriptNotes })
       })
-      showToast('Đã gửi bản thảo cho Editor (tạo version mới)!')
+      showToast('Manuscript sent to Editor (new version created)!')
       setIsSubmitManuscriptOpen(false)
       setSubmitManuscriptFile(null)
       setSubmitManuscriptNotes('')
       refreshData()
     } catch (err: any) {
       const msg = err?.message || ''
-      showToast(msg || 'Gửi thất bại (có thể chưa duyệt hết task).', 'error')
+      showToast(msg || 'Failed to send (some tasks might not be approved).', 'error')
     } finally {
       setSubmitManuscriptUploading(false)
     }
@@ -801,15 +801,15 @@ ratePerPage: t.ratePerPage ?? 0,
     e.preventDefault()
 
     if (newTaskPageStart > newTaskPageEnd) {
-      showToast('Trang bắt đầu không thể lớn hơn trang kết thúc!', 'error')
+      showToast('Start page cannot be greater than end page!', 'error')
       return
     }
     if (!newTaskDesc.trim()) {
-      showToast('Vui lòng nhập mô tả công việc!', 'error')
+      showToast('Please enter task description!', 'error')
       return
     }
     if (!newTaskAssistantId) {
-      showToast('Vui lòng chọn một assistant để giao việc!', 'error')
+      showToast('Please select an assistant to assign the task!', 'error')
       return
     }
 
@@ -841,7 +841,7 @@ const payload = {
           await fetchAPI(`/api/page-tasks/${newTaskId}/reference-files`, { method: 'POST', body: JSON.stringify({ fileAssetIds }) })
         }
       }
-      showToast(`Đã tạo task và giao việc thành công!`)
+      showToast(`Task created and assigned successfully!`)
       setNewTaskAttachments([])
       setNewTaskRate(0)
       setIsTaskModalOpen(false)
@@ -856,9 +856,9 @@ const payload = {
     }).catch((err: any) => {
       const msg = err?.message || ''
       if (msg.includes('Conflict') || msg.includes('overlap') || msg.includes('409')) {
-        showToast('Khoảng trang này đã được giao cho task khác. Vui lòng chọn khoảng trang khác.', 'error')
+        showToast('This page range has been assigned to another task. Please choose a different range.', 'error')
       } else {
-        showToast(msg || 'Giao task thất bại.', 'error')
+        showToast(msg || 'Failed to assign task.', 'error')
       }
     })
   }
@@ -866,13 +866,13 @@ const payload = {
   // 3. Duyệt Task của Assistant (Approve)
   const handleApproveTask = (task: Task) => {
     if (!task.submissionId) {
-      showToast('Không tìm thấy bản nộp để phê duyệt.', 'error')
+      showToast('No submission found to approve.', 'error')
       return
     }
     fetchAPI(`/api/page-tasks/submissions/${task.submissionId}/approve`, {
       method: 'POST'
     }).then(() => {
-      showToast(`Đã phê duyệt công việc của ${task.assistantName}!`)
+      showToast(`Approved the work of ${task.assistantName}!`)
       setIsReviewModalOpen(false)
       setActiveTaskToReview(null)
       setReviewFeedback('')
@@ -885,17 +885,17 @@ const payload = {
   // 4. Từ chối Task của Assistant (Reject)
   const handleRejectTask = (task: Task) => {
     if (!task.submissionId) {
-      showToast('Không tìm thấy bản nộp để từ chối.', 'error')
+      showToast('No submission found to reject.', 'error')
       return
     }
     const pinNotes = imagePins
       .filter(p => p.note.trim())
-      .map((p, i) => `${i + 1}. (Trang ${p.page + 1}) ${p.note.trim()}`)
+      .map((p, i) => `${i + 1}. (Page ${p.page + 1}) ${p.note.trim()}`)
       .join(' | ')
-    const fullFeedback = [reviewFeedback.trim(), pinNotes ? `[Góp ý trên ảnh] ${pinNotes}` : '']
+    const fullFeedback = [reviewFeedback.trim(), pinNotes ? `[Feedback on Image] ${pinNotes}` : '']
       .filter(Boolean).join(' — ')
     if (!fullFeedback.trim()) {
-      showToast('Vui lòng điền phản hồi hoặc góp ý trên ảnh!', 'error')
+      showToast('Please provide feedback or image comments!', 'error')
       return
     }
     fetchAPI(`/api/page-tasks/submissions/${task.submissionId}/reject`, {
@@ -919,7 +919,7 @@ const payload = {
           console.warn('Khong luu duoc pin:', e)
         }
       }
-      showToast(`Đã từ chối và gửi phản hồi yêu cầu sửa đổi!`, 'error')
+      showToast(`Rejected and sent feedback requesting revisions!`, 'error')
       setIsReviewModalOpen(false)
       setActiveTaskToReview(null)
       setReviewFeedback('')
@@ -932,7 +932,7 @@ const payload = {
     })
   }
   const handleStartTask = (taskId: string) => {
-    showToast('Đã bắt đầu công việc! Trạng thái được cập nhật thành Đang thực hiện.', 'success')
+    showToast('Work started! Status updated to In-Progress.', 'success')
     try {
       const started = JSON.parse(localStorage.getItem('started_tasks') || '[]')
       if (!started.includes(taskId)) {
@@ -944,17 +944,17 @@ const payload = {
   }
 
 
-  // 2. Nộp bài làm (Submit Work)
+  // 2. Submit Work
   const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!activeTaskToSubmit) return
     if (submitFiles.length === 0) {
-      showToast('Vui lòng chọn file để nộp.', 'error')
+      showToast('Please select a file to submit.', 'error')
       return
     }
     try {
       setSubmitWorkUploading(true)
-      // Luon gop thanh 1 zip (ke ca 1 file) -> dinh dang bai nop nhat quan -> luon so sanh duoc
+      // Luon gop thanh 1 zip (ke ca 1 file) -> dinh dang submission nhat quan -> luon so sanh duoc
       const JSZip = (await import('jszip')).default
       const zip = new JSZip()
       submitFiles.forEach((f) => zip.file(f.name, f))
@@ -975,10 +975,10 @@ const payload = {
         method: 'POST',
         body: JSON.stringify({
           submittedFileAssetId: fileAssetId,
-          note: submitComment || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'
+          note: submitComment || 'Work completed, sent for Mangaka review.'
         })
       })
-      showToast('Đã nộp kết quả công việc thành công! Chờ Mangaka phê duyệt.')
+      showToast('Work submitted successfully! Awaiting Mangaka approval.')
       setIsSubmitWorkModalOpen(false)
       setActiveTaskToSubmit(null)
       setSubmitFiles([])
@@ -1002,10 +1002,10 @@ const payload = {
 
   const getChapterStatusLabel = (status: ChapterStatus) => {
     switch (status) {
-      case 'Draft': return 'Bản nháp'
-      case 'In Progress': return 'Đang thực hiện'
-      case 'Ready for Editor': return 'Chờ Biên tập viên'
-      case 'Published': return 'Đã xuất bản'
+      case 'Draft': return 'Draft'
+      case 'In Progress': return 'In Progress'
+      case 'Ready for Editor': return 'Ready for Editor'
+      case 'Published': return 'Published'
     }
   }
 
@@ -1021,26 +1021,26 @@ const payload = {
 
   const getTaskStatusLabel = (status: TaskStatus) => {
     switch (status) {
-      case 'Pending': return 'Chờ nhận việc'
-      case 'In-Progress': return 'Đang thực hiện'
-      case 'Submitted': return 'Đã nộp bài'
-      case 'Approved': return 'Đã duyệt'
-      case 'Rejected': return 'Cần sửa lại'
+      case 'Pending': return 'Awaiting Task'
+      case 'In-Progress': return 'In Progress'
+      case 'Submitted': return 'Submitted'
+      case 'Approved': return 'Approved'
+      case 'Rejected': return 'Revision Required'
     }
   }
 
   const getTaskStatusBadge = (status: TaskStatus) => {
     switch (status) {
       case 'Pending':
-        return <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Chờ bắt đầu</span>
+        return <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Awaiting Start</span>
       case 'In-Progress':
-        return <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Play className="w-3.5 h-3.5 animate-pulse" /> Đang thực hiện</span>
+        return <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Play className="w-3.5 h-3.5 animate-pulse" /> In Progress</span>
       case 'Submitted':
-        return <span className="bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><ArrowRight className="w-3.5 h-3.5" /> Đã nộp</span>
+        return <span className="bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><ArrowRight className="w-3.5 h-3.5" /> Submitted</span>
       case 'Approved':
-        return <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Đã duyệt</span>
+        return <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Approved</span>
       case 'Rejected':
-        return <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><X className="w-3.5 h-3.5" /> Yêu cầu sửa đổi</span>
+        return <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><X className="w-3.5 h-3.5" /> Revision Required</span>
       default:
         return <span className="bg-slate-500/10 text-slate-500 border border-slate-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full">{status}</span>
     }
@@ -1249,7 +1249,7 @@ const payload = {
 
                     {selectedChapter.referenceFiles && selectedChapter.referenceFiles.length > 0 && (
                       <div className="space-y-1">
-                        <p className="text-xs font-bold text-muted-foreground">📎 Tài liệu tham khảo</p>
+                        <p className="text-xs font-bold text-muted-foreground">📎 Reference Documents</p>
                         {selectedChapter.referenceFiles.map((f: any) => (
                           <a key={f.fileAssetId} href={f.publicUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline truncate">
                             📄 {f.originalFileName}
@@ -1298,7 +1298,7 @@ const payload = {
                             onClick={() => setIsSubmitManuscriptOpen(true)}
                             className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
                           >
-                            Gửi bản thảo
+                            Submit Manuscript
                           </button>
                         )}
                         {false && selectedChapter?.status === 'Published' && (
@@ -1378,7 +1378,7 @@ const payload = {
                                   onClick={() => openEditTask(task)}
                                   className="inline-flex items-center gap-1.5 border border-border hover:bg-muted text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer"
                                 >
-                                  Sửa
+                                  Edit
                                 </button>
                               )}
                               {task.status === 'Submitted' && (
@@ -1426,14 +1426,14 @@ const payload = {
 
                       {salaryByAssistant.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-border">
-                          <h4 className="text-sm font-bold mb-3 text-foreground">Lương phải trả cho trợ lý</h4>
+                          <h4 className="text-sm font-bold mb-3 text-foreground">Salary Payable to Assistants</h4>
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="text-left text-muted-foreground border-b border-border">
-                                <th className="py-1.5 font-bold">Trợ lý</th>
-                                <th className="py-1.5 font-bold text-center">Số task</th>
-                                <th className="py-1.5 font-bold text-center">Số trang</th>
-                                <th className="py-1.5 font-bold text-right">Thành tiền</th>
+                                <th className="py-1.5 font-bold">Assistant</th>
+                                <th className="py-1.5 font-bold text-center">Tasks Count</th>
+                                <th className="py-1.5 font-bold text-center">Pages</th>
+                                <th className="py-1.5 font-bold text-right">Amount</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1490,7 +1490,7 @@ const payload = {
               <div className="flex items-center gap-3">
                 <Users className="w-5 h-5 text-primary shrink-0" />
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Chọn hồ sơ Trợ lý hoạt động (Kiểm thử)</label>
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Select Active Assistant Profile (Testing)</label>
                   <select
                     value={selectedAssistantId}
                     onChange={(e) => setSelectedAssistantId(e.target.value)}
@@ -1512,13 +1512,13 @@ const payload = {
               <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
-                    <Sparkles className="w-3.5 h-3.5" /> Không gian làm việc Trợ lý
+                    <Sparkles className="w-3.5 h-3.5" /> Assistant Workspace
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                    Bảng điều khiển Trợ lý
+                    Assistant Dashboard
                   </h1>
                   <p className="text-sm text-muted-foreground max-w-lg">
-                    Quản lý và thực hiện các nhiệm vụ vẽ do tác giả giao. Bắt đầu làm việc, nộp các trang vẽ và xem phản hồi.
+                    Manage and execute drawing tasks assigned by the author. Start working, submit drawings and view feedback.
                   </p>
                 </div>
               </div>
@@ -1537,8 +1537,8 @@ const payload = {
                   </div>
                 </div>
                 <div className="text-right text-xs">
-                  <p className="text-muted-foreground font-semibold">Nhiệm vụ đang vẽ</p>
-                  <p className="text-base font-extrabold text-foreground mt-0.5">{activeAssistant.activeTasks} nhiệm vụ đang làm</p>
+                  <p className="text-muted-foreground font-semibold">Active Tasks</p>
+                  <p className="text-base font-extrabold text-foreground mt-0.5">{activeAssistant.activeTasks} active tasks</p>
                 </div>
               </div>
             )}
@@ -1547,7 +1547,7 @@ const payload = {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: 'Đã nộp / Hoàn thành', value: stats.completed, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                { label: 'Nhiệm vụ được giao', value: stats.total, icon: ClipboardList, color: 'text-foreground', bg: 'bg-primary/10' },
+                { label: 'Tasks được giao', value: stats.total, icon: ClipboardList, color: 'text-foreground', bg: 'bg-primary/10' },
                 { label: 'Chờ bắt đầu', value: stats.pending, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
                 { label: 'Đang thực hiện', value: stats.working, icon: Play, color: 'text-blue-500', bg: 'bg-blue-500/10' },
               ].map(({ label, value, icon: Icon, color, bg }) => (
@@ -1570,7 +1570,7 @@ const payload = {
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                     <Layers className="w-5 h-5 text-primary" />
-                    Nhiệm vụ đang hoạt động của tôi ({stats.pending + stats.working})
+                    My Active Tasks ({stats.pending + stats.working})
                   </h2>
                 </div>
 
@@ -1578,9 +1578,9 @@ const payload = {
                   {assistantTasks.filter(t => t.status !== 'Approved' && t.status !== 'Submitted').length === 0 ? (
                     <div className="bg-card border border-border rounded-2xl p-10 text-center space-y-3">
                       <CheckCircle2 className="w-10 h-10 text-emerald-500/50 mx-auto" />
-                      <h3 className="font-bold text-sm text-foreground">Không có nhiệm vụ hoạt động nào</h3>
+                      <h3 className="font-bold text-sm text-foreground">No active tasks</h3>
                       <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                        Tất cả các nhiệm vụ được giao đã được hoàn thành. Hãy tiếp tục theo dõi các kịch bản phân công mới của tác giả.
+                        All assigned tasks have been completed. Please check for new script assignments from the author.
                       </p>
                     </div>
                   ) : (
@@ -1603,7 +1603,7 @@ const payload = {
                                   {task.id}
                                 </span>
                                 <h3 className="font-bold text-sm text-foreground">
-                                  {task.type} (Trang {task.pages})
+                                  {task.type} (Page {task.pages})
                                 </h3>
                               </div>
                               <p className="text-xs text-muted-foreground font-semibold mt-1">
@@ -1620,7 +1620,7 @@ const payload = {
                           </p>
                           {task.referenceFiles && task.referenceFiles.length > 0 && (
                             <div className="space-y-1">
-                              <p className="text-[10px] uppercase font-bold text-muted-foreground">📎 Tài liệu hướng dẫn</p>
+                              <p className="text-[10px] uppercase font-bold text-muted-foreground">📎 Reference Material</p>
                               {task.referenceFiles.map((f: any) => (
                                 <a key={f.fileAssetId} href={f.publicUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline truncate">
                                   📄 {f.originalFileName}
@@ -1635,7 +1635,7 @@ const payload = {
                               {task.feedback && (
                                 <div className="space-y-1">
                                   <p className="font-bold flex items-center gap-1.5">
-                                    <AlertTriangle className="w-3.5 h-3.5" /> Phản hồi yêu cầu sửa đổi
+                                    <AlertTriangle className="w-3.5 h-3.5" /> Revision Request Feedback
                                   </p>
                                   <p className="italic">"{task.feedback}"</p>
                                 </div>
@@ -1647,7 +1647,7 @@ const payload = {
                           {/* Footer Actions */}
                           <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/40">
                             <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
-                              <CalendarDays className="w-3.5 h-3.5 text-muted-foreground/60" /> Hạn chót: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Ngay lập tức'}
+                              <CalendarDays className="w-3.5 h-3.5 text-muted-foreground/60" /> Deadline: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Ngay lập tức'}
                             </span>
 
                             <div>
@@ -1668,11 +1668,11 @@ const payload = {
                                       }}
                                       className="flex items-center gap-1 px-3 py-2 border border-border text-foreground hover:bg-muted text-xs font-semibold rounded-xl transition-all cursor-pointer"
                                     >
-                                      <Eye className="w-3.5 h-3.5" /> Xem bài nộp & Góp ý
+                                      <Eye className="w-3.5 h-3.5" /> View Submission & Feedback
                                     </button>
                                   )}
                                   <span className="text-xs font-bold text-muted-foreground">
-                                    Lần nộp {(task.submissionCount || 0)}/{MAX_SUBMISSIONS}
+                                    Submission {(task.submissionCount || 0)}/{MAX_SUBMISSIONS}
                                   </span>
                                   <button
                                     onClick={() => {
@@ -1683,7 +1683,7 @@ const payload = {
                                     className="flex items-center gap-1 px-4.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                   >
                                     <Send className="w-3.5 h-3.5" />
-                                    {(task.submissionCount || 0) >= MAX_SUBMISSIONS ? 'Hết lượt nộp' : 'Nộp sản phẩm'}
+                                    {(task.submissionCount || 0) >= MAX_SUBMISSIONS ? 'No more attempts' : 'Submit Work'}
                                   </button>
                                 </div>
                               )}
@@ -1700,21 +1700,21 @@ const payload = {
               <div className="space-y-6">
                 <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                  Đã nộp & Hoàn thành ({stats.completed})
+                  Submitted & Completed ({stats.completed})
                 </h2>
 
                 <div className="space-y-4">
                   {completedTasks.length === 0 ? (
                     <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-2">
                       <Clock className="w-8 h-8 text-muted-foreground/20 mx-auto" />
-                      <p className="text-xs text-muted-foreground">Chưa có nhiệm vụ hoàn thành nào</p>
+                      <p className="text-xs text-muted-foreground">No completed tasks yet</p>
                     </div>
                   ) : (
                     completedTasks.map((task) => (
                       <div key={task.id} className="bg-card border border-border/60 rounded-2xl p-4.5 space-y-3.5 hover:border-primary/10 transition-colors">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h4 className="font-bold text-xs text-foreground">{task.type} (Trang {task.pages})</h4>
+                            <h4 className="font-bold text-xs text-foreground">{task.type} (Page {task.pages})</h4>
                             <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">{getChapterInfo(task.chapterId)}</p>
                           </div>
                           {getTaskStatusBadge(task.status)}
@@ -1737,7 +1737,7 @@ const payload = {
                                 }}
                                 className="p-1.5 bg-card rounded-lg text-foreground text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1 cursor-pointer"
                               >
-                                <Eye className="w-3.5 h-3.5" /> Chi tiết & Góp ý
+                                <Eye className="w-3.5 h-3.5" /> Details & Feedback
                               </button>
                               <a
                                 href={task.submittedWorkUrl}
@@ -1745,7 +1745,7 @@ const payload = {
                                 rel="noreferrer"
                                 className="p-1.5 bg-card rounded-lg text-foreground text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1"
                               >
-                                <ArrowRight className="w-3.5 h-3.5" /> File gốc
+                                <ArrowRight className="w-3.5 h-3.5" /> Original File
                               </a>
                             </div>
                           </div>
@@ -1754,14 +1754,14 @@ const payload = {
                         {/* Feedback summary */}
                         {task.status === 'Approved' && task.feedback && (
                           <div className="bg-emerald-500/8 border border-emerald-500/15 rounded-xl p-2.5 text-[11px] text-emerald-600 dark:text-emerald-400">
-                            <span className="font-bold">Phản hồi của Tác giả: </span>
+                            <span className="font-bold">Author Feedback: </span>
                             <span className="italic">"{task.feedback}"</span>
                           </div>
                         )}
 
                         <div className="flex items-center justify-between text-[9px] text-muted-foreground font-semibold pt-1">
-                          <span>Mã nhiệm vụ: {task.id}</span>
-                          <span>Cập nhật: {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString() : 'N/A'}</span>
+                          <span>Task ID: {task.id}</span>
+                          <span>Updated: {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString() : 'N/A'}</span>
                         </div>
                       </div>
                     ))
@@ -1780,10 +1780,10 @@ const payload = {
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
             <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
-              <Eye className="w-4 h-4 text-primary" /> Tổng quan Chương & Phát hành (Chế độ giám sát của Editor)
+              <Eye className="w-4 h-4 text-primary" /> Chapter & Publication Overview (Editor Supervision Mode)
             </h3>
             <p className="text-xs text-muted-foreground">
-              Bạn đang đăng nhập với vai trò {role}. Dưới đây là tiến độ hiện tại của các tác phẩm đang phát hành và mốc thời gian của từng chương.
+              You are logged in as {role}. Below is the current progress of active series and timelines for each chapter.
             </p>
             <div className="border border-border rounded-xl divide-y divide-border overflow-hidden">
               {allChapters.map(c => {
@@ -1796,17 +1796,17 @@ const payload = {
                   <div key={c.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-foreground">Chương {c.number}: {c.title}</span>
+                        <span className="text-xs font-bold text-foreground">Chapter {c.number}: {c.title}</span>
                         <span className={`px-2 py-0.5 text-[9px] font-bold border rounded-md ${getChapterStatusClass(c.status)}`}>
                           {getChapterStatusLabel(c.status)}
                         </span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">Hạn chót: {c.deadline} | Ngày xuất bản dự kiến: {c.publicationDate}</p>
+                      <p className="text-[10px] text-muted-foreground">Deadline: {c.deadline} | Expected Pub Date: {c.publicationDate}</p>
                     </div>
                     <div className="space-y-1 text-right sm:w-48 shrink-0">
                       <div className="flex justify-between text-[10px] font-bold">
-                        <span className="text-muted-foreground">Nhiệm vụ đã giao:</span>
-                        <span className="text-primary">{tasksList.length} Nhiệm vụ ({progress}% hoàn thành)</span>
+                        <span className="text-muted-foreground">Assigned tasks:</span>
+                        <span className="text-primary">{tasksList.length} Tasks ({progress}% completed)</span>
                       </div>
                       <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                         <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
@@ -1829,7 +1829,7 @@ const payload = {
           <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
-                <FileEdit className="w-5 h-5 text-primary" /> Sửa Chapter
+                <FileEdit className="w-5 h-5 text-primary" /> Edit Chapter
               </h3>
               <button
                 type="button"
@@ -1841,18 +1841,18 @@ const payload = {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Tiêu đề chapter</label>
+              <label className="text-xs font-bold text-muted-foreground">Chapter Title</label>
               <input
                 type="text"
                 value={editChapterTitle}
                 onChange={(e) => setEditChapterTitle(e.target.value)}
                 className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                placeholder="Nhập tiêu đề mới"
+                placeholder="Enter new title"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Tổng số trang</label>
+              <label className="text-xs font-bold text-muted-foreground">Total Pages</label>
               <input
                 type="number"
                value={editChapterPages === 0 ? '' : editChapterPages}
@@ -1862,7 +1862,7 @@ const payload = {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Ngày xuất bản</label>
+              <label className="text-xs font-bold text-muted-foreground">Publication Date</label>
               <input
                 type="date"
                 value={editChapterPubDate}
@@ -1871,7 +1871,7 @@ const payload = {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Deadline nộp</label>
+              <label className="text-xs font-bold text-muted-foreground">Submission Deadline</label>
               <input
                 type="date"
                 value={editChapterDeadline}
@@ -1885,14 +1885,14 @@ const payload = {
                 onClick={() => setIsEditChapterOpen(false)}
                 className="px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground rounded-xl transition-colors cursor-pointer"
               >
-                Hủy
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveEditChapter}
                 className="px-4 py-2 text-sm font-bold bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all cursor-pointer"
               >
-                Lưu thay đổi
+                Save Changes
               </button>
             </div>
           </div>
@@ -1905,7 +1905,7 @@ const payload = {
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <div className="flex items-center gap-4">
                 <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
-                  <PlusCircle className="w-5 h-5 text-primary" /> Đăng Ký Chapter Mới (P3)
+                  <PlusCircle className="w-5 h-5 text-primary" /> Register New Chapter (P3)
                 </h3>
               </div>
               <button
@@ -1916,16 +1916,16 @@ const payload = {
               </button>
             </div>
 
-            {/* Hướng dẫn quy trình */}
+            {/* Process Guidelines */}
             <div className="p-4 border border-cyan-500/20 bg-cyan-500/5 rounded-xl">
               <div className="flex items-start gap-3">
                 <Info className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <p className="font-semibold text-cyan-500">Quy trình Mangaka khi bắt đầu chapter mới:</p>
-                  <p>① Khai báo thông tin cơ bản (chọn series, số chapter, tiêu đề, ngày ra) → hệ thống tự tính deadline</p>
-                  <p>② Đính kèm kịch bản/storyboard để Editor nắm trước nội dung (Tùy chọn)</p>
-                  <p>③ Nộp bản thảo tranh thô bắt buộc (rough/ink) → Mangaka giao task vẽ chi tiết cho Assistant</p>
-                  <p>④ Ghi chú yêu cầu đặc biệt cho Editor (double-spread, SFX, lettering...) (Tùy chọn)</p>
+                  <p className="font-semibold text-cyan-500">Mangaka workflow for starting a new chapter:</p>
+                  <p>① Declare basic chapter info (select series, chapter number, title, release date) → deadline calculated automatically</p>
+                  <p>② Attach script/storyboard for Editor's early review (Optional)</p>
+                  <p>③ Submit required rough draft (rough/ink) → Mangaka delegates detail tasks to Assistant</p>
+                  <p>④ Add special notes for the Editor (double-spread, SFX, lettering...) (Optional)</p>
                 </div>
               </div>
             </div>
@@ -1936,13 +1936,13 @@ const payload = {
               <div className="space-y-4 border-b border-border/50 pb-5">
                 <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <BookOpen className="w-4 h-4 text-primary" />
-                  1. Thông tin cơ bản
+                  1. Basic Information
                 </h4>
 
                 {/* Series */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted-foreground">
-                    Tác phẩm (Series) <span className="text-red-500">*</span>
+                    Series <span className="text-red-500">*</span>
                   </label>
                   <select
                     className={`w-full px-3 py-2 bg-muted/50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground ${errors.seriesId ? 'border-red-500 ring-2 ring-red-500/10' : 'border-border focus:border-primary'
@@ -1957,7 +1957,7 @@ const payload = {
                       })
                     }}
                   >
-                    <option value="">Chọn tác phẩm của bạn...</option>
+                    <option value="">Select your series...</option>
                     {mangakaSeries.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.title}
@@ -1971,11 +1971,11 @@ const payload = {
                   {/* Chapter No */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                      <Hash className="w-3.5 h-3.5" /> Số chương <span className="text-red-500">*</span>
+                      <Hash className="w-3.5 h-3.5" /> Chapter No. <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
-                      placeholder="VD: 12"
+                      placeholder="e.g. 12"
                       min={1}
                       className={`w-full px-3 py-2 bg-muted/50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground ${errors.chapterNo ? 'border-red-500 ring-2 ring-red-500/10' : 'border-border focus:border-primary'
                         }`}
@@ -1995,11 +1995,11 @@ const payload = {
                   {/* Total Pages */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                      <Layers className="w-3.5 h-3.5" /> Tổng số trang <span className="text-red-500">*</span>
+                      <Layers className="w-3.5 h-3.5" /> Total Pages <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
-                      placeholder="VD: 24"
+                      placeholder="e.g. 24"
                       min={1}
                       className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                       value={newChapterPages}
@@ -2011,11 +2011,11 @@ const payload = {
                 {/* Title */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted-foreground">
-                    Tên chương <span className="text-red-500">*</span>
+                    Chapter Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: Sự Thức Tỉnh Của Rồng Thần"
+                    placeholder="e.g. The Awakening of the Dragon God"
                     className={`w-full px-3 py-2 bg-muted/50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground ${errors.title ? 'border-red-500 ring-2 ring-red-500/10' : 'border-border focus:border-primary'
                       }`}
                     value={newChapterTitle}
@@ -2034,7 +2034,7 @@ const payload = {
                 {/* Publication Date */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                    <CalendarDays className="w-3.5 h-3.5" /> Ngày xuất bản dự kiến <span className="text-red-500">*</span>
+                    <CalendarDays className="w-3.5 h-3.5" /> Expected Pub Date <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -2056,7 +2056,7 @@ const payload = {
                     <div className="mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs flex items-center gap-2">
                       <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                       <span className="text-amber-700 dark:text-amber-400">
-                        Hạn chót nộp bản thảo hoàn chỉnh cho Editor:{' '}
+                        Manuscript deadline to Editor:{' '}
                         <strong>
                           {(() => {
                             const d = new Date(newChapterPubDate)
@@ -2064,7 +2064,7 @@ const payload = {
                             return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
                           })()}
                         </strong>{' '}
-                        (14 ngày trước ngày xuất bản)
+                        (14 days before publication date)
                       </span>
                     </div>
                   )}
@@ -2075,34 +2075,34 @@ const payload = {
               <div className="space-y-3 border-b border-border/50 pb-5">
                 <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <FileText className="w-4 h-4 text-primary" />
-                  2. Tóm tắt nội dung chương (Synopsis)
+                  2. Chapter Synopsis
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Mô tả ngắn gọn diễn biến chính. Editor dùng phần này để duyệt và chuẩn bị định hướng biên tập.
+                  Brief description of the main storyline. The Editor uses this section for approval and editorial alignment.
                 </p>
                 <textarea
-                  placeholder="VD: Ryuu giải phóng sức mạnh rồng thần để đối đầu với hội đồng hắc ám..."
+                  placeholder="e.g. Ryuu unleashes the dragon god's power to confront the dark council..."
                   className="w-full h-24 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
                   value={newChapterSynopsis}
                   onChange={(e) => setNewChapterSynopsis(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground text-right">{newChapterSynopsis.length} ký tự</p>
+                <p className="text-xs text-muted-foreground text-right">{newChapterSynopsis.length} characters</p>
               </div>
 
               {/* Section 3: Storyboard */}
               <div className="space-y-3 border-b border-border/50 pb-5">
                 <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <ScrollText className="w-4 h-4 text-violet-500" />
-                  3. Kịch bản / Storyboard <span className="text-xs font-normal text-muted-foreground ml-1">(Tùy chọn)</span>
+                  3. Script / Storyboard <span className="text-xs font-normal text-muted-foreground ml-1">(Tùy chọn)</span>
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Bản phác thảo layout phân khung (storyboard/nemu) giúp Editor và Trợ lý hiểu cấu trúc chương.
+                  Panel layout draft (storyboard/nemu) helps the Editor and Assistant understand the chapter structure.
                 </p>
                 <div className="p-5 border-2 border-dashed border-violet-500/20 hover:border-violet-500/40 bg-violet-500/5 rounded-2xl text-center transition-colors">
                   <ScrollText className="w-8 h-8 mx-auto mb-2 text-violet-400 opacity-60" />
-                  <p className="text-xs text-muted-foreground">Kéo thả hoặc</p>
+                  <p className="text-xs text-muted-foreground">Drag & drop or</p>
                   <label className="mt-2 inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer">
-                    Chọn File (Browse)
+                    Browse Files
                     <input
                       type="file"
                       multiple
@@ -2110,7 +2110,7 @@ const payload = {
                       onChange={(e) => setNewChapterStoryboardFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
                     />
                   </label>
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">PDF, JPG, PNG · Tối đa 20MB/file</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">PDF, JPG, PNG · Max 20MB/file</p>
                 </div>
                 {newChapterStoryboardFiles.length > 0 && (
                   <div className="space-y-2 mt-3">
@@ -2130,7 +2130,7 @@ const payload = {
                             onClick={() => removeFile('storyboardFiles', idx)}
                             className="text-xs text-red-500 hover:underline cursor-pointer"
                           >
-                            Xóa
+                            Delete
                           </button>
                         </div>
                       </div>
@@ -2139,23 +2139,23 @@ const payload = {
                 )}
               </div>
 
-              {/* Section 4: Bản thảo Sequential Art (Bắt buộc) */}
+              {/* Section 4: Rough/Sequential Art Manuscript (Bắt buộc) */}
               <div className="space-y-3 border-b border-border/50 pb-5">
                 <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <ImageIcon className="w-4 h-4 text-primary" />
-                  4. Bản thảo Sequential Art <span className="text-red-500">* Bắt buộc</span>
+                  4. Rough/Sequential Art Manuscript <span className="text-red-500">* Bắt buộc</span>
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Đính kèm phác thảo thô (pencil) hoặc bản vẽ nét (ink) để bắt đầu phân chia công việc vẽ.
+                  Attach rough sketches (pencil) or line art (ink) to start assigning drawing tasks.
                 </p>
                 <div className={`p-5 border-2 border-dashed rounded-2xl text-center transition-colors ${errors.manuscriptFiles
                   ? 'border-red-500 bg-red-500/5'
                   : 'border-primary/20 hover:border-primary/40 bg-primary/5'
                   }`}>
                   <Upload className={`w-8 h-8 mx-auto mb-2 ${errors.manuscriptFiles ? 'text-red-400' : 'text-primary'} opacity-65`} />
-                  <p className="text-xs text-muted-foreground">Kéo thả bản thảo vào đây hoặc</p>
+                  <p className="text-xs text-muted-foreground">Drag & drop manuscript here or</p>
                   <label className="mt-2 inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer">
-                    Chọn File (Browse)
+                    Browse Files
                     <input
                       type="file"
                       multiple
@@ -2163,7 +2163,7 @@ const payload = {
                       onChange={(e) => setNewChapterManuscriptFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
                     />
                   </label>
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">ZIP, PDF, JPG, PNG, TIF · Tối đa 50MB/file</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">ZIP, PDF, JPG, PNG, TIF · Max 50MB/file</p>
                 </div>
                 {errors.manuscriptFiles && (
                   <p className="text-xs text-red-500 flex items-center gap-1 font-semibold mt-1">
@@ -2188,7 +2188,7 @@ const payload = {
                             onClick={() => removeFile('manuscriptFiles', idx)}
                             className="text-xs text-red-500 hover:underline cursor-pointer"
                           >
-                            Xóa
+                            Delete
                           </button>
                         </div>
                       </div>
@@ -2197,17 +2197,17 @@ const payload = {
                 )}
               </div>
 
-              {/* Section 5: Ghi chú cho Editor */}
+              {/* Section 5: Notes cho Editor */}
               <div className="space-y-3">
                 <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <MessageSquare className="w-4 h-4 text-amber-500" />
-                  5. Ghi chú đặc biệt cho Editor <span className="text-xs font-normal text-muted-foreground ml-1">(Tùy chọn)</span>
+                  5. Special Notes for Editor <span className="text-xs font-normal text-muted-foreground ml-1">(Tùy chọn)</span>
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Các yêu cầu dàn trang đặc biệt: Trang đôi (double-spread), font thoại, thứ tự đọc đặc biệt, v.v.
+                  Các yêu cầu dàn trang đặc biệt: Page đôi (double-spread), font thoại, thứ tự đọc đặc biệt, v.v.
                 </p>
                 <textarea
-                  placeholder="VD: Trang 12-13 dùng double-spread cảnh chiến đấu lớn, tránh cắt giữa khi đóng gáy..."
+                  placeholder="VD: Page 12-13 dùng double-spread cảnh chiến đấu lớn, tránh cắt giữa khi đóng gáy..."
                   className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
                   value={newChapterNotes}
                   onChange={(e) => setNewChapterNotes(e.target.value)}
@@ -2221,13 +2221,13 @@ const payload = {
                   onClick={() => setIsChapterModalOpen(false)}
                   className="px-5 py-2.5 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
-                  Hủy bỏ
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-md shadow-primary/10 transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  <PlusCircle className="w-4 h-4" /> Đăng Ký Chapter Lên Hệ Thống
+                  <PlusCircle className="w-4 h-4" /> Register Chapter to System
                 </button>
               </div>
             </form>
@@ -2241,7 +2241,7 @@ const payload = {
           <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
-                <Plus className="w-5 h-5 text-primary" /> Phân công nhiệm vụ vẽ
+                <Plus className="w-5 h-5 text-primary" /> Assign Drawing Task
               </h3>
               <button
                 onClick={() => setIsTaskModalOpen(false)}
@@ -2254,10 +2254,10 @@ const payload = {
             <form onSubmit={handleCreateTask} className="space-y-4">
               {/* Task Type with Suggestions */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground">Loại nhiệm vụ (Task Type)</label>
+                <label className="text-xs font-bold text-muted-foreground">Task Type</label>
                 <input
                   type="text"
-                  placeholder="Nhập loại task (VD: Line Art, Coloring...)"
+                  placeholder="Enter task type (e.g. Line Art, Coloring...)"
                   value={newTaskType}
                   onChange={(e) => setNewTaskType(e.target.value)}
                   className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground font-semibold"
@@ -2265,7 +2265,7 @@ const payload = {
 
                 {/* Suggestions List */}
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Gợi ý loại task (Click để chọn nhanh):</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Suggested task types (Click to select):</span>
                   <div className="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto p-1 bg-muted/20 border border-border/50 rounded-xl">
                     {TASK_TYPE_SUGGESTIONS.map((suggestion) => {
                       const isSelected = newTaskType.toLowerCase() === suggestion.name.toLowerCase();
@@ -2285,7 +2285,7 @@ const payload = {
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-foreground">{suggestion.name}</span>
-                            {isSelected && <span className="text-[9px] bg-primary text-primary-foreground px-1.5 py-0.2 rounded font-bold">Đang chọn</span>}
+                            {isSelected && <span className="text-[9px] bg-primary text-primary-foreground px-1.5 py-0.2 rounded font-bold">Selected</span>}
                           </div>
                           <span className="text-[10px] opacity-80 leading-relaxed">{suggestion.description}</span>
                         </button>
@@ -2298,7 +2298,7 @@ const payload = {
               {/* Pages Range: Start & End */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Trang bắt đầu</label>
+                  <label className="text-xs font-bold text-muted-foreground">Start Page</label>
                   <input
                     type="number"
                     min={1}
@@ -2311,7 +2311,7 @@ const payload = {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Trang kết thúc</label>
+                  <label className="text-xs font-bold text-muted-foreground">End Page</label>
                   <input
                     type="number"
                     min={newTaskPageStart}
@@ -2329,7 +2329,7 @@ const payload = {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                    <CalendarDays className="w-3.5 h-3.5 text-primary" /> Hạn nộp (Due Date)
+                    <CalendarDays className="w-3.5 h-3.5 text-primary" /> Due Date
                   </label>
                   <input
                     type="date"
@@ -2340,7 +2340,7 @@ const payload = {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Chọn Trợ lý</label>
+                  <label className="text-xs font-bold text-muted-foreground">Select Assistant</label>
                   <select
                     value={newTaskAssistantId}
                     onChange={(e) => setNewTaskAssistantId(e.target.value)}
@@ -2348,14 +2348,14 @@ const payload = {
                   >
                     {assistants.map((a) => (
                       <option key={a.id} value={a.id}>
-                        {a.name} ({a.specialty}) — Số task đang làm: {a.activeTasks}
+                        {a.name} ({a.specialty}) — Active tasks count: {a.activeTasks}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
                   <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Đơn giá / trang (VNĐ)</label>
+                <label className="text-xs font-bold text-muted-foreground">Unit Price / Page (VND)</label>
                 <input
                   type="number"
                   min={0}
@@ -2367,9 +2367,9 @@ const payload = {
               </div>
               {/* Instructions / Description */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Mô tả & Hướng dẫn chi tiết</label>
+                <label className="text-xs font-bold text-muted-foreground">Description & Detailed Guidelines</label>
                 <textarea
-                  placeholder="Mô tả chi tiết: Vẽ nền chùa cổ, hướng ánh sáng từ bên phải, biểu cảm nhân vật lo lắng..."
+                  placeholder="Detailed description: Draw ancient temple background, light source from the right, anxious character expression..."
                   value={newTaskDesc}
                   onChange={(e) => setNewTaskDesc(e.target.value)}
                   className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
@@ -2380,12 +2380,12 @@ const payload = {
               {/* Attach Reference Files input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                  <Upload className="w-3.5 h-3.5 text-primary" /> Tài liệu đính kèm (Reference Files)
+                  <Upload className="w-3.5 h-3.5 text-primary" /> Attached Reference Files
                 </label>
                 <div className="p-3 border-2 border-dashed border-primary/20 hover:border-primary/45 bg-primary/5 rounded-xl text-center transition-colors">
-                  <p className="text-xs text-muted-foreground">Đính kèm các file tài liệu hướng dẫn vẽ</p>
+                  <p className="text-xs text-muted-foreground">Attach drawing instruction files</p>
                   <label className="mt-1.5 inline-flex items-center justify-center gap-1 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs px-3 py-1.5 rounded-xl transition-all cursor-pointer">
-                    <Upload className="w-3.5 h-3.5" /> Chọn File
+                    <Upload className="w-3.5 h-3.5" /> Browse Files
                     <input
                       type="file"
                       multiple
@@ -2404,7 +2404,7 @@ const payload = {
                           onClick={() => removeTaskAttachment(idx)}
                           className="text-red-500 hover:text-red-700 font-bold hover:underline cursor-pointer"
                         >
-                          Xóa
+                          Delete
                         </button>
                       </div>
                     ))}
@@ -2418,13 +2418,13 @@ const payload = {
                   onClick={() => setIsTaskModalOpen(false)}
                   className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
-                  Hủy bỏ
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
                 >
-                  Giao nhiệm vụ
+                  Assign Task
                 </button>
               </div>
             </form>
@@ -2436,46 +2436,46 @@ const payload = {
       {isEditTaskOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setIsEditTaskOpen(false)}>
           <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold">Sửa Task</h3>
+            <h3 className="text-lg font-bold">Edit Task</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">Trang bắt đầu</label>
+                <label className="text-xs font-bold text-muted-foreground">Start Page</label>
                <input type="number" value={editTaskPageStart === 0 ? '' : editTaskPageStart} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageStart(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">Trang kết thúc</label>
+                <label className="text-xs font-bold text-muted-foreground">End Page</label>
                <input type="number" value={editTaskPageEnd === 0 ? '' : editTaskPageEnd} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageEnd(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground">Mô tả</label>
+              <label className="text-xs font-bold text-muted-foreground">Description</label>
               <textarea value={editTaskDescription} onChange={(e) => setEditTaskDescription(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground">Hạn nộp</label>
+              <label className="text-xs font-bold text-muted-foreground">Due Date</label>
               <input type="date" value={editTaskDueDate} onChange={(e) => setEditTaskDueDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground">Đơn giá / trang (VNĐ)</label>
+              <label className="text-xs font-bold text-muted-foreground">Unit Price / Page (VND)</label>
               <input type="number" min={0} value={editTaskRate === 0 ? '' : editTaskRate} onChange={(e) => setEditTaskRate(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground">Giao cho (đổi trợ lý)</label>
+              <label className="text-xs font-bold text-muted-foreground">Assign to (change assistant)</label>
               <select
                 value={editTaskAssistantId}
                 onChange={(e) => setEditTaskAssistantId(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm"
               >
-                <option value="">-- Chọn trợ lý --</option>
+                <option value="">-- Select Assistant --</option>
                 {assistants.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
-              <p className="text-[10px] text-muted-foreground">Đổi trợ lý để giao lại nhiệm vụ này cho người khác.</p>
+              <p className="text-[10px] text-muted-foreground">Change assistant to reassign this task to someone else.</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setIsEditTaskOpen(false)} className="px-4 py-2 rounded-xl border border-border text-sm font-bold hover:bg-muted">Hủy</button>
-              <button type="button" onClick={handleSaveEditTask} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90">Lưu</button>
+              <button type="button" onClick={() => setIsEditTaskOpen(false)} className="px-4 py-2 rounded-xl border border-border text-sm font-bold hover:bg-muted">Cancel</button>
+              <button type="button" onClick={handleSaveEditTask} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90">Save</button>
             </div>
           </div>
         </div>
@@ -2484,18 +2484,18 @@ const payload = {
         <div className="fixed inset-0 z-[200] bg-black/90 flex flex-col" onClick={() => setPinOverlayOpen(false)}>
           <div className="flex items-center justify-between p-3 text-white shrink-0">
             <span className="text-sm font-bold">
-              Bấm lên ảnh để ghim góp ý
-              {zipPages.length > 1 && ` — Trang ${currentPage + 1}/${zipPages.length}`}
-              {` — ${imagePins.filter(p => p.page === currentPage).length} điểm`}
+              Click on image to pin comments
+              {zipPages.length > 1 && ` — Page ${currentPage + 1}/${zipPages.length}`}
+              {` — ${imagePins.filter(p => p.page === currentPage).length} points`}
             </span>
             <button onClick={() => setPinOverlayOpen(false)} className="text-white text-xl px-3">✕</button>
           </div>
 
           {zipPages.length > 1 && (
             <div className="flex items-center justify-center gap-3 pb-2 text-white shrink-0" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0} className="px-3 py-1 bg-white/20 rounded-lg disabled:opacity-30">‹ Trước</button>
-              <span className="text-sm">Trang {currentPage + 1}/{zipPages.length}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(zipPages.length - 1, p + 1))} disabled={currentPage === zipPages.length - 1} className="px-3 py-1 bg-white/20 rounded-lg disabled:opacity-30">Sau ›</button>
+              <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0} className="px-3 py-1 bg-white/20 rounded-lg disabled:opacity-30">‹ Prev</button>
+              <span className="text-sm">Page {currentPage + 1}/{zipPages.length}</span>
+              <button onClick={() => setCurrentPage(p => Math.min(zipPages.length - 1, p + 1))} disabled={currentPage === zipPages.length - 1} className="px-3 py-1 bg-white/20 rounded-lg disabled:opacity-30">Next ›</button>
             </div>
           )}
 
@@ -2513,11 +2513,11 @@ const payload = {
               }}
             >
               {zipLoading ? (
-                <p className="text-white text-sm">Đang giải nén zip...</p>
+                <p className="text-white text-sm">Extracting ZIP file...</p>
               ) : zipPages[currentPage] ? (
                 <div className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={zipPages[currentPage].dataUrl} alt="bai nop" className="max-h-[80vh] max-w-full object-contain pointer-events-none" />
+                  <img src={zipPages[currentPage].dataUrl} alt="submission" className="max-h-[80vh] max-w-full object-contain pointer-events-none" />
                   {imagePins.map((pin, idx) => pin.page === currentPage && (
                     <div key={idx} className="absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
                       {idx + 1}
@@ -2525,22 +2525,22 @@ const payload = {
                   ))}
                 </div>
               ) : (
-                <p className="text-white text-sm">Không có ảnh để hiển thị.</p>
+                <p className="text-white text-sm">No images to display.</p>
               )}
             </div>
 
             <div className="w-80 bg-background p-4 overflow-y-auto shrink-0 space-y-2">
-              <h3 className="text-sm font-extrabold mb-2">Góp ý ({imagePins.length})</h3>
-              {imagePins.length === 0 && <p className="text-xs text-muted-foreground">Bấm lên ảnh để thêm điểm góp ý.</p>}
+              <h3 className="text-sm font-extrabold mb-2">Comments ({imagePins.length})</h3>
+              {imagePins.length === 0 && <p className="text-xs text-muted-foreground">Click on the image to add a feedback point.</p>}
               {imagePins.map((pin, idx) => (
                 <div key={idx} className="flex items-start gap-2">
                   <span className="w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0 mt-1">{idx + 1}</span>
                   <div className="flex-1">
-                    {zipPages.length > 1 && <span className="text-[10px] text-muted-foreground">Trang {pin.page + 1}</span>}
+                    {zipPages.length > 1 && <span className="text-[10px] text-muted-foreground">Page {pin.page + 1}</span>}
                     <textarea
                       value={pin.note}
                       onChange={(e) => setImagePins(prev => prev.map((p, i) => i === idx ? { ...p, note: e.target.value } : p))}
-                      placeholder="Góp ý cho điểm này..."
+                      placeholder="Comments cho points này..."
                       className="w-full text-xs px-2 py-1.5 border border-border rounded-lg bg-background resize-none"
                       rows={2}
                     />
@@ -2548,7 +2548,7 @@ const payload = {
                   <button onClick={() => setImagePins(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-red-500 shrink-0 mt-1">✕</button>
                 </div>
               ))}
-              <button onClick={() => setPinOverlayOpen(false)} className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl">Xong</button>
+              <button onClick={() => setPinOverlayOpen(false)} className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl">Done</button>
             </div>
           </div>
         </div>
@@ -2556,14 +2556,14 @@ const payload = {
       {isSubmitManuscriptOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setIsSubmitManuscriptOpen(false)}>
           <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold">Gửi bản thảo (Manuscript)</h3>
-            <p className="text-xs text-muted-foreground">Mỗi lần gửi sẽ tạo một version mới.</p>
+            <h3 className="text-lg font-bold">Submit Manuscript</h3>
+            <p className="text-xs text-muted-foreground">Each submission will create a new version.</p>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground">File bản thảo</label>
+              <label className="text-xs font-bold text-muted-foreground">Manuscript File</label>
               <label className="flex items-center gap-3 w-full px-3 py-2 rounded-xl border border-border bg-background text-sm cursor-pointer hover:bg-muted transition-colors">
-                <span className="shrink-0 px-3 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs">Chọn file</span>
+                <span className="shrink-0 px-3 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs">Select file</span>
                 <span className="text-muted-foreground truncate">
-                  {submitManuscriptFile ? submitManuscriptFile.name : 'Chưa chọn tệp nào'}
+                  {submitManuscriptFile ? submitManuscriptFile.name : 'No file selected'}
                 </span>
                 <input
                   type="file"
@@ -2573,13 +2573,13 @@ const payload = {
               </label>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground">Ghi chú</label>
+              <label className="text-xs font-bold text-muted-foreground">Notes</label>
               <textarea value={submitManuscriptNotes} onChange={(e) => setSubmitManuscriptNotes(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setIsSubmitManuscriptOpen(false)} className="px-4 py-2 rounded-xl border border-border text-sm font-bold hover:bg-muted">Hủy</button>
+              <button type="button" onClick={() => setIsSubmitManuscriptOpen(false)} className="px-4 py-2 rounded-xl border border-border text-sm font-bold hover:bg-muted">Cancel</button>
               <button type="button" disabled={submitManuscriptUploading} onClick={handleSubmitManuscript} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 disabled:opacity-50">
-                {submitManuscriptUploading ? 'Đang gửi...' : 'Gửi'}
+                {submitManuscriptUploading ? 'Sending...' : 'Submit'}
               </button>
             </div>
           </div>
@@ -2590,7 +2590,7 @@ const payload = {
           <div className="bg-card border border-border rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary" /> Duyệt bài làm của Trợ lý
+                <Eye className="w-5 h-5 text-primary" /> Review Assistant Submission
               </h3>
               <button
                 onClick={() => {
@@ -2607,7 +2607,7 @@ const payload = {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Left Side: Image Preview */}
               <div className="space-y-3">
-                <label className="text-xs font-bold text-muted-foreground">Xem trước sản phẩm đã nộp</label>
+                <label className="text-xs font-bold text-muted-foreground">Preview submitted work</label>
                 <div
                   className="relative border border-border rounded-xl overflow-hidden bg-muted min-h-[400px] max-h-[600px] flex items-center justify-center group shadow-inner cursor-crosshair"
                   onClick={() => {
@@ -2619,13 +2619,13 @@ const payload = {
                   {!activeTaskToReview.submittedWorkUrl ? (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground/50">
                       <ImageIcon className="w-12 h-12" />
-                      <span className="text-xs">Chưa có bài nộp</span>
+                      <span className="text-xs">No submissions yet</span>
                     </div>
                   ) : /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) ? (
                     <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
                       <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
-                      <span className="text-sm font-bold text-foreground">File nén nhiều trang</span>
-                      <span className="text-xs">Bấm vào đây để xem & góp ý từng trang</span>
+                      <span className="text-sm font-bold text-foreground">Multi-page compressed file</span>
+                      <span className="text-xs">Click here to view & comment page-by-page</span>
                     </div>
                   ) : (
                     <ImageCommentLayer
@@ -2651,20 +2651,20 @@ const payload = {
                     onClick={openPinOverlay}
                     className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
                   >
-                    Mở to để góp ý chi tiết
+                    Open lightbox for detailed feedback
                   </button>
                 )}
 
                 {imagePins.length > 0 && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground">Góp ý trên ảnh ({imagePins.length})</label>
+                    <label className="text-xs font-bold text-muted-foreground">Feedback on Image ({imagePins.length})</label>
                     {imagePins.map((pin, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <span className="w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
                         <input
                           value={pin.note}
                           onChange={(e) => setImagePins(prev => prev.map((p, i) => i === idx ? { ...p, note: e.target.value } : p))}
-                          placeholder="Nhập góp ý cho điểm này..."
+                          placeholder="Enter feedback for this point..."
                           className="flex-1 text-xs px-2 py-1.5 border border-border rounded-lg bg-background"
                         />
                         <button onClick={() => setImagePins(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-red-500 shrink-0">✕</button>
@@ -2679,12 +2679,12 @@ const payload = {
                       onClick={handleCompareSubmissions}
                       className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors"
                     >
-                      So sánh với lần nộp trước
+                      Compare with previous submission
                     </button>
                     {subCompareLoading && (
                       <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
                         <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                        Đang so sánh ảnh...
+                        Comparing images...
                       </div>
                     )}
                     {subCompareError && (
@@ -2695,7 +2695,7 @@ const payload = {
                     {subCompareResult && (
                       <div className="border border-border rounded-xl p-3 space-y-2 bg-muted/20">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-foreground">Mức thay đổi so với lần trước</span>
+                          <span className="text-xs font-bold text-foreground">Change percentage compared to previous</span>
                           <span className={`text-sm font-extrabold ${subCompareResult.percent > 20 ? 'text-red-600' : subCompareResult.percent > 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
                             {subCompareResult.percent}%
                           </span>
@@ -2709,7 +2709,7 @@ const payload = {
                         {subCompareResult.diff && (
                           <div className="space-y-1">
                             <img src={subCompareResult.diff} alt="Vùng thay đổi" className="w-full border border-border rounded-lg" />
-                            <p className="text-[10px] text-muted-foreground text-center">🔴 Vùng màu đỏ là chỗ có thay đổi so với lần nộp trước</p>
+                            <p className="text-[10px] text-muted-foreground text-center">🔴 Red highlighted areas show differences from the previous submission</p>
                           </div>
                         )}
                       </div>
@@ -2722,7 +2722,7 @@ const payload = {
                 {/* Submitted Files List */}
                 {activeTaskToReview.submittedFiles && activeTaskToReview.submittedFiles.length > 0 ? (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground">Tệp đã nộp ({activeTaskToReview.submittedFiles.length})</label>
+                    <label className="text-xs font-bold text-muted-foreground">Submitted Files ({activeTaskToReview.submittedFiles.length})</label>
                     <div className="space-y-1 max-h-36 overflow-y-auto">
                       {activeTaskToReview.submittedFiles.map((file, idx) => (
                         <div key={idx} className="flex items-center justify-between p-2 bg-emerald-500/5 rounded-xl border border-emerald-500/10 text-xs">
@@ -2734,11 +2734,11 @@ const payload = {
                   </div>
                 ) : activeTaskToReview.submittedWorkUrl ? (
                   <a href={activeTaskToReview.submittedWorkUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline bg-muted/40 p-2.5 rounded-xl border border-border">
-                    📎 Mở file bài nộp trong tab mới
+                    📎 Open submission file in new tab
                   </a>
                 ) : (
                   <div className="text-xs text-muted-foreground italic bg-muted/40 p-2.5 rounded-xl border border-border">
-                    Không có file đính kèm nào được nộp
+                    No attached files submitted
                   </div>
                 )}
               </div>
@@ -2751,7 +2751,7 @@ const payload = {
                       Manga: {getMangaTitleForTask(activeTaskToReview)}
                     </span>
                     <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded inline-block">
-                      {activeTaskToReview.type} (Trang {activeTaskToReview.pages})
+                      {activeTaskToReview.type} (Page {activeTaskToReview.pages})
                     </span>
                   </div>
 
@@ -2760,19 +2760,19 @@ const payload = {
                   </p>
 
                   <p className="text-xs text-muted-foreground">
-                    Người nộp: <strong>{activeTaskToReview.assistantName}</strong>
+                    Submitted by: <strong>{activeTaskToReview.assistantName}</strong>
                   </p>
 
                   <div className="p-3 bg-muted/50 rounded-xl text-xs leading-relaxed text-foreground border border-border">
-                    <p className="font-bold text-muted-foreground mb-1 text-[10px] uppercase">Ghi chú của Trợ lý:</p>
-                    <p className="italic whitespace-pre-line">{activeTaskToReview.submitDescription || 'Đã hoàn thành công việc, gửi Mangaka duyệt.'}</p>
+                    <p className="font-bold text-muted-foreground mb-1 text-[10px] uppercase">Notes của Assistant:</p>
+                    <p className="italic whitespace-pre-line">{activeTaskToReview.submitDescription || 'Work completed, sent for Mangaka review.'}</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground">Ý kiến phản hồi (Bắt buộc nếu Từ chối)</label>
+                  <label className="text-xs font-bold text-muted-foreground">Feedback Comments (Required if Rejecting)</label>
                   <textarea
-                    placeholder="Nhập phản hồi... Các điểm tốt cần giữ, chi tiết cụ thể cần chỉnh sửa..."
+                    placeholder="Enter feedback comments... Các points tốt cần giữ, chi tiết cụ thể cần chỉnh sửa..."
                     value={reviewFeedback}
                     onChange={(e) => setReviewFeedback(e.target.value)}
                     className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
@@ -2784,13 +2784,13 @@ const payload = {
                     onClick={() => handleRejectTask(activeTaskToReview)}
                     className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
                   >
-                    Yêu cầu sửa lại
+                    Request Revision
                   </button>
                   <button
                     onClick={() => handleApproveTask(activeTaskToReview)}
                     className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
                   >
-                    Phê duyệt & Hoàn thành
+                    Approve & Complete
                   </button>
                 </div>
               </div>
@@ -2811,18 +2811,18 @@ const payload = {
 
           <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6 overflow-hidden">
             <h3 className="text-base font-extrabold text-foreground flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-indigo-500" /> Nộp sản phẩm hoàn thành
+              <ClipboardList className="w-5 h-5 text-indigo-500" /> Submit Work completed
             </h3>
             <p className="text-xs text-muted-foreground mt-1.5">
-              Gửi sản phẩm và ghi chú bản vẽ cho tác giả. Họ sẽ xét duyệt để phê duyệt hoặc yêu cầu bạn điều chỉnh thêm.
+              Submit sản phẩm và ghi chú bản vẽ cho tác giả. Họ sẽ xét duyệt để phê duyệt hoặc yêu cầu bạn điều chỉnh thêm.
             </p>
 
             <form onSubmit={handleSubmitWork} className="space-y-4 mt-4">
               <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-muted-foreground">Mô tả sản phẩm nộp</label>
+                <label className="text-[10px] uppercase font-bold text-muted-foreground">Submission Description</label>
                 <textarea
                   required
-                  placeholder="Ví dụ: Đã vẽ xong bối cảnh nền và screentone. Thêm chi tiết đổ nát ở trang 5."
+                  placeholder="e.g. Finished background and screentone. Added debris details on page 5."
                   value={submitComment}
                   onChange={(e) => setSubmitComment(e.target.value)}
                   className="w-full p-2.5 bg-muted/50 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all h-24 resize-none text-foreground"
@@ -2830,7 +2830,7 @@ const payload = {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-muted-foreground">File bài nộp</label>
+                <label className="text-[10px] uppercase font-bold text-muted-foreground">Submission Files</label>
                 <input
                   type="file"
                   multiple
@@ -2843,7 +2843,7 @@ const payload = {
                 />
                 {submitFiles.length > 0 && (
                   <div className="space-y-1 mt-1">
-                    <p className="text-[10px] text-muted-foreground">Đã chọn {submitFiles.length} file:</p>
+                    <p className="text-[10px] text-muted-foreground">Selected {submitFiles.length} file(s):</p>
                     {submitFiles.map((f, i) => (
                       <div key={i} className="flex items-center justify-between text-[11px] bg-muted/40 rounded-lg px-2 py-1">
                         <span className="truncate text-foreground">{f.name}</span>
@@ -2872,14 +2872,14 @@ const payload = {
                   }}
                   className="px-4 py-2 border border-border text-foreground hover:bg-muted text-xs font-semibold rounded-xl transition-all"
                 >
-                  Hủy
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitWorkUploading}
                   className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitWorkUploading ? 'Đang nộp...' : 'Nộp bài'}
+                  {submitWorkUploading ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </form>
@@ -2893,7 +2893,7 @@ const payload = {
           <div className="bg-card rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary" /> Chi tiết Nhiệm vụ & Góp ý sửa đổi
+                <Eye className="w-5 h-5 text-primary" /> Task Details & Revision Comments
               </h3>
               <button
                 onClick={() => {
@@ -2910,7 +2910,7 @@ const payload = {
               {/* Left Column: Image Preview with Comments */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-muted-foreground">Sản phẩm đã nộp & Chú thích</label>
+                  <label className="text-xs font-bold text-muted-foreground">Submitted Work & Notes</label>
                   {activeTaskToView.submittedWorkUrl && (
                     <a
                       href={activeTaskToView.submittedWorkUrl}
@@ -2918,7 +2918,7 @@ const payload = {
                       rel="noopener noreferrer"
                       className="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
                     >
-                      <ArrowRight className="w-3.5 h-3.5" /> Tải file gốc
+                      <ArrowRight className="w-3.5 h-3.5" /> Download Original File
                     </a>
                   )}
                 </div>
@@ -2926,12 +2926,12 @@ const payload = {
                 {!activeTaskToView.submittedWorkUrl ? (
                   <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground/50">
                     <Layers className="w-12 h-12 mb-2" />
-                    <span className="text-xs">Chưa nộp sản phẩm nào</span>
+                    <span className="text-xs">No submissions uploaded yet</span>
                   </div>
                 ) : zipLoading ? (
                   <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground">
                     <span className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-                    <span className="text-xs">Đang giải nén tệp tin zip...</span>
+                    <span className="text-xs">Extracting zip file...</span>
                   </div>
                 ) : zipPages.length > 0 ? (
                   <div className="space-y-3">
@@ -2943,16 +2943,16 @@ const payload = {
                           disabled={currentPage === 0}
                           className="px-2.5 py-1 bg-card hover:bg-muted border border-border rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          ‹ Trước
+                          ‹ Prev
                         </button>
-                        <span className="text-xs font-bold text-foreground">Trang {currentPage + 1}/{zipPages.length}: {zipPages[currentPage].name}</span>
+                        <span className="text-xs font-bold text-foreground">Page {currentPage + 1}/{zipPages.length}: {zipPages[currentPage].name}</span>
                         <button
                           type="button"
                           onClick={() => setCurrentPage(p => Math.min(zipPages.length - 1, p + 1))}
                           disabled={currentPage === zipPages.length - 1}
                           className="px-2.5 py-1 bg-card hover:bg-muted border border-border rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          Sau ›
+                          Next ›
                         </button>
                       </div>
                     )}
@@ -2968,7 +2968,7 @@ const payload = {
                 ) : (
                   <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground">
                     <AlertTriangle className="w-8 h-8 text-amber-500 mb-2" />
-                    <span className="text-xs text-center px-4">Không thể tải trước ảnh của tệp tin. Vui lòng bấm "Tải file gốc" để kiểm tra trực tiếp.</span>
+                    <span className="text-xs text-center px-4">Cannot preview image file. Please click "Download Original File" to inspect directly.</span>
                   </div>
                 )}
               </div>
@@ -2978,21 +2978,21 @@ const payload = {
                 <div className="space-y-4">
                   {/* Manga/Chapter Info */}
                   <div className="p-3.5 bg-muted/40 border border-border rounded-xl space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Thông tin chương</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Chapter Info</p>
                     <p className="font-bold text-foreground text-sm">{getChapterInfo(activeTaskToView.chapterId)}</p>
-                    <p className="text-xs text-muted-foreground font-semibold">Nhiệm vụ: {activeTaskToView.type} (Trang {activeTaskToView.pages})</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Task: {activeTaskToView.type} (Page {activeTaskToView.pages})</p>
                   </div>
 
                   {/* Task details */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground">Hạn nộp</p>
+                      <p className="text-xs font-bold text-muted-foreground">Due Date</p>
                       <p className="font-semibold text-amber-600 bg-amber-500/5 border border-amber-500/10 px-2.5 py-1.5 rounded-lg inline-block text-xs">
-                        {activeTaskToView.dueDate ? new Date(activeTaskToView.dueDate).toLocaleDateString() : 'Không giới hạn'}
+                        {activeTaskToView.dueDate ? new Date(activeTaskToView.dueDate).toLocaleDateString() : 'Unlimited'}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground">Trạng thái</p>
+                      <p className="text-xs font-bold text-muted-foreground">Status</p>
                       <div className="inline-block">
                         {getTaskStatusBadge(activeTaskToView.status)}
                       </div>
@@ -3001,7 +3001,7 @@ const payload = {
 
                   {/* Description from Mangaka */}
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground">Yêu cầu & Hướng dẫn vẽ từ Tác giả</p>
+                    <p className="text-xs font-bold text-muted-foreground">Author Guidelines & Requirements</p>
                     <div className="p-3 bg-muted/30 border border-border rounded-xl text-foreground text-xs leading-relaxed whitespace-pre-line">
                       {activeTaskToView.description}
                     </div>
@@ -3010,7 +3010,7 @@ const payload = {
                   {/* Reference Files */}
                   {activeTaskToView.referenceFiles && activeTaskToView.referenceFiles.length > 0 && (
                     <div className="space-y-1.5">
-                      <p className="text-xs font-bold text-muted-foreground">Tài liệu hướng dẫn đính kèm</p>
+                      <p className="text-xs font-bold text-muted-foreground">Attached Guidelines</p>
                       <div className="space-y-1">
                         {activeTaskToView.referenceFiles.map((f) => (
                           <a
@@ -3031,7 +3031,7 @@ const payload = {
                   {activeTaskToView.status === 'Rejected' && activeTaskToView.feedback && (
                     <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 text-xs text-red-600 dark:text-red-400 space-y-1.5">
                       <p className="font-bold flex items-center gap-1.5">
-                        <AlertTriangle className="w-4 h-4" /> Yêu cầu sửa đổi từ Tác giả
+                        <AlertTriangle className="w-4 h-4" /> Revision Requests from Author
                       </p>
                       <p className="italic bg-card/40 p-2.5 rounded-lg border border-red-500/10">"{activeTaskToView.feedback}"</p>
                     </div>
@@ -3040,7 +3040,7 @@ const payload = {
                   {/* Assistant Submission notes */}
                   {activeTaskToView.submitDescription && (
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground">Ghi chú nộp bài của bạn</p>
+                      <p className="text-xs font-bold text-muted-foreground">Your submission notes</p>
                       <div className="p-3 bg-muted/20 border border-border rounded-xl text-foreground text-xs italic leading-relaxed">
                         "{activeTaskToView.submitDescription}"
                       </div>
@@ -3057,7 +3057,7 @@ const payload = {
                     }}
                     className="px-5 py-2.5 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl transition-all cursor-pointer"
                   >
-                    Đóng chi tiết
+                    Close Details
                   </button>
                 </div>
               </div>

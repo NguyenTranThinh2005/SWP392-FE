@@ -43,7 +43,7 @@ export default function AdminPage() {
       setGenresList(gData)
     } catch (err: any) {
       console.error("Failed to fetch roles or genres from backend", err)
-      toast.error("Không thể tải danh sách vai trò hoặc thể loại từ hệ thống.")
+      toast.error("Failed to load roles or genres list from the system.")
       setRolesList([])
       setGenresList([])
     } finally {
@@ -79,7 +79,7 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error("Failed to fetch users from backend", err)
-      toast.error("Không thể kết nối API để lấy danh sách người dùng.")
+      toast.error("Failed to connect to the API to fetch the user list.")
     }
   }, [])
 
@@ -102,9 +102,9 @@ export default function AdminPage() {
 
   // Look up editor name helper
   const getEditorName = useCallback((editorId?: string) => {
-    if (!editorId) return 'Chưa gán'
+    if (!editorId) return 'Unassigned'
     const ed = usersList.find(u => u.id === editorId)
-    return ed ? ed.name : 'Không xác định'
+    return ed ? ed.name : 'Unknown'
   }, [usersList])
 
   if (!mounted) return null
@@ -116,9 +116,9 @@ export default function AdminPage() {
         <div className="w-16 h-16 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
           <Shield className="w-10 h-10 animate-pulse" />
         </div>
-        <h2 className="text-xl font-bold text-foreground">Không có quyền truy cập</h2>
+        <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Chỉ tài khoản hoạt động với vai trò <strong>Admin</strong> mới được phép truy cập trang này.
+          Only active accounts with the <strong>Admin</strong> role are allowed to access this page.
         </p>
       </div>
     )
@@ -131,12 +131,12 @@ export default function AdminPage() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
             <Users className="w-8 h-8 text-primary" />
-            {role === 'Admin' ? 'Quản trị Tài khoản' : 'Danh sách Thành viên'}
+            {role === 'Admin' ? 'Account Administration' : 'Member List'}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {role === 'Admin'
-              ? 'Thiết lập tài khoản nội bộ và phân quyền vai trò cho hệ thống'
-              : 'Xem danh sách tác giả, trợ lý vẽ và biên tập viên phụ trách trong hệ thống'}
+              ? 'Set up internal accounts and assign roles for the system'
+              : 'View list of authors, drawing assistants, and responsible editors in the system'}
           </p>
         </div>
 
@@ -150,7 +150,7 @@ export default function AdminPage() {
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`}
             >
-              <Users className="w-3.5 h-3.5" /> Danh sách Tài khoản
+              <Users className="w-3.5 h-3.5" /> Account List
             </button>
             <button
               onClick={() => setActiveTab('create')}
@@ -159,7 +159,7 @@ export default function AdminPage() {
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`}
             >
-              <UserPlus className="w-3.5 h-3.5" /> Tạo Tài khoản mới
+              <UserPlus className="w-3.5 h-3.5" /> Create New Account
             </button>
             <button
               onClick={() => setActiveTab('system')}
@@ -168,7 +168,7 @@ export default function AdminPage() {
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`}
             >
-              <Layers className="w-3.5 h-3.5" /> Quản lý Hệ thống
+              <Layers className="w-3.5 h-3.5" /> System Management
             </button>
           </div>
         )}

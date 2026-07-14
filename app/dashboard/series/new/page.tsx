@@ -69,7 +69,7 @@ export default function NewProposalPage() {
   // Show toast notification when blocked
   useEffect(() => {
     if (blockedByBR19) {
-      toast.warning('Bạn hiện đang có đề xuất khác đang chờ duyệt. Không thể tạo thêm đề xuất mới.')
+      toast.warning('You currently have another proposal awaiting approval. Cannot create a new proposal.')
     }
   }, [blockedByBR19])
 
@@ -80,7 +80,7 @@ export default function NewProposalPage() {
       try {
         const isBlockedNow = await hasPendingProposal(mangakaId)
         if (isBlockedNow) {
-          throw new Error('Bạn đang có đề xuất ở trạng thái chờ duyệt hoặc đang duyệt. Không thể thực hiện hành động này.')
+          throw new Error('You have a proposal that is pending or under review. Cannot perform this action.')
         }
 
         if (action === 'draft') {

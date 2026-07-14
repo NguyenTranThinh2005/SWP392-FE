@@ -25,7 +25,7 @@ export default function ProposalHeader({ isBlocked }: ProposalHeaderProps) {
         {isBlocked ? (
           <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-lg text-xs font-semibold text-amber-600">
             <AlertTriangle className="w-4 h-4" />
-            <span>Đang có đề xuất chờ duyệt — Tạm khóa</span>
+            <span>A proposal is awaiting approval — Temporarily Locked</span>
           </div>
         ) : (
           <Link

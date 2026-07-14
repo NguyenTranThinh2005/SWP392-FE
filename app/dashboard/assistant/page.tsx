@@ -115,7 +115,7 @@ export default function AssistantDashboardPage() {
         id: u.userId,
         name: u.displayName || u.userName,
         avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
-        specialty: 'Trợ lý',
+        specialty: 'Assistant',
         activeTasks: 0
       }))
       setAssistants(mapped)
@@ -160,15 +160,15 @@ export default function AssistantDashboardPage() {
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
           <AlertTriangle className="w-8 h-8 text-destructive" />
         </div>
-        <h2 className="text-xl font-bold">Từ chối truy cập</h2>
+        <h2 className="text-xl font-bold">Access Denied</h2>
         <p className="text-muted-foreground text-sm max-w-md">
-          Chỉ người dùng có vai trò <strong>Trợ lý</strong> mới được quyền truy cập bảng điều khiển này.
+          Only users with the <strong>Assistant</strong> role are authorized to view this dashboard.
         </p>
         <Link
           href="/dashboard/manga-list"
           className="mt-2 text-sm font-semibold text-primary hover:underline"
         >
-          Đi tới Danh sách truyện
+          Go to Manga List
         </Link>
       </div>
     )
@@ -199,11 +199,11 @@ export default function AssistantDashboardPage() {
   const getStatusBadge = (status: TaskStatus) => {
     switch (status) {
       case 'Pending':
-        return <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> Chờ bắt đầu</span>
+        return <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> Pending</span>
       case 'In-Progress':
-        return <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Play className="w-3 h-3 animate-pulse" /> Đang thực hiện</span>
+        return <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Play className="w-3 h-3 animate-pulse" /> In-Progress</span>
       case 'Rejected':
-        return <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><XCircle className="w-3 h-3" /> Yêu cầu sửa đổi</span>
+        return <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><XCircle className="w-3 h-3" /> Revision Required</span>
       default:
         return <span className="bg-slate-500/10 text-slate-500 border border-slate-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full">{status}</span>
     }
@@ -217,13 +217,13 @@ export default function AssistantDashboardPage() {
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
-              <Sparkles className="w-3.5 h-3.5" /> Không gian làm việc Trợ lý
+              <Sparkles className="w-3.5 h-3.5" /> Assistant Workspace
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Bảng điều khiển Trợ lý
+              Assistant Dashboard
             </h1>
             <p className="text-sm text-muted-foreground max-w-lg">
-              Chào mừng bạn đến với không gian làm việc. Theo dõi trạng thái các nhiệm vụ được giao và chuyển đến tab Nhiệm vụ để bắt đầu vẽ.
+              Welcome to your workspace. Track the status of your assigned tasks and go to the Tasks tab to start drawing.
             </p>
           </div>
         </div>
@@ -238,12 +238,12 @@ export default function AssistantDashboardPage() {
             </div>
             <div>
               <h2 className="font-bold text-sm text-foreground">{activeAssistant.name}</h2>
-              <p className="text-xs text-muted-foreground font-semibold mt-0.5">Chuyên môn: {activeAssistant.specialty}</p>
+              <p className="text-xs text-muted-foreground font-semibold mt-0.5">Specialty: {activeAssistant.specialty}</p>
             </div>
           </div>
           <div className="text-right text-xs">
-            <p className="text-muted-foreground font-semibold">Nhiệm vụ đang vẽ</p>
-            <p className="text-base font-extrabold text-foreground mt-0.5">{activeAssistant.activeTasks} nhiệm vụ đang làm</p>
+            <p className="text-muted-foreground font-semibold">Active Tasks</p>
+            <p className="text-base font-extrabold text-foreground mt-0.5">{activeAssistant.activeTasks} active tasks</p>
           </div>
         </div>
       )}
@@ -251,10 +251,10 @@ export default function AssistantDashboardPage() {
       {/* Stats Counter Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Đã nộp / Hoàn thành', value: stats.completed, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-          { label: 'Nhiệm vụ được giao', value: stats.total, icon: ClipboardList, color: 'text-foreground', bg: 'bg-primary/10' },
-          { label: 'Chờ bắt đầu', value: stats.pending, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-          { label: 'Đang thực hiện', value: stats.working, icon: Play, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+          { label: 'Submitted / Completed', value: stats.completed, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+          { label: 'Assigned Tasks', value: stats.total, icon: ClipboardList, color: 'text-foreground', bg: 'bg-primary/10' },
+          { label: 'Pending', value: stats.pending, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+          { label: 'In-Progress', value: stats.working, icon: Play, color: 'text-blue-500', bg: 'bg-blue-500/10' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-card border border-border rounded-2xl p-5 space-y-3 shadow-sm hover:border-primary/10 transition-colors">
             <div className={`w-9 h-9 ${bg} ${color} rounded-xl flex items-center justify-center`}>
@@ -274,15 +274,15 @@ export default function AssistantDashboardPage() {
           <div>
             <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Layers className="w-5 h-5 text-primary" />
-              Nhiệm vụ đang hoạt động ({activeTasks.length})
+              Active Tasks ({activeTasks.length})
             </h2>
-            <p className="text-xs text-muted-foreground mt-1">Các nhiệm vụ cần bạn xử lý.</p>
+            <p className="text-xs text-muted-foreground mt-1">Tasks that require your attention.</p>
           </div>
           <button
             onClick={() => router.push('/dashboard/chapters')}
             className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all"
           >
-            Đến trang Nhiệm vụ <ArrowRight className="w-3.5 h-3.5" />
+            Go to Tasks <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -290,9 +290,9 @@ export default function AssistantDashboardPage() {
           {activeTasks.length === 0 ? (
             <div className="py-12 text-center space-y-3">
               <CheckCircle2 className="w-10 h-10 text-emerald-500/50 mx-auto" />
-              <h3 className="font-bold text-sm text-foreground">Bạn không có nhiệm vụ hoạt động nào</h3>
+              <h3 className="font-bold text-sm text-foreground">You have no active tasks</h3>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Tất cả nhiệm vụ đã được gửi hoặc duyệt. Hãy nghỉ ngơi hoặc liên hệ Mangaka để nhận kịch bản mới!
+                All tasks have been submitted or approved. Take a break or contact the Mangaka to get new scripts!
               </p>
             </div>
           ) : (
@@ -303,7 +303,7 @@ export default function AssistantDashboardPage() {
                     <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
                       {task.id}
                     </span>
-                    <span className="text-sm font-bold text-foreground">{task.type} (Trang {task.pages})</span>
+                    <span className="text-sm font-bold text-foreground">{task.type} (Pages {task.pages})</span>
                     {getStatusBadge(task.status)}
                   </div>
                   <p className="text-xs text-muted-foreground font-semibold">{getChapterInfo(task.chapterId)}</p>
@@ -312,7 +312,7 @@ export default function AssistantDashboardPage() {
                 <button
                   onClick={() => router.push('/dashboard/chapters')}
                   className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-all cursor-pointer"
-                  title="Đi tới chi tiết nhiệm vụ"
+                  title="Go to task details"
                 >
                   <Eye className="w-4 h-4" />
                 </button>

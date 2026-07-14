@@ -11,14 +11,11 @@ import {
   Calendar,
   FileText,
   CheckCircle2,
-  X,
   FileArchive,
   Download,
-  ChevronLeft,
-  ChevronRight,
   Search,
-  PencilLine,
-  XCircle
+  XCircle,
+  X
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { seriesService, type SeriesProposal } from '@/services/seriesService'
@@ -42,9 +39,6 @@ export default function EditorProposalsTab({
   const [rejectReasonText, setRejectReasonText] = useState('')
 
   const [detailedProposal, setDetailedProposal] = useState<SeriesProposal | null>(null)
-  const [detailedProposalLoading, setDetailedProposalLoading] = useState(false)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [lightboxActiveIndex, setLightboxActiveIndex] = useState(0)
 
   useEffect(() => {
     if (!selectedProposalId) {
@@ -53,7 +47,6 @@ export default function EditorProposalsTab({
     }
     let active = true
     const fetchDetail = async () => {
-      setDetailedProposalLoading(true)
       try {
         const detail = await seriesService.getSeriesById(selectedProposalId)
         if (active) {
@@ -61,8 +54,6 @@ export default function EditorProposalsTab({
         }
       } catch (err) {
         console.error('Failed to fetch detailed proposal:', err)
-      } finally {
-        if (active) setDetailedProposalLoading(false)
       }
     }
     fetchDetail()
@@ -71,37 +62,7 @@ export default function EditorProposalsTab({
     }
   }, [selectedProposalId])
 
-  // Keyboard event listener for Lightbox navigation
-  useEffect(() => {
-    if (!lightboxOpen) return
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setLightboxOpen(false)
-      } else if (e.key === 'ArrowLeft') {
-        setLightboxActiveIndex((prev) => {
-          const previewPages = detailedProposal?.proposalPages && detailedProposal.proposalPages.length > 0
-            ? detailedProposal.proposalPages
-            : (detailedProposal?.sampleFileUrl || '').split(',').filter(Boolean);
-          if (previewPages.length === 0) return prev;
-          return prev > 0 ? prev - 1 : previewPages.length - 1;
-        });
-      } else if (e.key === 'ArrowRight') {
-        setLightboxActiveIndex((prev) => {
-          const previewPages = detailedProposal?.proposalPages && detailedProposal.proposalPages.length > 0
-            ? detailedProposal.proposalPages
-            : (detailedProposal?.sampleFileUrl || '').split(',').filter(Boolean);
-          if (previewPages.length === 0) return prev;
-          return prev < previewPages.length - 1 ? prev + 1 : 0;
-        });
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [lightboxOpen, detailedProposal])
 
   const getIntakeStatusBadge = (status: string) => {
     let bg = 'bg-gray-500/20';
@@ -166,7 +127,7 @@ export default function EditorProposalsTab({
             ? detailedProposal
             : baseProposal
 
-          const samplePages = proposal.samplePages || ((proposal.title.length % 5) + 6);
+
           const deadlineDate = proposal.submittedAt ? new Date(proposal.submittedAt) : new Date(proposal.createdAt || Date.now());
           deadlineDate.setDate(deadlineDate.getDate() + 7);
           const deadlineStr = deadlineDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -684,122 +645,6 @@ export default function EditorProposalsTab({
         </div>
       )}
 
-      {/* Lightbox Modal */}
-      {lightboxOpen && detailedProposal && (
-        (() => {
-          const previewPages = detailedProposal.proposalPages && detailedProposal.proposalPages.length > 0
-            ? detailedProposal.proposalPages
-            : (detailedProposal.sampleFileUrl || '')
-              .split(',')
-              .filter(Boolean)
-              .map((id: string, idx: number) => ({
-                pageNo: idx + 1,
-                previewFileAssetId: id.trim(),
-                url: undefined as string | undefined,
-              }));
-
-          const activePage = previewPages[lightboxActiveIndex];
-          if (!activePage) return null;
-
-          const imgUrl = activePage.url
-            || (activePage.previewFileAssetId?.startsWith('http')
-              ? activePage.previewFileAssetId
-              : `${API_BASE_URL}/api/files/${activePage.previewFileAssetId}`);
-
-          const handlePrev = (e?: React.MouseEvent) => {
-            e?.stopPropagation();
-            setLightboxActiveIndex((prev) => (prev > 0 ? prev - 1 : previewPages.length - 1));
-          };
-
-          const handleNext = (e?: React.MouseEvent) => {
-            e?.stopPropagation();
-            setLightboxActiveIndex((prev) => (prev < previewPages.length - 1 ? prev + 1 : 0));
-          };
-
-          return (
-            <div
-              className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 animate-in fade-in duration-200"
-              onClick={() => setLightboxOpen(false)}
-            >
-              {/* Header bar */}
-              <div className="w-full max-w-5xl flex items-center justify-between py-2 text-white/90 z-10">
-                <div>
-                  <h4 className="text-xs font-bold font-mono tracking-wider text-primary">
-                    MANUSCRIPT PREVIEW
-                  </h4>
-                  <p className="text-[10px] text-white/50">
-                    Page {lightboxActiveIndex + 1} of {previewPages.length}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setLightboxOpen(false)}
-                  className="p-2 hover:bg-white/10 rounded-full text-white/80 hover:text-white transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Main Content Area */}
-              <div className="flex-1 w-full max-w-5xl flex items-center justify-between gap-4 z-10">
-                {/* Prev Button */}
-                <button
-                  onClick={handlePrev}
-                  className="p-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-xl transition-all border border-white/10 cursor-pointer hidden md:flex"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-
-                {/* Image Wrapper */}
-                <div
-                  className="flex-1 max-h-[80vh] flex items-center justify-center p-2 relative"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imgUrl}
-                    alt={`Page ${lightboxActiveIndex + 1}`}
-                    className="max-w-full max-h-[75vh] object-contain rounded-lg border border-white/10 shadow-2xl animate-in zoom-in-95 duration-200"
-                  />
-                </div>
-
-                {/* Next Button */}
-                <button
-                  onClick={handleNext}
-                  className="p-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-xl transition-all border border-white/10 cursor-pointer hidden md:flex"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Footer Control Info & Mobile Navigation */}
-              <div className="w-full max-w-5xl flex flex-col items-center gap-3 z-10 text-white/60 text-[10px] pb-4">
-                <div className="flex items-center gap-4 md:hidden">
-                  <button
-                    onClick={handlePrev}
-                    className="py-1.5 px-3 bg-white/15 active:bg-white/20 rounded-md text-white font-bold"
-                  >
-                    Prev
-                  </button>
-                  <span className="font-bold">
-                    {lightboxActiveIndex + 1} / {previewPages.length}
-                  </span>
-                  <button
-                    onClick={handleNext}
-                    className="py-1.5 px-3 bg-white/15 active:bg-white/20 rounded-md text-white font-bold"
-                  >
-                    Next
-                  </button>
-                </div>
-                <div className="hidden md:block text-[10px] font-medium tracking-wide">
-                  Use <kbd className="px-1.5 py-0.5 bg-white/15 rounded text-[8px] font-mono">←</kbd> and{" "}
-                  <kbd className="px-1.5 py-0.5 bg-white/15 rounded text-[8px] font-mono">→</kbd> keys to navigate,{" "}
-                  <kbd className="px-1.5 py-0.5 bg-white/15 rounded text-[8px] font-mono">ESC</kbd> to close.
-                </div>
-              </div>
-            </div>
-          );
-        })()
-      )}
     </div>
   )
 }

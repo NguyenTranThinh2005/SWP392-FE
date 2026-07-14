@@ -43,17 +43,17 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
     e.preventDefault()
 
     if (!formName.trim() || !formUsername.trim() || !formEmail.trim() || !formPassword) {
-      toast.error('Vui lòng điền đầy đủ các thông tin bắt buộc.')
+      toast.error('Please fill in all required fields.')
       return
     }
 
     if (formPassword !== formConfirmPassword) {
-      toast.error('Mật khẩu và xác nhận mật khẩu không khớp.')
+      toast.error('Passwords do not match.')
       return
     }
 
     if (formPassword.length < 8) {
-      toast.error('Mật khẩu phải có độ dài ít nhất 8 ký tự.')
+      toast.error('Password must be at least 8 characters long.')
       return
     }
 
@@ -61,7 +61,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
     try {
       const selectedRoleObj = rolesList.find(r => r.roleId === formRoleId)
       if (!selectedRoleObj) {
-        toast.error('Vui lòng chọn vai trò hệ thống hợp lệ.')
+        toast.error('Please select a valid system role.')
         return
       }
       const selectedRoleName = selectedRoleObj.roleName
@@ -76,7 +76,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
         assignedFromUserId: isMangaka && formEditorId.trim() ? formEditorId.trim() : undefined
       })
 
-      toast.success(`Tài khoản "${formName}" đã được tạo thành công!`)
+      toast.success(`Account "${formName}" created successfully!`)
 
       // Reset Form
       setFormName('')
@@ -90,7 +90,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
 
       onSuccess()
     } catch (err: any) {
-      toast.error(err.message || 'Tạo tài khoản thất bại.')
+      toast.error(err.message || 'Failed to create account.')
     } finally {
       setSubmitting(false)
     }
@@ -100,7 +100,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
     <Card className="max-w-2xl mx-auto p-6 bg-card border border-border rounded-xl shadow-lg animate-in fade-in duration-200">
       <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
         <UserPlus className="w-5 h-5 text-primary" />
-        <h2 className="text-lg font-bold text-foreground">Tạo tài khoản người dùng mới</h2>
+        <h2 className="text-lg font-bold text-foreground">Create New User Account</h2>
       </div>
 
       <form onSubmit={handleCreateAccount} className="space-y-4">
@@ -108,11 +108,11 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
           {/* Full Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <UserIcon className="w-3.5 h-3.5" /> Họ và tên <span className="text-destructive">*</span>
+              <UserIcon className="w-3.5 h-3.5" /> Full Name <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
-              placeholder="Ví dụ: Takeshi Obata"
+              placeholder="Example: Takeshi Obata"
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground placeholder:text-muted-foreground/40 focus:border-primary/50"
@@ -123,11 +123,11 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
           {/* Username */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <UserIcon className="w-3.5 h-3.5" /> Tên tài khoản <span className="text-destructive">*</span>
+              <UserIcon className="w-3.5 h-3.5" /> Username <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
-              placeholder="Ví dụ: obata_mangaka"
+              placeholder="Example: obata_mangaka"
               value={formUsername}
               onChange={(e) => setFormUsername(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground placeholder:text-muted-foreground/40 focus:border-primary/50"
@@ -143,7 +143,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
           </label>
           <input
             type="email"
-            placeholder="Ví dụ: obata@mangaflow.com"
+            placeholder="Example: obata@mangaflow.com"
             value={formEmail}
             onChange={(e) => setFormEmail(e.target.value)}
             className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground placeholder:text-muted-foreground/40 focus:border-primary/50"
@@ -155,7 +155,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
           {/* Select Role */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Vai trò hệ thống <span className="text-destructive">*</span>
+              System Role <span className="text-destructive">*</span>
             </label>
             <select
               value={formRoleId}
@@ -165,7 +165,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
               }}
               className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer focus:border-primary/50"
             >
-              <option value="" disabled>-- Chọn Vai Trò --</option>
+              <option value="" disabled>-- Select Role --</option>
               {rolesList.map(r => (
                 <option key={r.roleId} value={r.roleId}>{r.roleName}</option>
               ))}
@@ -176,7 +176,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
           {isMangakaSelected && (
             <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-200">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                <LinkIcon className="w-3.5 h-3.5 text-primary" /> Chọn Tantou Editor Phụ Trách <span className="text-destructive">*</span>
+                <LinkIcon className="w-3.5 h-3.5 text-primary" /> Select Responsible Tantou Editor <span className="text-destructive">*</span>
               </label>
               <select
                 value={formEditorId}
@@ -184,7 +184,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
                 className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer focus:border-primary/50"
                 required
               >
-                <option value="">-- Chọn Tantou Editor --</option>
+                <option value="">-- Select Tantou Editor --</option>
                 {editors.map(ed => (
                   <option key={ed.id} value={ed.id}>{ed.name} ({ed.username})</option>
                 ))}
@@ -197,7 +197,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
           {/* Password */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Mật khẩu <span className="text-destructive">*</span>
+              Password <span className="text-destructive">*</span>
             </label>
             <input
               type="password"
@@ -212,7 +212,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
           {/* Confirm Password */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Xác nhận Mật khẩu <span className="text-destructive">*</span>
+              Confirm Password <span className="text-destructive">*</span>
             </label>
             <input
               type="password"
@@ -231,7 +231,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
           disabled={submitting}
           className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl mt-4 cursor-pointer transition-all"
         >
-          {submitting ? 'Đang tạo...' : 'Tạo tài khoản mới'}
+          {submitting ? 'Creating...' : 'Create New Account'}
         </Button>
       </form>
     </Card>

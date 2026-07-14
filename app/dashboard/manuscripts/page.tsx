@@ -203,10 +203,10 @@ export default function ManuscriptsPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-foreground">
-                      Bản thảo đã nộp (Manuscript File)
+                      Submitted Manuscript (Manuscript File)
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      Tập tin đính kèm của Mangaka cho phiên bản {activeManuscript.latestVersion}
+                      Attached file from Mangaka for version {activeManuscript.latestVersion}
                     </p>
                   </div>
                 </div>
@@ -235,13 +235,13 @@ export default function ManuscriptsPage() {
                         rel="noreferrer"
                         className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-extrabold rounded-lg transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
                       >
-                        <Download className="w-4 h-4" /> Tải về Bản thảo
+                        <Download className="w-4 h-4" /> Download Manuscript
                       </a>
                     </div>
                   </div>
                 ) : (
                   <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-lg text-xs text-amber-600 font-medium">
-                    Không tìm thấy liên kết file cho phiên bản này.
+                    No file link found for this version.
                   </div>
                 )}
               </Card>
@@ -377,10 +377,10 @@ export default function ManuscriptsPage() {
           {/* Status Tabs Menu */}
           <div className="flex border-b border-border">
             {[
-              { id: 'ALL', label: 'Tất cả Bản thảo' },
-              { id: 'SUBMITTED', label: 'Chờ Duyệt' },
-              { id: 'APPROVED', label: 'Đã Phê Duyệt' },
-              { id: 'REVISION REQUIRED', label: 'Yêu Cầu Sửa Đổi' }
+              { id: 'ALL', label: 'All Manuscripts' },
+              { id: 'SUBMITTED', label: 'Pending Review' },
+              { id: 'APPROVED', label: 'Approved' },
+              { id: 'REVISION REQUIRED', label: 'Revision Required' }
             ].map((tab) => (
               <button
                 key={tab.id}

@@ -55,7 +55,7 @@ export default function AssignEditorModal({
           setSelectedEditorId(activeAssignment?.fromUserId || mangaka.editorId || '')
         })
         .catch((err: any) => {
-          toast.error(err.message || 'Không thể tải lịch sử gán Editor.')
+          toast.error(err.message || 'Failed to load editor assignment history.')
         })
         .finally(() => {
           setLoadingHistory(false)
@@ -67,22 +67,22 @@ export default function AssignEditorModal({
     e.preventDefault()
     if (!mangaka) return
     if (!selectedEditorId) {
-      toast.error('Vui lòng chọn Tantou Editor mới.')
+      toast.error('Please select a new Tantou Editor.')
       return
     }
     if (!activeAssignmentId) {
-      toast.error('Không tìm thấy assignment hiện tại để đổi Editor.')
+      toast.error('Current assignment not found to change Editor.')
       return
     }
 
     setIsReassigning(true)
     try {
       await userService.assignEditorToMangaka(mangaka.id, selectedEditorId, activeAssignmentId)
-      toast.success(`Đã gán Editor thành công cho Mangaka ${mangaka.name}!`)
+      toast.success(`Successfully assigned Editor to Mangaka ${mangaka.name}!`)
       onSuccess()
       onClose()
     } catch (err: any) {
-      toast.error(err.message || 'Đã xảy ra lỗi khi gán Editor.')
+      toast.error(err.message || 'An error occurred while assigning Editor.')
     } finally {
       setIsReassigning(false)
     }
@@ -90,7 +90,7 @@ export default function AssignEditorModal({
 
   const formatDateTime = (value?: string | null) => {
     if (!value) return '—'
-    return new Date(value).toLocaleString('vi-VN', {
+    return new Date(value).toLocaleString('en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -106,18 +106,18 @@ export default function AssignEditorModal({
       <DialogContent className="bg-card border border-border rounded-xl max-w-2xl p-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-foreground">
-            Gán Tantou Editor Phụ Trách
+            Assign Responsible Tantou Editor
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleConfirmAssignment} className="space-y-4 pt-3">
           <div className="bg-muted/40 p-3.5 rounded-xl border border-border/50 text-xs space-y-1.5">
-            <p className="text-muted-foreground">Mangaka được chọn:</p>
+            <p className="text-muted-foreground">Selected Mangaka:</p>
             <p className="font-bold text-foreground text-sm">{mangaka.name} ({mangaka.email})</p>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Chọn Tantou Editor
+              Select Tantou Editor
             </label>
             <select
               value={selectedEditorId}
@@ -125,7 +125,7 @@ export default function AssignEditorModal({
               disabled={isReassigning || loadingHistory}
               className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
             >
-              <option value="" disabled>-- Chọn Tantou Editor mới --</option>
+              <option value="" disabled>-- Select new Tantou Editor --</option>
               {editors.map(ed => (
                 <option key={ed.id} value={ed.id}>{ed.name} ({ed.username})</option>
               ))}
@@ -135,7 +135,7 @@ export default function AssignEditorModal({
           <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Lịch sử gán Editor
+                Editor Assignment History
               </p>
               {activeAssignmentId && (
                 <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-bold">
@@ -145,10 +145,10 @@ export default function AssignEditorModal({
             </div>
 
             {loadingHistory ? (
-              <p className="text-xs text-muted-foreground">Đang tải lịch sử gán...</p>
+              <p className="text-xs text-muted-foreground">Loading assignment history...</p>
             ) : assignmentHistory.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Chưa có dữ liệu assignment cho Mangaka này.
+                No assignment data available for this Mangaka.
               </p>
             ) : (
               <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
@@ -169,12 +169,12 @@ export default function AssignEditorModal({
                           ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-bold"
                           : "bg-muted text-muted-foreground border border-border text-[10px] font-bold"
                         }>
-                          {isActive ? 'Đang gán' : 'Đã kết thúc'}
+                          {isActive ? 'Assigned' : 'Ended'}
                         </Badge>
                       </div>
                       <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-muted-foreground">
-                        <span>Gán: {formatDateTime(item.assignedAt)}</span>
-                        <span>Kết thúc: {formatDateTime(item.unassignedAt)}</span>
+                        <span>Assigned: {formatDateTime(item.assignedAt)}</span>
+                        <span>Ended: {formatDateTime(item.unassignedAt)}</span>
                       </div>
                     </div>
                   )
@@ -184,7 +184,7 @@ export default function AssignEditorModal({
           </div>
 
           <Button type="submit" disabled={isReassigning || loadingHistory || !selectedEditorId || !activeAssignmentId} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl mt-2 cursor-pointer transition-all">
-            {isReassigning ? 'Đang đổi Editor...' : 'Xác nhận đổi Editor'}
+            {isReassigning ? 'Changing Editor...' : 'Confirm Editor Change'}
           </Button>
         </form>
       </DialogContent>

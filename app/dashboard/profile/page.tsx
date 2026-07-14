@@ -39,7 +39,7 @@ export default function ProfilePage() {
     // Limit file size (5MB max)
     const maxSize = 5 * 1024 * 1024
     if (file.size > maxSize) {
-      toast.error('Ảnh đại diện không được vượt quá 5MB.')
+      toast.error('Avatar image must not exceed 5MB.')
       return
     }
 
@@ -49,9 +49,9 @@ export default function ProfilePage() {
       setUser(response.data)
       // Trigger update on header and other components
       window.dispatchEvent(new Event('user-profile-updated'))
-      toast.success(response.message || 'Cập nhật ảnh đại diện thành công!')
+      toast.success(response.message || 'Avatar updated successfully!')
     } catch (err: any) {
-      toast.error(err.message || 'Cập nhật ảnh đại diện thất bại.')
+      toast.error(err.message || 'Failed to update avatar.')
     } finally {
       setUpdatingAvatar(false)
       // Reset input value to allow selecting same file again
@@ -88,7 +88,7 @@ export default function ProfilePage() {
       })
       .catch((err) => {
         console.error("Failed to load user profile", err)
-        toast.error("Không thể tải thông tin tài khoản.")
+        toast.error("Failed to load user account information.")
       })
       .finally(() => {
         setLoading(false)
@@ -99,12 +99,12 @@ export default function ProfilePage() {
     e.preventDefault()
     
     if (!displayName.trim()) {
-      toast.error("Tên hiển thị không được để trống.")
+      toast.error("Display name cannot be empty.")
       return
     }
     
     if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
-      toast.error("Email không hợp lệ.")
+      toast.error("Invalid email address.")
       return
     }
 
@@ -126,9 +126,9 @@ export default function ProfilePage() {
       
       // Dispatch event to update header in real-time
       window.dispatchEvent(new Event('user-profile-updated'))
-      toast.success(response.message || "Cập nhật thông tin cá nhân thành công!")
+      toast.success(response.message || "Personal profile updated successfully!")
     } catch (err: any) {
-      toast.error(err.message || "Cập nhật thông tin thất bại.")
+      toast.error(err.message || "Failed to update profile info.")
     } finally {
       setUpdatingProfile(false)
     }
@@ -138,17 +138,17 @@ export default function ProfilePage() {
     e.preventDefault()
 
     if (!currentPassword) {
-      toast.error("Vui lòng nhập mật khẩu hiện tại.")
+      toast.error("Please enter your current password.")
       return
     }
 
     if (newPassword.length < 6) {
-      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự.")
+      toast.error("New password must be at least 6 characters long.")
       return
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error("Xác nhận mật khẩu mới không khớp.")
+      toast.error("Confirm new password does not match.")
       return
     }
 
@@ -159,7 +159,7 @@ export default function ProfilePage() {
         newPassword
       })
 
-      toast.success("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.")
+      toast.success("Password changed successfully! Redirecting to login...")
       
       // Session invalidated on backend, clean session and redirect to login
       setTimeout(async () => {
@@ -169,7 +169,7 @@ export default function ProfilePage() {
         router.push('/login')
       }, 1500)
     } catch (err: any) {
-      toast.error(err.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.")
+      toast.error(err.message || "Failed to change password. Please check your current password.")
     } finally {
       setChangingPassword(false)
     }
@@ -179,7 +179,7 @@ export default function ProfilePage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="ml-2.5 text-sm text-muted-foreground">Đang tải thông tin tài khoản...</span>
+        <span className="ml-2.5 text-sm text-muted-foreground">Loading account profile...</span>
       </div>
     )
   }
@@ -194,7 +194,7 @@ export default function ProfilePage() {
   }
 
   const formattedDate = user?.id && user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : ''
 
   return (
@@ -202,10 +202,10 @@ export default function ProfilePage() {
       {/* Page Header */}
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-          Hồ Sơ Cá Nhân
+          Personal Profile
         </h1>
         <p className="text-sm text-muted-foreground">
-          Quản lý thông tin tài khoản và thay đổi mật khẩu của bạn.
+          Manage your account profile details and login password.
         </p>
       </div>
 
@@ -235,14 +235,14 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Hover Trigger Overlay (only if not currently uploading) */}
+              {/* Hover Trigger Overlay */}
               {!updatingAvatar && (
                 <label
                   htmlFor="avatar-upload"
                   className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
                 >
                   <UserIcon className="w-5 h-5" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">Đổi ảnh</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider">Change</span>
                 </label>
               )}
             </div>
@@ -273,11 +273,11 @@ export default function ProfilePage() {
           <div className="w-full pt-4 border-t border-border/60 space-y-3 text-left">
             <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
               <Calendar className="w-4 h-4 text-muted-foreground/60 shrink-0" />
-              <span>Thành viên từ: {formattedDate || 'Chưa cập nhật'}</span>
+              <span>Member since: {formattedDate || 'Not updated'}</span>
             </div>
             <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
               <Shield className="w-4 h-4 text-muted-foreground/60 shrink-0" />
-              <span>Quyền hạn: {user?.role}</span>
+              <span>Role Privilege: {user?.role}</span>
             </div>
           </div>
         </div>
@@ -296,7 +296,7 @@ export default function ProfilePage() {
               )}
             >
               <UserIcon className="w-4 h-4" />
-              Thông tin cá nhân
+              Profile Details
             </button>
             <button
               onClick={() => setActiveTab('password')}
@@ -308,7 +308,7 @@ export default function ProfilePage() {
               )}
             >
               <Lock className="w-4 h-4" />
-              Đổi mật khẩu
+              Change Password
             </button>
           </div>
 
@@ -317,22 +317,22 @@ export default function ProfilePage() {
             {activeTab === 'info' ? (
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                 <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-foreground">Thông tin cơ bản</h3>
-                  <p className="text-xs text-muted-foreground">Cập nhật tên hiển thị và địa chỉ email của bạn.</p>
+                  <h3 className="text-lg font-bold text-foreground">Basic Info</h3>
+                  <p className="text-xs text-muted-foreground">Update your account name and email address.</p>
                 </div>
 
                 <div className="space-y-4">
                   {/* Display Name */}
                   <div className="space-y-2">
                     <Label htmlFor="displayName">
-                      <UserIcon className="w-4 h-4 text-muted-foreground" />
-                      Tên hiển thị
+                       <UserIcon className="w-4 h-4 text-muted-foreground" />
+                       Display Name
                     </Label>
                     <Input
                       id="displayName"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Nhập tên hiển thị mới"
+                      placeholder="Enter new display name"
                       required
                       className="rounded-xl h-10"
                     />
@@ -342,14 +342,14 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     <Label htmlFor="email">
                       <Mail className="w-4 h-4 text-muted-foreground" />
-                      Email
+                      Email Address
                     </Label>
                     <Input
                       id="email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Nhập địa chỉ email"
+                      placeholder="Enter email address"
                       required
                       className="rounded-xl h-10"
                     />
@@ -359,7 +359,7 @@ export default function ProfilePage() {
                   <div className="space-y-2 opacity-75">
                     <Label>
                       <Shield className="w-4 h-4 text-muted-foreground" />
-                      Tên đăng nhập (Username)
+                      Username
                     </Label>
                     <div className="h-10 w-full rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground select-none cursor-not-allowed">
                       {user?.name?.toLowerCase().replace(/\s+/g, '_') || 'user_profile'}
@@ -376,10 +376,10 @@ export default function ProfilePage() {
                     {updatingProfile ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Đang lưu...
+                        Saving...
                       </>
                     ) : (
-                      'Lưu thay đổi'
+                      'Save Changes'
                     )}
                   </Button>
                 </div>
@@ -387,29 +387,29 @@ export default function ProfilePage() {
             ) : (
               <form onSubmit={handleChangePassword} className="space-y-6">
                 <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-foreground">Đổi mật khẩu tài khoản</h3>
-                  <p className="text-xs text-muted-foreground">Thay đổi mật khẩu đăng nhập để bảo mật tài khoản tốt hơn.</p>
+                  <h3 className="text-lg font-bold text-foreground">Change Password</h3>
+                  <p className="text-xs text-muted-foreground">Change your account password to secure your credentials.</p>
                 </div>
 
                 {/* Warning Alert */}
                 <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-3 text-amber-600 dark:text-amber-500 text-xs">
                   <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold">Lưu ý quan trọng: </span>
-                    Khi đổi mật khẩu thành công, tất cả các phiên đăng nhập khác của bạn trên các thiết bị sẽ bị đăng xuất tự động. Bạn sẽ cần phải đăng nhập lại với mật khẩu mới.
+                    <span className="font-bold">Important note: </span>
+                    Upon successful password change, you will be automatically logged out of all active sessions and will need to log back in.
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   {/* Current Password */}
                   <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Mật khẩu hiện tại</Label>
+                    <Label htmlFor="currentPassword">Current Password</Label>
                     <Input
                       id="currentPassword"
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Nhập mật khẩu hiện tại"
+                      placeholder="Enter current password"
                       required
                       className="rounded-xl h-10"
                     />
@@ -417,13 +417,13 @@ export default function ProfilePage() {
 
                   {/* New Password */}
                   <div className="space-y-2">
-                    <Label htmlFor="newPassword">Mật khẩu mới</Label>
+                    <Label htmlFor="newPassword">New Password</Label>
                     <Input
                       id="newPassword"
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Tối thiểu 6 ký tự"
+                      placeholder="At least 6 characters"
                       required
                       className="rounded-xl h-10"
                     />
@@ -431,13 +431,13 @@ export default function ProfilePage() {
 
                   {/* Confirm Password */}
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Xác nhận mật khẩu mới</Label>
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
                     <Input
                       id="confirmPassword"
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Nhập lại mật khẩu mới"
+                      placeholder="Confirm your new password"
                       required
                       className="rounded-xl h-10"
                     />
@@ -453,10 +453,10 @@ export default function ProfilePage() {
                     {changingPassword ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Đang xử lý...
+                        Saving...
                       </>
                     ) : (
-                      'Thay đổi mật khẩu'
+                      'Change Password'
                     )}
                   </Button>
                 </div>

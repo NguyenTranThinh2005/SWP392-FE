@@ -27,7 +27,7 @@ export default function ViewUserModal({ isOpen, onClose, user, getEditorName }: 
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
             <Info className="w-5 h-5 text-primary" />
-            Chi tiết tài khoản
+            Account Details
           </DialogTitle>
         </DialogHeader>
 
@@ -47,12 +47,12 @@ export default function ViewUserModal({ isOpen, onClose, user, getEditorName }: 
           </div>
 
           <div className="grid grid-cols-3 gap-2 border-t border-border/50 pt-3">
-            <span className="text-muted-foreground font-semibold">Họ và tên:</span>
+            <span className="text-muted-foreground font-semibold">Full Name:</span>
             <span className="col-span-2 text-foreground font-bold">{user.name}</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <span className="text-muted-foreground font-semibold">Tên tài khoản:</span>
+            <span className="text-muted-foreground font-semibold">Username:</span>
             <span className="col-span-2 text-foreground font-mono">{user.username}</span>
           </div>
 
@@ -62,7 +62,7 @@ export default function ViewUserModal({ isOpen, onClose, user, getEditorName }: 
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <span className="text-muted-foreground font-semibold">Vai trò:</span>
+            <span className="text-muted-foreground font-semibold">Role:</span>
             <span className="col-span-2">
               <Badge className="bg-primary/10 text-primary border-primary/20 font-bold text-xs px-2.5 py-0.5 rounded-full border">
                 {user.role}
@@ -71,9 +71,9 @@ export default function ViewUserModal({ isOpen, onClose, user, getEditorName }: 
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <span className="text-muted-foreground font-semibold">Ngày tạo:</span>
+            <span className="text-muted-foreground font-semibold">Created Date:</span>
             <span className="col-span-2 text-foreground">
-              {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN', {
+              {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
@@ -85,21 +85,21 @@ export default function ViewUserModal({ isOpen, onClose, user, getEditorName }: 
 
           {user.role === 'Mangaka' && (
             <div className="grid grid-cols-3 gap-2">
-              <span className="text-muted-foreground font-semibold">Editor phụ trách:</span>
+              <span className="text-muted-foreground font-semibold">Responsible Editor:</span>
               <span className="col-span-2 text-foreground font-bold">{getEditorName(user.editorId)}</span>
             </div>
           )}
 
           <div className="grid grid-cols-3 gap-2">
-            <span className="text-muted-foreground font-semibold">Trạng thái:</span>
+            <span className="text-muted-foreground font-semibold">Status:</span>
             <span className="col-span-2">
               {user.status === 'Active' ? (
                 <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20 font-bold text-xs px-2.5 py-0.5 rounded-full">
-                  Hoạt động
+                  Active
                 </Badge>
               ) : (
                 <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-500 border border-rose-500/20 font-bold text-xs px-2.5 py-0.5 rounded-full">
-                  Đã khóa
+                  Locked
                 </Badge>
               )}
             </span>
@@ -110,7 +110,7 @@ export default function ViewUserModal({ isOpen, onClose, user, getEditorName }: 
               onClick={onClose}
               className="px-5 py-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded-xl cursor-pointer"
             >
-              Đóng
+              Close
             </Button>
           </div>
         </div>

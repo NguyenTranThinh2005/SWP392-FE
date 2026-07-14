@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useRole } from '@/context/RoleContext'
 import Image from 'next/image'
 import {
@@ -10,11 +9,6 @@ import {
   PencilLine,
   Layers,
   ClipboardList,
-  BarChart3,
-  Menu,
-  X,
-  ChevronDown,
-  FileSpreadsheet,
   UserPlus,
   LayoutDashboard,
   Trophy,
@@ -24,49 +18,47 @@ import {
 
 function SidebarInner() {
   const pathname = usePathname()
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const { role, setRole } = useRole()
-  const [isOpen, setIsOpen] = useState(false)
+  const { role } = useRole()
 
   const menuItems = {
     Mangaka: [
-      { label: 'Bảng điều khiển', href: '/dashboard/mangaka', icon: LayoutDashboard },
-      { label: 'Danh sách truyện', href: '/dashboard/manga-list', icon: BookOpen },
-      { label: 'Đề xuất của tôi', href: '/dashboard/series', icon: PencilLine },
-      { label: 'Tạo đề xuất mới', href: '/dashboard/series/new', icon: UserPlus },
-      { label: 'Bản thảo', href: '/dashboard/manuscripts', icon: Layers },
-      { label: 'Chương & Nhiệm vụ', href: '/dashboard/chapters', icon: ClipboardList },
-      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
-      { label: 'Lịch sử lương', href: '/dashboard/salary', icon: Wallet },
+      { label: 'Dashboard', href: '/dashboard/mangaka', icon: LayoutDashboard },
+      { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
+      { label: 'My Proposals', href: '/dashboard/series', icon: PencilLine },
+      { label: 'Create New Proposal', href: '/dashboard/series/new', icon: UserPlus },
+      { label: 'Manuscripts', href: '/dashboard/manuscripts', icon: Layers },
+      { label: 'Chapters & Tasks', href: '/dashboard/chapters', icon: ClipboardList },
+      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Salary History', href: '/dashboard/salary', icon: Wallet },
     ],
     Assistant: [
-      { label: 'Bảng điều khiển', href: '/dashboard/assistant', icon: LayoutDashboard },
-      { label: 'Danh sách truyện', href: '/dashboard/manga-list', icon: BookOpen },
-      { label: 'Nhiệm vụ của tôi', href: '/dashboard/chapters', icon: ClipboardList },
-      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
-      { label: 'Lịch sử lương', href: '/dashboard/salary', icon: Wallet },
+      { label: 'Dashboard', href: '/dashboard/assistant', icon: LayoutDashboard },
+      { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
+      { label: 'My Tasks', href: '/dashboard/chapters', icon: ClipboardList },
+      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Salary History', href: '/dashboard/salary', icon: Wallet },
     ],
     TantouEditor: [
-      { label: 'Bảng điều khiển', href: '/dashboard/tantou-editor?tab=dashboard', icon: LayoutDashboard },
-      { label: 'Tác phẩm', href: '/dashboard/tantou-editor?tab=series', icon: BookOpen },
-      { label: 'Duyệt đề xuất', href: '/dashboard/tantou-editor?tab=proposals', icon: ClipboardList },
-      { label: 'Bản thảo', href: '/dashboard/tantou-editor?tab=manuscripts', icon: Layers },
-      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Dashboard', href: '/dashboard/tantou-editor?tab=dashboard', icon: LayoutDashboard },
+      { label: 'Series', href: '/dashboard/tantou-editor?tab=series', icon: BookOpen },
+      { label: 'Approve Proposals', href: '/dashboard/tantou-editor?tab=proposals', icon: ClipboardList },
+      { label: 'Manuscripts', href: '/dashboard/tantou-editor?tab=manuscripts', icon: Layers },
+      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
     ],
     EditorialBoard: [
-      { label: 'Danh sách truyện', href: '/dashboard/manga-list', icon: BookOpen },
-      { label: 'Duyệt đề xuất', href: '/dashboard/reviews', icon: PencilLine },
-      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
+      { label: 'Review Proposals', href: '/dashboard/reviews', icon: PencilLine },
+      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
     ],
     EditorInChief: [
-      { label: 'Bảng điều khiển', href: '/dashboard/editor-in-chief', icon: LayoutDashboard },
-      { label: 'Danh sách truyện', href: '/dashboard/manga-list', icon: BookOpen },
-      { label: 'Duyệt đề xuất', href: '/dashboard/reviews', icon: PencilLine },
-      { label: 'Xếp hạng', href: '/dashboard/ranking', icon: Trophy },
+      { label: 'Dashboard', href: '/dashboard/editor-in-chief', icon: LayoutDashboard },
+      { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
+      { label: 'Review Proposals', href: '/dashboard/reviews', icon: PencilLine },
+      { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },
     ],
     Admin: [
-      { label: 'Quản lý tài khoản', href: '/dashboard/admin', icon: Users },
+      { label: 'Account Management', href: '/dashboard/admin', icon: Users },
     ],
   }
 
@@ -92,7 +84,7 @@ function SidebarInner() {
         {/* Navigation Items */}
         <div className="space-y-1">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2.5 mb-2">
-            Tính năng chính
+            Main Features
           </p>
           <nav className="space-y-1">
             {currentLinks.map((item) => {
@@ -113,7 +105,6 @@ function SidebarInner() {
                     ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
-                  onClick={() => setIsOpen(false)}
                 >
                   <Icon className={`w-4 h-4 transition-transform group-hover:scale-105 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'}`} />
                   {item.label}
@@ -127,49 +118,9 @@ function SidebarInner() {
   )
 
   return (
-    <>
-      {/* Mobile Top Header */}
-      <header className="lg:hidden h-14 bg-card border-b border-border flex items-center justify-between px-4 sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/logo.svg"
-            alt="MangaFlow Logo"
-            width={28}
-            height={28}
-            className="object-contain"
-          />
-          <span className="font-extrabold text-sm tracking-tight text-foreground">
-            MangaFlow
-          </span>
-        </div>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-        >
-          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </header>
-
-      {/* Mobile Sidebar Overlay Drawer */}
-      {isOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 flex">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
-          />
-          {/* Drawer content */}
-          <aside className="relative w-64 h-full flex flex-col z-50">
-            <SidebarContent />
-          </aside>
-        </div>
-      )}
-
-      {/* Desktop Sidebar (Permanent left) */}
-      <aside className="hidden lg:flex lg:w-64 lg:h-screen lg:flex-col lg:sticky lg:top-0 lg:z-30 shrink-0">
-        <SidebarContent />
-      </aside>
-    </>
+    <aside className="flex w-64 h-screen flex-col sticky top-0 z-30 shrink-0">
+      <SidebarContent />
+    </aside>
   )
 }
 

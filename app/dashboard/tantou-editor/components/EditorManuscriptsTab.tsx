@@ -8,27 +8,23 @@ import {
   Download,
   AlertTriangle,
   CheckCircle2,
-  FileCheck,
-  XCircle
+  FileCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { manuscriptService } from '@/services/manuscriptService'
 import { chapterService } from '@/services/chapterService'
 import type { ManuscriptItem, Annotation } from '@/types/manuscript'
-import { type Chapter } from '@/lib/chapters-store'
 import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
 
 interface EditorManuscriptsTabProps {
   manuscripts: ManuscriptItem[]
   supervisedSeries: any[]
-  chapters: Chapter[]
   onRefresh: () => void
 }
 
 export default function EditorManuscriptsTab({
   manuscripts,
   supervisedSeries,
-  chapters,
   onRefresh
 }: EditorManuscriptsTabProps) {
   const [activeManuscriptId, setActiveManuscriptId] = useState<string | null>(null)
@@ -207,10 +203,10 @@ export default function EditorManuscriptsTab({
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-foreground">
-                      Bản thảo đã nộp (Manuscript File)
+                      Submitted Manuscript (Manuscript File)
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      Tập tin đính kèm của Mangaka cho phiên bản {activeManuscript.latestVersion}
+                      Attached file from Mangaka for version {activeManuscript.latestVersion}
                     </p>
                   </div>
                 </div>
@@ -239,13 +235,13 @@ export default function EditorManuscriptsTab({
                         rel="noreferrer"
                         className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-extrabold rounded-lg transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
                       >
-                        <Download className="w-4 h-4" /> Tải về Bản thảo
+                        <Download className="w-4 h-4" /> Download Manuscript
                       </a>
                     </div>
                   </div>
                 ) : (
                   <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-lg text-xs text-amber-600 font-medium">
-                    Không tìm thấy liên kết file cho phiên bản này.
+                    No file link found for this version.
                   </div>
                 )}
               </div>

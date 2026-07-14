@@ -7,8 +7,7 @@ import {
   FileText,
   ChevronRight,
   PencilLine,
-  Sparkles,
-  Users
+  Sparkles
 } from 'lucide-react'
 
 interface EditorDashboardTabProps {
@@ -25,7 +24,7 @@ export default function EditorDashboardTab({
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       <div>
-        <h2 className="text-2xl font-black text-foreground">Tổng quan</h2>
+        <h2 className="text-2xl font-black text-foreground">Overview</h2>
       </div>
 
       {/* Stats Summary Strip */}
@@ -38,7 +37,7 @@ export default function EditorDashboardTab({
             <BookOpen className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground font-semibold">Series của tôi</p>
+            <p className="text-xs text-muted-foreground font-semibold">My Series</p>
             <p className="text-2xl font-black text-foreground leading-none mt-1">
               {stats.seriesCount}
             </p>
@@ -54,7 +53,7 @@ export default function EditorDashboardTab({
           </div>
           <div>
             <p className="text-xs text-muted-foreground font-semibold font-sans">
-              Đang chờ đánh giá
+              Pending Review
             </p>
             <p className="text-2xl font-black text-foreground leading-none mt-1">
               {stats.pendingCount}

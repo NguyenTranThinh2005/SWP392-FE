@@ -10,7 +10,6 @@ import {
 import { useRole } from '@/context/RoleContext'
 import {
   type Chapter,
-  type Task,
 } from '@/lib/chapters-store'
 import { manuscriptService } from '@/services/manuscriptService'
 import type { ManuscriptItem } from '@/types/manuscript'
@@ -37,7 +36,6 @@ function TantouEditorWorkspace() {
   // Data states
   const [seriesList, setSeriesList] = useState<any[]>([])
   const [chapters, setChapters] = useState<Chapter[]>([])
-  const [tasks, setTasks] = useState<Task[]>([])
   const [manuscripts, setManuscripts] = useState<ManuscriptItem[]>([])
 
   // Load Data function
@@ -204,12 +202,12 @@ function TantouEditorWorkspace() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-5">
         <div>
           <h1 className="text-2xl font-black text-foreground tracking-tight mt-1.5">
-            Chào mừng, <span className="text-primary">{currentUserName}</span>
+            Welcome, <span className="text-primary">{currentUserName}</span>
           </h1>
         </div>
         <div className="flex items-center gap-2 bg-card border border-border px-3.5 py-1.5 rounded-lg text-xs font-bold text-muted-foreground shadow-sm">
           <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-          Hoạt động: {assignedMangakas.length} Mangaka được gán
+          Active: {assignedMangakas.length} Assigned Mangaka{assignedMangakas.length !== 1 ? 's' : ''}
         </div>
       </div>
 
@@ -240,7 +238,6 @@ function TantouEditorWorkspace() {
         <EditorManuscriptsTab
           manuscripts={manuscripts}
           supervisedSeries={supervisedSeries}
-          chapters={chapters}
           onRefresh={triggerRefresh}
         />
       )}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { BookOpen, Filter, Search, Star, Tags, User, UserCheck } from 'lucide-react'
+import { BookOpen, Filter, Search, Star, Tags, User } from 'lucide-react'
 import { proposalService } from '@/services/proposalService'
 
 const { getProposals } = proposalService
@@ -19,7 +19,6 @@ interface Manga {
   id: string
   title: string
   author: string
-  editor: string
   genre: string[]
   type: string
   description: string
@@ -46,7 +45,6 @@ export default function MangaListPage() {
           id: proposal.id,
           title: proposal.title,
           author: proposal.author || 'Unknown Author',
-          editor: proposal.tantouEditorName || 'Chua gan editor',
           genre: proposal.genre ? proposal.genre.split(', ') : [],
           type: proposal.publicationType,
           description: proposal.synopsis,
@@ -63,8 +61,7 @@ export default function MangaListPage() {
     const query = search.toLowerCase()
     const matchesSearch =
       manga.title.toLowerCase().includes(query) ||
-      manga.author.toLowerCase().includes(query) ||
-      manga.editor.toLowerCase().includes(query)
+      manga.author.toLowerCase().includes(query)
     const matchesType = filterType === 'All' || manga.type === filterType
 
     return matchesSearch && matchesType
@@ -87,7 +84,7 @@ export default function MangaListPage() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by title, author, editor..."
+            placeholder="Search by title, author..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60"
@@ -150,10 +147,6 @@ export default function MangaListPage() {
                     <div className="flex items-center gap-1.5 min-w-0">
                       <User className="w-3.5 h-3.5 text-primary shrink-0" />
                       <span className="truncate">{manga.author}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <UserCheck className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                      <span className="truncate">{manga.editor}</span>
                     </div>
                   </div>
 

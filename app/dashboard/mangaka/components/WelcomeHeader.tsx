@@ -25,16 +25,16 @@ export default function WelcomeHeader({
       <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1.5">
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-            Chào mừng quay trở lại, {mangakaName}
+            Welcome back, {mangakaName}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Quản lý các đề xuất tác phẩm mới và theo dõi trạng thái duyệt của bạn.
+            Manage your series proposals and track their review status.
           </p>
           {assignedEditor && (
             <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 bg-primary/5 border border-primary/10 rounded-xl text-xs font-medium text-muted-foreground">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>
-                Editor phụ trách:{' '}
+                Assigned Editor:{' '}
                 <strong className="text-foreground">{assignedEditor.name}</strong>{' '}
                 {assignedEditor.email ? `(${assignedEditor.email})` : ''}
               </span>
@@ -45,7 +45,7 @@ export default function WelcomeHeader({
         {isBlocked ? (
           <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs font-semibold text-amber-600 shrink-0">
             <AlertTriangle className="w-4 h-4" />
-            Đang có đề xuất chờ duyệt — tạm khóa tạo đề xuất mới
+            Pending proposal under review — new submissions temporarily locked
           </div>
         ) : (
           <Link
@@ -53,7 +53,7 @@ export default function WelcomeHeader({
             className="inline-flex items-center gap-2 shrink-0 bg-primary text-primary-foreground font-bold text-sm px-5 py-3 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all"
           >
             <Plus className="w-4 h-4" />
-            Đề xuất mới
+            New Proposal
           </Link>
         )}
       </div>

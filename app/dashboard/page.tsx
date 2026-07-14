@@ -39,7 +39,7 @@ export default function DashboardRedirectPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <p className="text-sm text-muted-foreground animate-pulse">Đang chuyển hướng đến bảng điều khiển của bạn...</p>
+      <p className="text-sm text-muted-foreground animate-pulse">Redirecting to your dashboard...</p>
     </div>
   )
 }

@@ -14,25 +14,25 @@ interface StatsGridProps {
 export default function StatsGrid({ counts }: StatsGridProps) {
   const statsItems = [
     {
-      label: 'Tổng số đề xuất',
+      label: 'Total Proposals',
       value: counts.total,
       icon: PencilLine,
       color: 'text-foreground',
     },
     {
-      label: 'Đang duyệt',
+      label: 'Pending Review',
       value: counts.pending,
       icon: Clock,
       color: 'text-amber-600',
     },
     {
-      label: 'Đã duyệt',
+      label: 'Approved',
       value: counts.approved,
       icon: CheckCircle2,
       color: 'text-emerald-600',
     },
     {
-      label: 'Bị từ chối',
+      label: 'Rejected',
       value: counts.rejected,
       icon: XCircle,
       color: 'text-red-500',

@@ -85,7 +85,7 @@ export function ImageCommentLayer({ imageUrl, pageNo, annotations, onAddAnnotati
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
                             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                            Thêm chú thích tại điểm đã chọn
+                            Add annotation at selected point
                         </span>
                         <span className="text-[10px] font-medium text-muted-foreground">
                             (x: {Math.round(draft.x * 100)}%, y: {Math.round(draft.y * 100)}%)
@@ -95,7 +95,7 @@ export function ImageCommentLayer({ imageUrl, pageNo, annotations, onAddAnnotati
                         value={draft.text}
                         onChange={(event) => setDraft({ ...draft, text: event.target.value })}
                         className="min-h-[80px] w-full resize-none rounded-xl border border-border bg-muted/40 p-3 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
-                        placeholder="Nhập nội dung ghi chú chỉnh sửa ở đây..."
+                        placeholder="Enter edit notes here..."
                         autoFocus
                     />
                     <div className="flex justify-end gap-2">
@@ -104,14 +104,14 @@ export function ImageCommentLayer({ imageUrl, pageNo, annotations, onAddAnnotati
                             onClick={() => setDraft(null)}
                             className="px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                         >
-                            Hủy bỏ
+                            Cancel
                         </button>
                         <button
                             type="button"
                             onClick={handleSave}
                             className="rounded-lg bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
                         >
-                            Lưu ghi chú
+                            Save Note
                         </button>
                     </div>
                 </div>
@@ -121,7 +121,7 @@ export function ImageCommentLayer({ imageUrl, pageNo, annotations, onAddAnnotati
             {filteredAnnotations.length > 0 && (
                 <div className="space-y-2">
                     <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        Danh sách ghi chú ({filteredAnnotations.length})
+                        Annotation List ({filteredAnnotations.length})
                     </h4>
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {filteredAnnotations.map((annotation, index) => (

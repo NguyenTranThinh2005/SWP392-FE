@@ -20,44 +20,44 @@ const STATUS_CONFIG: Record<
   { label: string; className: string; icon: React.ElementType }
 > = {
   Draft: {
-    label: 'Bản thảo',
+    label: 'Draft',
     className: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
     icon: FileEdit,
   },
   'Pending Review': {
-    label: 'Chờ duyệt (cũ)',
+    label: 'Pending Review',
     className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
     icon: Clock,
   },
   'Under Review': {
-    label: 'Tantou đang xem xét',
+    label: 'Under Review',
     className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
     icon: Eye,
   },
   'Board Voting': {
-    label: 'Ban biên tập đang bỏ phiếu',
+    label: 'Board Voting',
     className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
     icon: Eye,
   },
   Approved: {
-    label: 'Đã duyệt',
+    label: 'Approved',
     className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
     icon: CheckCircle2,
   },
   Rejected: {
-    label: 'Bị từ chối',
+    label: 'Rejected',
     className: 'bg-red-500/10 text-red-600 border-red-500/20',
     icon: XCircle,
   },
   Active: {
-    label: 'Đã duyệt & Đang phát hành',
+    label: 'Active',
     className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
     icon: CheckCircle2,
   },
 }
 
 function formatDateShort(iso: string) {
-  return new Date(iso).toLocaleDateString('vi-VN', {
+  return new Date(iso).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -81,13 +81,13 @@ export default function RecentProposals({ proposals }: RecentProposalsProps) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-primary" />
-          <h2 className="font-bold text-sm">Đề xuất gần đây</h2>
+          <h2 className="font-bold text-sm">Recent Proposals</h2>
         </div>
         <Link
           href="/dashboard/series"
           className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors"
         >
-          Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
+          View All <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 
@@ -95,12 +95,12 @@ export default function RecentProposals({ proposals }: RecentProposalsProps) {
         {recent.length === 0 ? (
           <div className="p-10 text-center space-y-2">
             <PencilLine className="w-8 h-8 text-muted-foreground/30 mx-auto" />
-            <p className="text-sm text-muted-foreground">Chưa có đề xuất nào</p>
+            <p className="text-sm text-muted-foreground">No proposals yet</p>
             <Link
               href="/dashboard/series/new"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
             >
-              <Plus className="w-3.5 h-3.5" /> Tạo đề xuất đầu tiên của bạn
+              <Plus className="w-3.5 h-3.5" /> Create your first proposal
             </Link>
           </div>
         ) : (

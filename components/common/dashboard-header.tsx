@@ -25,15 +25,15 @@ function formatRelativeTime(isoString: string) {
   const date = new Date(isoString)
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
 
-  if (seconds < 60) return 'vừa xong'
+  if (seconds < 60) return 'just now'
 
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} phút trước`
+  if (minutes < 60) return `${minutes}m ago`
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} giờ trước`
+  if (hours < 24) return `${hours}h ago`
 
-  return date.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' })
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export function DashboardHeader() {
@@ -123,7 +123,7 @@ export function DashboardHeader() {
       {/* Left section: Welcome context */}
       <div className="flex items-center gap-3">
         <span className="text-sm font-extrabold tracking-tight text-muted-foreground capitalize">
-          Bảng điều khiển
+          Dashboard
         </span>
         <span className="text-muted-foreground/30 text-xs">/</span>
         <span className={cn(
@@ -144,7 +144,7 @@ export function DashboardHeader() {
               "p-2.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all relative border border-transparent focus:outline-none",
               isOpen && "bg-muted text-foreground border-border/40"
             )}
-            aria-label="Mở thông báo"
+            aria-label="Open notifications"
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
@@ -160,10 +160,10 @@ export function DashboardHeader() {
               {/* Header */}
               <div className="flex items-center justify-between p-3.5 border-b border-border/60">
                 <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-sm text-foreground">Thông báo & Cảnh báo</span>
+                  <span className="font-extrabold text-sm text-foreground">Notifications & Alerts</span>
                   {unreadCount > 0 && (
                     <span className="bg-red-500/10 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {unreadCount} mới
+                      {unreadCount} new
                     </span>
                   )}
                 </div>
@@ -173,16 +173,16 @@ export function DashboardHeader() {
                     <button
                       onClick={markAllRead}
                       className="p-1.5 text-[10px] font-bold text-primary hover:bg-primary/5 rounded-md transition-colors flex items-center gap-1"
-                      title="Đánh dấu tất cả đã đọc"
+                      title="Mark all as read"
                     >
-                      <CheckCheck className="w-3.5 h-3.5" /> Đọc tất cả
+                      <CheckCheck className="w-3.5 h-3.5" /> Read all
                     </button>
                     <button
                       onClick={clearAll}
                       className="p-1.5 text-[10px] font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-md transition-colors flex items-center gap-1"
-                      title="Xóa tất cả"
+                      title="Clear all"
                     >
-                      <Trash2 className="w-3.5 h-3.5" /> Xóa sạch
+                      <Trash2 className="w-3.5 h-3.5" /> Clear all
                     </button>
                   </div>
                 )}
@@ -232,8 +232,8 @@ export function DashboardHeader() {
                       <Bell className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-foreground">Tất cả đã hoàn tất!</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Không có thông báo mới cho {role} vào lúc này.</p>
+                      <p className="text-xs font-bold text-foreground">All caught up!</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">No new notifications for {role} at the moment.</p>
                     </div>
                   </div>
                 )}
@@ -247,7 +247,7 @@ export function DashboardHeader() {
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all relative border border-transparent focus:outline-none"
-            aria-label="Menu hồ sơ người dùng"
+            aria-label="User profile menu"
           >
             {userInfo?.avatarUrl ? (
               <img
@@ -267,7 +267,7 @@ export function DashboardHeader() {
             <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               {/* User info details */}
               <div className="px-3 py-2 border-b border-border/60">
-                <p className="text-xs font-bold text-foreground truncate">{userInfo?.name || 'Đang tải...'}</p>
+                <p className="text-xs font-bold text-foreground truncate">{userInfo?.name || 'Loading...'}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{userInfo?.email || ''}</p>
                 <div className="mt-1.5">
                   <span className={cn(
@@ -289,14 +289,14 @@ export function DashboardHeader() {
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer"
                 >
                   <User className="w-4 h-4" />
-                  Hồ sơ cá nhân
+                  Personal Profile
                 </button>
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-lg transition-all cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
-                  Đăng xuất
+                  Logout
                 </button>
               </div>
             </div>

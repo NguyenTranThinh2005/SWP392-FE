@@ -48,17 +48,17 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
     if (!user) return
 
     if (!name.trim() || !username.trim() || !email.trim() || !roleId) {
-      toast.error('Vui lòng điền đầy đủ các thông tin bắt buộc.')
+      toast.error('Please fill in all required fields.')
       return
     }
 
     if (password && password !== confirmPassword) {
-      toast.error('Mật khẩu mới và xác nhận mật khẩu không khớp.')
+      toast.error('New password and confirm password do not match.')
       return
     }
 
     if (password && password.length < 8) {
-      toast.error('Mật khẩu mới phải có độ dài ít nhất 8 ký tự.')
+      toast.error('New password must be at least 8 characters long.')
       return
     }
 
@@ -72,11 +72,11 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
         newPassword: password ? password : undefined
       })
 
-      toast.success(`Cập nhật tài khoản "${name}" thành công!`)
+      toast.success(`Successfully updated account "${name}"!`)
       onSuccess()
       onClose()
     } catch (err: any) {
-      toast.error(err.message || 'Cập nhật tài khoản thất bại.')
+      toast.error(err.message || 'Failed to update account.')
     } finally {
       setUpdating(false)
     }
@@ -90,7 +90,7 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
         <DialogHeader>
           <DialogTitle className="text-base font-extrabold text-foreground flex items-center gap-2">
             <Edit3 className="w-5 h-5 text-primary" />
-            Chỉnh sửa thông tin tài khoản
+            Edit Account Information
           </DialogTitle>
         </DialogHeader>
 
@@ -98,11 +98,11 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
           {/* Full Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Họ và tên <span className="text-destructive">*</span>
+              Full Name <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
-              placeholder="Nhập họ và tên..."
+              placeholder="Enter full name..."
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground"
@@ -113,11 +113,11 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
           {/* Username */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Tên tài khoản (Username) <span className="text-destructive">*</span>
+              Username <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
-              placeholder="Nhập tên tài khoản..."
+              placeholder="Enter username..."
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground font-mono"
@@ -128,11 +128,11 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
           {/* Email */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Địa chỉ Email <span className="text-destructive">*</span>
+              Email Address <span className="text-destructive">*</span>
             </label>
             <input
               type="email"
-              placeholder="Nhập email..."
+              placeholder="Enter email..."
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground"
@@ -143,7 +143,7 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
           {/* System Role */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Vai trò hệ thống <span className="text-destructive">*</span>
+              System Role <span className="text-destructive">*</span>
             </label>
             <select
               value={roleId}
@@ -151,7 +151,7 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
               className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
               required
             >
-              <option value="">-- Chọn vai trò --</option>
+              <option value="">-- Select role --</option>
               {rolesList.map(role => (
                 <option key={role.roleId} value={role.roleId}>{role.roleName}</option>
               ))}
@@ -161,11 +161,11 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
           {/* New Password */}
           <div className="space-y-1.5 border-t border-border/50 pt-3">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Mật khẩu mới (Tùy chọn)
+              New Password (Optional)
             </label>
             <input
               type="password"
-              placeholder="Để trống nếu không muốn đổi mật khẩu"
+              placeholder="Leave blank if you do not want to change password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground"
@@ -175,11 +175,11 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
           {/* Confirm New Password */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Xác nhận mật khẩu mới
+              Confirm New Password
             </label>
             <input
               type="password"
-              placeholder="Xác nhận mật khẩu mới..."
+              placeholder="Confirm new password..."
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground"
@@ -195,14 +195,14 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
               className="px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
               disabled={updating}
             >
-              Hủy
+              Cancel
             </Button>
             <Button
               type="submit"
               className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded-xl cursor-pointer"
               disabled={updating}
             >
-              {updating ? 'Đang cập nhật...' : 'Cập nhật tài khoản'}
+              {updating ? 'Updating...' : 'Update Account'}
             </Button>
           </div>
         </form>

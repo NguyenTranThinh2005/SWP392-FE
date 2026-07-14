@@ -495,17 +495,17 @@ export default function RankingPage() {
                       {/* Rank Cell */}
                       <TableCell className="text-center font-bold">
                         {row.rank === 1 ? (
-                          <div className="flex flex-col items-center" title="Hạng 1">
+                          <div className="flex flex-col items-center" title="Rank 1">
                             <Trophy className="w-6 h-6 text-amber-500" />
                             <span className="text-[10px] font-extrabold text-amber-600">TOP 1</span>
                           </div>
                         ) : row.rank === 2 ? (
-                          <div className="flex flex-col items-center" title="Hạng 2">
+                          <div className="flex flex-col items-center" title="Rank 2">
                             <Medal className="w-6 h-6 text-slate-400" />
                             <span className="text-[10px] font-extrabold text-slate-500">TOP 2</span>
                           </div>
                         ) : row.rank === 3 ? (
-                          <div className="flex flex-col items-center" title="Hạng 3">
+                          <div className="flex flex-col items-center" title="Rank 3">
                             <Medal className="w-6 h-6 text-orange-600" />
                             <span className="text-[10px] font-extrabold text-orange-600">TOP 3</span>
                           </div>
