@@ -102,9 +102,6 @@ export default function ProposalCard({
               <h3 className="text-lg font-extrabold text-foreground truncate group-hover:text-primary transition-colors">
                 {proposal.title}
               </h3>
-              <p className="text-xs text-muted-foreground font-mono">
-                {proposal.id}
-              </p>
             </div>
 
             <span

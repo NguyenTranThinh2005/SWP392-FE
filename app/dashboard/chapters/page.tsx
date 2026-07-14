@@ -1599,9 +1599,6 @@ const payload = {
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
-                                  {task.id}
-                                </span>
                                 <h3 className="font-bold text-sm text-foreground">
                                   {task.type} (Page {task.pages})
                                 </h3>
@@ -1759,8 +1756,7 @@ const payload = {
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between text-[9px] text-muted-foreground font-semibold pt-1">
-                          <span>Task ID: {task.id}</span>
+                        <div className="flex items-center justify-end text-[9px] text-muted-foreground font-semibold pt-1">
                           <span>Updated: {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString() : 'N/A'}</span>
                         </div>
                       </div>

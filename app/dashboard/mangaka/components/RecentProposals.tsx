@@ -132,10 +132,6 @@ export default function RecentProposals({ proposals }: RecentProposalsProps) {
                     {p.title}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      {p.id}
-                    </span>
-                    <span className="text-muted-foreground/30">•</span>
                     <CalendarDays className="w-3 h-3 text-muted-foreground/60" />
                     <span className="text-[10px] text-muted-foreground">
                       {formatDateShort(p.submittedAt ?? p.createdAt)}

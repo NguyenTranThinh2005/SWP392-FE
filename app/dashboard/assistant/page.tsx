@@ -281,9 +281,6 @@ export default function AssistantDashboardPage() {
               <div key={task.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
-                      {task.id}
-                    </span>
                     <span className="text-sm font-bold text-foreground">{task.type} (Pages {task.pages})</span>
                     {getStatusBadge(task.status)}
                   </div>

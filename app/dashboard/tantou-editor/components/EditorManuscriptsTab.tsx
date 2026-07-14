@@ -401,9 +401,6 @@ export default function EditorManuscriptsTab({
                         <h3 className="font-extrabold text-base text-foreground">
                           {m.seriesTitle} — Ch.{m.chapterNumber} "{m.chapterTitle}"
                         </h3>
-                        <span className="text-[10px] font-mono bg-muted border border-border/80 text-muted-foreground px-1.5 py-0.5 rounded">
-                          {m.id}
-                        </span>
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-1 font-semibold">
                         Latest Version: <span className="text-foreground">{m.latestVersion}</span> • Cycles: {m.history?.length || 1}
