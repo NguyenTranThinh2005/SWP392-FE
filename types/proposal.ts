@@ -11,9 +11,10 @@ export interface Proposal {
   status: ProposalStatus;
   createdAt: string;
   submittedAt?: string;
-  coverImageUrl?: string;
+  coverImagePublicUrl?: string;
   rawStatus?: string;
   sourceZipFileAssetId?: string | null;
+  sourceZipPublicUrl?: string | null;
   author?: string;
   tantouEditorName?: string;
 }

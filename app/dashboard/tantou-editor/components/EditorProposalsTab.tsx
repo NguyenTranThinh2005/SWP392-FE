@@ -206,11 +206,11 @@ export default function EditorProposalsTab({
                     </h3>
 
                     {/* Cover Artwork */}
-                    {proposal.coverImageUrl ? (
+                    {proposal.coverImagePublicUrl ? (
                       <div className="aspect-[3/4] rounded-lg overflow-hidden border border-border shadow-sm">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={proposal.coverImageUrl}
+                          src={proposal.coverImagePublicUrl}
                           alt={proposal.title}
                           className="w-full h-full object-cover"
                         />

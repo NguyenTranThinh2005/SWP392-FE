@@ -77,6 +77,7 @@ export default function UserListTab({
       })
   }, [usersList, searchTerm, roleFilter, statusFilter])
 
+  // Tính năng khóa tài khoản: Chuyển đổi trạng thái tài khoản người dùng thành Inactive (gọi DELETE /api/users/{id})
   const handleToggleStatus = async (userId: string, currentStatus: 'Active' | 'Inactive') => {
     if (currentStatus === 'Active') {
       try {

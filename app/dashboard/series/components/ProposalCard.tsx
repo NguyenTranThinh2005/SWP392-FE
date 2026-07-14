@@ -83,10 +83,10 @@ export default function ProposalCard({
       <div className="flex flex-col sm:flex-row">
         <div className="sm:w-40 md:w-48 shrink-0 bg-muted border-b sm:border-b-0 sm:border-r border-border">
           <div className="aspect-[3/4] sm:h-full sm:min-h-48 w-full overflow-hidden bg-muted flex items-center justify-center">
-            {proposal.coverImageUrl ? (
+            {proposal.coverImagePublicUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={proposal.coverImageUrl}
+                src={proposal.coverImagePublicUrl}
                 alt={proposal.title}
                 className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
               />

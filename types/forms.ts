@@ -5,7 +5,7 @@ export interface SeriesProposalFormData {
   genre: string
   publicationType: PublicationType
   description: string
-  coverImageUrl?: string
+  coverImagePublicUrl?: string
 }
 
 export interface ChapterTaskFormData {

@@ -66,9 +66,10 @@ export const mapSeriesToProposal = (s: any): Proposal => {
     status: status,
     createdAt: s.createdAt || new Date().toISOString(),
     submittedAt: s.submittedAt || s.createdAt || new Date().toISOString(),
-    coverImageUrl: s.coverImageUrl,
+    coverImagePublicUrl: s.coverImagePublicUrl || s.coverImageUrl,
     rawStatus: rawStatus,
     sourceZipFileAssetId,
+    sourceZipPublicUrl: s.sourceZipPublicUrl || null,
     author: s.author || 'Tác giả',
     tantouEditorName: s.tantouEditorName || undefined,
   };
@@ -132,7 +133,7 @@ export const proposalService = {
       publicationType: data.publicationType,
       synopsis: data.synopsis,
       sampleFileUrl: data.sampleFileUrl,
-      coverImageUrl: data.coverImageUrl,
+      coverImagePublicUrl: data.coverImagePublicUrl,
       mangakaId: data.mangakaId,
       sourceZipFileAssetId: data.sourceZipFileAssetId,
       status: 'Draft'
@@ -154,7 +155,7 @@ export const proposalService = {
       publicationType: data.publicationType,
       synopsis: data.synopsis,
       sampleFileUrl: data.sampleFileUrl,
-      coverImageUrl: data.coverImageUrl,
+      coverImagePublicUrl: data.coverImagePublicUrl,
       mangakaId: data.mangakaId,
       sourceZipFileAssetId: data.sourceZipFileAssetId,
       status: 'PendingReview'
@@ -181,7 +182,7 @@ export const proposalService = {
       publicationType: updatedData.publicationType,
       synopsis: updatedData.synopsis,
       sampleFileUrl: updatedData.sampleFileUrl,
-      coverImageUrl: updatedData.coverImageUrl,
+      coverImagePublicUrl: updatedData.coverImagePublicUrl,
       mangakaId: updatedData.mangakaId,
       sourceZipFileAssetId: updatedData.sourceZipFileAssetId,
       status: submit ? 'PendingReview' : 'Draft'

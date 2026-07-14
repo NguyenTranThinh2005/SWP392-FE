@@ -27,7 +27,7 @@ export interface SeriesProposal {
   coverColor: string;
   rating?: number;
   sampleFileUrl?: string;
-  coverImageUrl?: string;
+  coverImagePublicUrl?: string;
   mangakaId?: string;
   tantouEditorId?: string;
   tantouEditorName?: string;
@@ -85,14 +85,14 @@ const mapSeriesResponse = (s: any): SeriesProposal => {
   const sampleFileUrl = s.sampleFileUrl || s.SampleFileUrl || '';
   const proposalPages = s.proposalPages || s.ProposalPages || [];
   
-  let coverImageUrl = s.coverImageUrl || s.CoverImageUrl || '';
-  if (coverImageUrl && !coverImageUrl.startsWith('http') && !coverImageUrl.startsWith('/')) {
-    coverImageUrl = `${API_BASE_URL}/api/files/${coverImageUrl}`;
-  } else if (!coverImageUrl && proposalPages && proposalPages.length > 0) {
+  let coverImagePublicUrl = s.coverImagePublicUrl || s.CoverImagePublicUrl || s.coverImageUrl || s.CoverImageUrl || '';
+  if (coverImagePublicUrl && !coverImagePublicUrl.startsWith('http') && !coverImagePublicUrl.startsWith('/')) {
+    coverImagePublicUrl = `${API_BASE_URL}/api/files/${coverImagePublicUrl}`;
+  } else if (!coverImagePublicUrl && proposalPages && proposalPages.length > 0) {
     const firstPage = proposalPages.find((p: any) => (p.pageNo || p.PageNo) === 1) || proposalPages[0];
     const previewFileAssetId = firstPage?.previewFileAssetId || firstPage?.PreviewFileAssetId;
     if (previewFileAssetId) {
-      coverImageUrl = `${API_BASE_URL}/api/files/${previewFileAssetId}`;
+      coverImagePublicUrl = `${API_BASE_URL}/api/files/${previewFileAssetId}`;
     }
   }
   const mangakaId = s.mangakaId || s.MangakaId;
@@ -133,7 +133,7 @@ const mapSeriesResponse = (s: any): SeriesProposal => {
     status,
     description,
     sampleFileUrl,
-    coverImageUrl,
+    coverImagePublicUrl,
     mangakaId,
     tantouEditorId,
     tantouEditorName,
@@ -168,18 +168,18 @@ export const seriesService = {
 
     // Resolve public URL for cover image if it is a raw GUID or api file path
     let coverAssetId = '';
-    if (proposal.coverImageUrl) {
-      if (proposal.coverImageUrl.includes('/api/files/')) {
-        coverAssetId = proposal.coverImageUrl.split('/').pop() || '';
-      } else if (!proposal.coverImageUrl.startsWith('http') && !proposal.coverImageUrl.startsWith('/')) {
-        coverAssetId = proposal.coverImageUrl;
+    if (proposal.coverImagePublicUrl) {
+      if (proposal.coverImagePublicUrl.includes('/api/files/')) {
+        coverAssetId = proposal.coverImagePublicUrl.split('/').pop() || '';
+      } else if (!proposal.coverImagePublicUrl.startsWith('http') && !proposal.coverImagePublicUrl.startsWith('/')) {
+        coverAssetId = proposal.coverImagePublicUrl;
       }
     }
     if (coverAssetId) {
       try {
         const fileRes = await fetchAPI<{ data: any }>(`/api/files/${coverAssetId}`);
         const fileAsset = fileRes.data || fileRes;
-        proposal.coverImageUrl = fileAsset.publicUrl || fileAsset.PublicUrl || proposal.coverImageUrl;
+        proposal.coverImagePublicUrl = fileAsset.publicUrl || fileAsset.PublicUrl || proposal.coverImagePublicUrl;
       } catch (err) {
         console.error(`Failed to fetch cover image URL for ${coverAssetId}:`, err);
       }
@@ -247,7 +247,7 @@ export const seriesService = {
       .split(',')
       .filter(Boolean);
 
-    const coverAssetId = extractAssetId(proposal.coverImageUrl);
+    const coverAssetId = extractAssetId(proposal.coverImagePublicUrl);
     if (coverAssetId && !samplePageFileAssetIds.includes(coverAssetId)) {
       samplePageFileAssetIds.unshift(coverAssetId);
     }
@@ -259,7 +259,7 @@ export const seriesService = {
       genreIds: genreIds,
       sourceZipFileAssetId: proposal.sourceZipFileAssetId || null,
       samplePageFileAssetIds: samplePageFileAssetIds,
-      coverImageUrl: proposal.coverImageUrl || null
+      coverImagePublicUrl: proposal.coverImagePublicUrl || null
     };
 
     const res = await fetchAPI<{ data: any }>("/api/series", {
@@ -292,7 +292,7 @@ export const seriesService = {
       .split(',')
       .filter(Boolean);
 
-    const coverAssetId = extractAssetId(proposal.coverImageUrl);
+    const coverAssetId = extractAssetId(proposal.coverImagePublicUrl);
     if (coverAssetId && !samplePageFileAssetIds.includes(coverAssetId)) {
       samplePageFileAssetIds.unshift(coverAssetId);
     }
@@ -304,7 +304,7 @@ export const seriesService = {
       genreIds: genreIds,
       sourceZipFileAssetId: proposal.sourceZipFileAssetId || null,
       samplePageFileAssetIds: samplePageFileAssetIds,
-      coverImageUrl: proposal.coverImageUrl || null
+      coverImagePublicUrl: proposal.coverImagePublicUrl || null
     };
 
     const res = await fetchAPI<{ data: any }>(`/api/series/${id}`, {

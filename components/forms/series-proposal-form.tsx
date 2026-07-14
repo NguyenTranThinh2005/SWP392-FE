@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronUp, AlertCircle, BookOpen, FileText, Upload, X } from 'lucide-react'
 import { API_BASE_URL } from '@/lib/constants'
 import { systemService } from '@/services/systemService'
+import { toast } from 'sonner'
+import { fetchAPI } from '@/services/api'
 
 const uploadSourceArchiveToBackend = async (file: File): Promise<string> => {
   const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
@@ -80,7 +82,7 @@ interface SeriesProposalFormProps {
   isLoading?: boolean
   /** If provided, block both buttons and show warning */
   hasActivePendingProposal?: boolean
-  defaultValues?: Partial<SeriesProposalInput>
+  defaultValues?: Partial<SeriesProposalInput> & { sourceZipPublicUrl?: string | null }
 }
 
 const SYNOPSIS_MIN = 100
@@ -102,10 +104,31 @@ export function SeriesProposalForm({
   const [sourceZipFile, setSourceZipFile] = useState<File | null>(null)
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null)
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string>(
-    defaultValues?.coverImageUrl ?? ''
+    defaultValues?.coverImagePublicUrl ?? ''
   )
   const [isUploading, setIsUploading] = useState(false)
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const handleDownloadSourceZip = async () => {
+    if (!sourceZipFileAssetIdValue) return
+    setIsDownloadingZip(true)
+    try {
+      const res = await fetchAPI<{ data: any }>(`/api/files/${sourceZipFileAssetIdValue}`)
+      const fileAsset = res.data || res
+      const publicUrl = fileAsset.publicUrl || fileAsset.PublicUrl
+      if (publicUrl) {
+        window.open(publicUrl, '_blank')
+      } else {
+        toast.error('Không tìm thấy đường dẫn tải file.')
+      }
+    } catch (err: any) {
+      console.error('Failed to download ZIP file:', err)
+      toast.error(err.message || 'Không thể tải tệp tin.')
+    } finally {
+      setIsDownloadingZip(false)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -141,7 +164,7 @@ export function SeriesProposalForm({
       publicationType: defaultValues?.publicationType ?? 'Weekly',
       synopsis: defaultValues?.synopsis ?? '',
       sampleFileUrl: defaultValues?.sampleFileUrl ?? '',
-      coverImageUrl: defaultValues?.coverImageUrl ?? '',
+      coverImagePublicUrl: defaultValues?.coverImagePublicUrl ?? '',
       sourceZipFileAssetId: defaultValues?.sourceZipFileAssetId ?? null,
     },
   })
@@ -154,13 +177,13 @@ export function SeriesProposalForm({
         publicationType: defaultValues.publicationType ?? 'Weekly',
         synopsis: defaultValues.synopsis ?? '',
         sampleFileUrl: defaultValues.sampleFileUrl ?? '',
-        coverImageUrl: defaultValues.coverImageUrl ?? '',
+        coverImagePublicUrl: defaultValues.coverImagePublicUrl ?? '',
         sourceZipFileAssetId: defaultValues.sourceZipFileAssetId ?? null,
       })
       if (defaultValues.genre) {
         setSelectedGenres(defaultValues.genre.split(', ').filter(Boolean))
       }
-      setCoverPreviewUrl(defaultValues.coverImageUrl ?? '')
+      setCoverPreviewUrl(defaultValues.coverImagePublicUrl ?? '')
     }
   }, [defaultValues, reset])
 
@@ -196,7 +219,7 @@ export function SeriesProposalForm({
       URL.revokeObjectURL(coverPreviewUrl)
     }
     setCoverPreviewUrl('')
-    setValue('coverImageUrl', '')
+    setValue('coverImagePublicUrl', '')
   }
 
   const synopsisValue = watch('synopsis') ?? ''
@@ -243,8 +266,8 @@ export function SeriesProposalForm({
         if (coverImageFile) {
           const coverAssetId = await uploadCoverImageToBackend(coverImageFile)
           const coverUrl = `${API_BASE_URL}/api/files/${coverAssetId}`
-          finalData.coverImageUrl = coverUrl
-          setValue('coverImageUrl', coverUrl)
+          finalData.coverImagePublicUrl = coverUrl
+          setValue('coverImagePublicUrl', coverUrl)
         }
 
         if (sourceZipFile) {
@@ -474,9 +497,25 @@ export function SeriesProposalForm({
             >
               Chọn tệp ZIP/RAR
             </label>
-            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-              {sourceZipFile ? sourceZipFile.name : (sourceZipFileAssetIdValue ? 'Đã tải lên tệp ZIP/RAR' : 'Chưa chọn tệp')}
-            </span>
+            {sourceZipFile ? (
+              <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                {sourceZipFile.name}
+              </span>
+            ) : sourceZipFileAssetIdValue ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-emerald-600 font-semibold">Đã tải lên tệp ZIP/RAR</span>
+                <button
+                  type="button"
+                  onClick={handleDownloadSourceZip}
+                  disabled={isDownloadingZip}
+                  className="text-[11px] text-primary hover:underline font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDownloadingZip ? '(Đang tải...)' : '(Tải xuống bản thảo đã lưu)'}
+                </button>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">Chưa chọn tệp</span>
+            )}
           </div>
           <input type="hidden" {...register('sourceZipFileAssetId')} />
           {errors.sourceZipFileAssetId && (
@@ -532,10 +571,10 @@ export function SeriesProposalForm({
             )}
             
             {/* Hidden input to keep React Hook Form synchronized */}
-            <input type="hidden" {...register('coverImageUrl')} />
+            <input type="hidden" {...register('coverImagePublicUrl')} />
             
-            {errors.coverImageUrl && (
-              <span className="text-destructive text-xs font-semibold block">{errors.coverImageUrl.message}</span>
+            {errors.coverImagePublicUrl && (
+              <span className="text-destructive text-xs font-semibold block">{errors.coverImagePublicUrl.message}</span>
             )}
           </div>
         </div>

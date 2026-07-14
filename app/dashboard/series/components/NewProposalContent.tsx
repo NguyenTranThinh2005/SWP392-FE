@@ -92,7 +92,7 @@ export default function NewProposalContent() {
               publicationType: data.publicationType,
               synopsis: data.synopsis,
               sampleFileUrl: data.sampleFileUrl,
-              coverImageUrl: data.coverImageUrl,
+              coverImagePublicUrl: data.coverImagePublicUrl,
               sourceZipFileAssetId: data.sourceZipFileAssetId,
             }, false)
           } else {
@@ -104,7 +104,7 @@ export default function NewProposalContent() {
               synopsis: data.synopsis,
               sampleFileUrl: data.sampleFileUrl,
               mangakaId: mangakaId,
-              coverImageUrl: data.coverImageUrl,
+              coverImagePublicUrl: data.coverImagePublicUrl,
               sourceZipFileAssetId: data.sourceZipFileAssetId,
             })
           }
@@ -125,7 +125,7 @@ export default function NewProposalContent() {
             publicationType: data.publicationType,
             synopsis: data.synopsis,
             sampleFileUrl: data.sampleFileUrl,
-            coverImageUrl: data.coverImageUrl,
+            coverImagePublicUrl: data.coverImagePublicUrl,
             sourceZipFileAssetId: data.sourceZipFileAssetId,
           }, true)
         } else {
@@ -136,7 +136,7 @@ export default function NewProposalContent() {
             synopsis: data.synopsis,
             sampleFileUrl: data.sampleFileUrl,
             mangakaId: mangakaId,
-            coverImageUrl: data.coverImageUrl,
+            coverImagePublicUrl: data.coverImagePublicUrl,
             sourceZipFileAssetId: data.sourceZipFileAssetId,
           })
         }
