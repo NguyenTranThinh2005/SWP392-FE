@@ -479,7 +479,7 @@ export default function AssistantDashboardPage() {
                             <p className="italic">"{task.feedback}"</p>
                           </div>
                         )}
-                        <SubmissionFeedbackView submissionId={task.submissionId} imageUrl={task.submittedWorkUrl} />
+                        <SubmissionFeedbackView submissionId={task.submissionId} imageUrl={task.submittedWorkUrl} pageStart={task.pageStart} />
                       </div>
                     )}
 

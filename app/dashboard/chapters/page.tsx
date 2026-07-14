@@ -89,8 +89,8 @@ export default function ChaptersPage() {
   const [isViewDetailModalOpen, setIsViewDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
 const [subCompareLoading, setSubCompareLoading] = useState(false)
-  const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string } | null>(null)
-  const [subCompareError, setSubCompareError] = useState('')
+const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string; pages?: any[] } | null>(null)  
+const [subCompareError, setSubCompareError] = useState('')
 
   const handleCompareSubmissions = async () => {
     const cur = activeTaskToReview?.submittedWorkUrl
@@ -99,7 +99,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
     setSubCompareError(''); setSubCompareLoading(true); setSubCompareResult(null)
     try {
       const r = await compareAny(prev, cur)
-      setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl })
+      setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl, pages: r.pages })
     } catch (e: any) {
       setSubCompareError('Lỗi khi so sánh: ' + (e?.message || 'không đọc được file'))
     } finally { setSubCompareLoading(false) }
@@ -861,7 +861,7 @@ const payload = {
           await fetchAPI(`/api/submissions/${task.submissionId}/annotations`, {
             method: 'POST',
             body: JSON.stringify({
-              pageNo: p.page + 1,
+              pageNo: (task.pageStart || 1) + p.page,
               positionX: Math.min(1, Math.max(0, p.x / 100)),
               positionY: Math.min(1, Math.max(0, p.y / 100)),
               content: p.note.trim(),
@@ -2461,10 +2461,28 @@ const payload = {
                             style={{ width: `${Math.min(subCompareResult.percent, 100)}%` }}
                           />
                         </div>
-                        {subCompareResult.diff && (
+                       {subCompareResult.diff && (
                           <div className="space-y-1">
                             <img src={subCompareResult.diff} alt="Vùng thay đổi" className="w-full border border-border rounded-lg" />
                             <p className="text-[10px] text-muted-foreground text-center">🔴 Vùng màu đỏ là chỗ có thay đổi so với lần nộp trước</p>
+                          </div>
+                        )}
+                        {subCompareResult.pages && subCompareResult.pages.length > 0 && (
+                          <div className="space-y-2">
+                            {subCompareResult.pages.map((pg: any, idx: number) => (
+                              <div key={idx} className="space-y-1 border border-border rounded-lg p-2">
+                                <p className="text-[11px] font-bold text-muted-foreground">
+                                  Trang {idx + 1}
+                                  {pg.status === 'added' && ' — 🟢 Trang mới thêm'}
+                                  {pg.status === 'removed' && ' — ⚪ Trang đã xóa'}
+                                  {typeof pg.diffPercent === 'number' && ` — ${pg.diffPercent}% thay đổi`}
+                                </p>
+                                {pg.diffDataUrl && (
+                                  <img src={pg.diffDataUrl} alt={`Diff trang ${idx + 1}`} className="w-full border border-border rounded" />
+                                )}
+                              </div>
+                            ))}
+                            <p className="text-[10px] text-muted-foreground text-center">🔴 Vùng đỏ = chỗ thay đổi từng trang</p>
                           </div>
                         )}
                       </div>
