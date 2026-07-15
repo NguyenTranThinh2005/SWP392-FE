@@ -60,7 +60,7 @@ export default function MangaListPage() {
           description: p.synopsis,
           coverColor,
           rating: 4.5 + (p.title.length % 5) * 0.1,
-          coverImagePublicUrl: p.coverImagePublicUrl,
+          coverImageUrl: p.coverImagePublicUrl,
         }
       })
       setMangaList(list)
@@ -124,67 +124,64 @@ export default function MangaListPage() {
           {filteredManga.map((manga) => (
             <div
               key={manga.id}
-              className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/25 hover:shadow-lg transition-all flex flex-col justify-between group"
+              className="bg-card border border-border overflow-hidden hover:border-primary/25 hover:shadow-lg transition-all flex flex-row group"
             >
-              {/* Cover Card Mockup */}
-              <div className="h-40 p-5 flex flex-col justify-between text-white relative overflow-hidden bg-slate-900">
+              {/* Left Cover */}
+              <div className="w-28 sm:w-32 shrink-0 relative overflow-hidden bg-slate-900 aspect-[3/4]">
                 {manga.coverImageUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={manga.coverImageUrl}
                     alt={manga.title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-300"
+                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
                   <div className={`absolute inset-0 bg-gradient-to-br ${manga.coverColor} opacity-90`} />
                 )}
-                {/* Background decorative elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-xl pointer-events-none" />
-
-                {/* Top badges */}
-                <div className="flex justify-between items-start z-10">
-                  <span className="bg-black/35 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase">
+                {/* Type Badge on cover */}
+                <div className="absolute top-2 left-2 z-10">
+                  <span className="bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-bold text-white uppercase border border-white/5">
                     {manga.type}
                   </span>
-                  <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold z-10 ${manga.status === 'Active'
-                    ? 'bg-emerald-500/90 text-white'
-                    : 'bg-amber-500/90 text-white'
-                    }`}>
-                    {manga.status}
-                  </span>
-                </div>
-
-                {/* Cover Title Info */}
-                <div className="z-10">
-                  <h3 className="font-extrabold text-lg leading-tight group-hover:underline cursor-pointer">
-                    {manga.title}
-                  </h3>
-                  <p className="text-xs text-white/80 font-semibold mt-1">by {manga.author}</p>
                 </div>
               </div>
 
-              {/* Card Body */}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                  {manga.description}
-                </p>
+              {/* Right Content */}
+              <div className="p-4 flex-1 flex flex-col justify-between min-w-0 space-y-2">
+                <div>
+                  <div className="flex justify-between items-start gap-1">
+                    <h3 className="font-extrabold text-sm text-foreground truncate group-hover:text-primary transition-colors cursor-pointer" title={manga.title}>
+                      {manga.title}
+                    </h3>
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold shrink-0 ${manga.status === 'Active'
+                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      }`}>
+                      {manga.status}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-semibold">by {manga.author}</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-1.5 line-clamp-2">
+                    {manga.description}
+                  </p>
+                </div>
 
-                {/* Genres & Rating footer */}
-                <div className="flex items-center justify-between pt-2 border-t border-border/40">
-                  <div className="flex flex-wrap gap-1">
-                    {manga.genre.map((g) => (
+                {/* Genres & Rating */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/40 text-[10px]">
+                  <div className="flex flex-wrap gap-1 min-w-0">
+                    {manga.genre.slice(0, 2).map((g) => (
                       <span
                         key={g}
-                        className="bg-muted text-muted-foreground text-[10px] font-semibold px-2 py-0.5 rounded"
+                        className="bg-muted text-muted-foreground text-[8px] font-semibold px-1.5 py-0.5 rounded truncate"
                       >
                         {g}
                       </span>
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0 text-amber-500">
-                    <Star className="w-3.5 h-3.5" />
-                    <span className="text-xs font-bold text-foreground">{manga.rating}</span>
+                  <div className="flex items-center gap-0.5 shrink-0 text-amber-500 font-bold">
+                    <Star className="w-3 h-3" />
+                    <span className="text-foreground">{manga.rating}</span>
                   </div>
                 </div>
               </div>

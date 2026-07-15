@@ -35,17 +35,24 @@ export interface SeriesProposal {
   sourceZipFileAssetId?: string | null;
   sourceZipFile?: SourceZipFileResponse | null;
   sourceZipPublicUrl?: string | null;
+  coverImageFileAssetId?: string | null;
   rawStatus?: string;
   proposalPages?: ProposalPageResponse[];
   createdAt?: string;
   submittedAt?: string;
 }
 
-const mapGenreNamesToGuids = async (genreString: string): Promise<string[]> => {
+const mapGenreNamesToGuids = async (genreOrGenres: string | string[]): Promise<string[]> => {
   try {
     const genresResponse = await fetchAPI<{ data: any[] }>("/api/genres");
     const dbGenres = genresResponse.data || [];
-    const inputNames = genreString.split(',').map(s => s.trim().toLowerCase());
+    
+    let inputNames: string[] = [];
+    if (typeof genreOrGenres === 'string') {
+      inputNames = genreOrGenres.split(',').map(s => s.trim().toLowerCase());
+    } else if (Array.isArray(genreOrGenres)) {
+      inputNames = genreOrGenres.map(s => s.trim().toLowerCase());
+    }
     
     const matchedGuids = dbGenres
       .filter(g => inputNames.includes((g.title || g.name || '').toLowerCase()))
@@ -66,12 +73,15 @@ const mapGenreNamesToGuids = async (genreString: string): Promise<string[]> => {
 
 const extractAssetId = (urlOrId: string | null | undefined): string | null => {
   if (!urlOrId) return null;
-  if (urlOrId.includes('/api/files/')) {
-    const parts = urlOrId.split('/api/files/');
-    const id = parts[parts.length - 1];
-    return id || null;
+  
+  // Try to match a GUID format (36 chars) anywhere inside the string/URL
+  const guidRegex = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+  const match = urlOrId.match(guidRegex);
+  if (match) {
+    return match[1];
   }
-  return urlOrId;
+  
+  return null;
 };
 
 const mapSeriesResponse = (s: any): SeriesProposal => {
@@ -85,7 +95,8 @@ const mapSeriesResponse = (s: any): SeriesProposal => {
   const sampleFileUrl = s.sampleFileUrl || s.SampleFileUrl || '';
   const proposalPages = s.proposalPages || s.ProposalPages || [];
   
-  let coverImagePublicUrl = s.coverImagePublicUrl || s.CoverImagePublicUrl || s.coverImageUrl || s.CoverImageUrl || '';
+  const coverImageFileAssetId = s.coverImageFileAssetId || s.CoverImageFileAssetId || null;
+  let coverImagePublicUrl = s.coverImagePublicUrl || s.CoverImagePublicUrl || s.coverImageUrl || s.CoverImageUrl || coverImageFileAssetId || '';
   if (coverImagePublicUrl && !coverImagePublicUrl.startsWith('http') && !coverImagePublicUrl.startsWith('/')) {
     coverImagePublicUrl = `${API_BASE_URL}/api/files/${coverImagePublicUrl}`;
   } else if (!coverImagePublicUrl && proposalPages && proposalPages.length > 0) {
@@ -142,6 +153,7 @@ const mapSeriesResponse = (s: any): SeriesProposal => {
     sourceZipFileAssetId,
     sourceZipFile,
     sourceZipPublicUrl,
+    coverImageFileAssetId,
     rawStatus: status,
     proposalPages: proposalPages.map((p: any) => ({
       proposalPageId: p.proposalPageId || p.ProposalPageId,
@@ -159,7 +171,29 @@ const mapSeriesResponse = (s: any): SeriesProposal => {
 export const seriesService = {
   listSeries: async (): Promise<SeriesProposal[]> => {
     const res = await fetchAPI<{ data: any[] }>("/api/series");
-    return (res.data || res || []).map(mapSeriesResponse);
+    const list = (res.data || res || []).map(mapSeriesResponse);
+    return await Promise.all(
+      list.map(async (proposal) => {
+        let coverAssetId = '';
+        if (proposal.coverImagePublicUrl) {
+          if (proposal.coverImagePublicUrl.includes('/api/files/')) {
+            coverAssetId = proposal.coverImagePublicUrl.split('/').pop() || '';
+          } else if (!proposal.coverImagePublicUrl.startsWith('http') && !proposal.coverImagePublicUrl.startsWith('/')) {
+            coverAssetId = proposal.coverImagePublicUrl;
+          }
+        }
+        if (coverAssetId) {
+          try {
+            const fileRes = await fetchAPI<{ data: any }>(`/api/files/${coverAssetId}`);
+            const fileAsset = fileRes.data || fileRes;
+            proposal.coverImagePublicUrl = fileAsset.publicUrl || fileAsset.PublicUrl || proposal.coverImagePublicUrl;
+          } catch (err) {
+            console.error(`Failed to fetch cover image URL for ${coverAssetId}:`, err);
+          }
+        }
+        return proposal;
+      })
+    );
   },
 
   getSeriesById: async (id: string): Promise<SeriesProposal> => {
@@ -245,11 +279,14 @@ export const seriesService = {
     // Map sampleFileUrl back to its comma-separated file asset IDs
     const samplePageFileAssetIds = (proposal.sampleFileUrl || '')
       .split(',')
-      .filter(Boolean);
+      .map((url: string) => extractAssetId(url.trim()))
+      .filter((id: string | null): id is string => id !== null);
 
     const coverAssetId = extractAssetId(proposal.coverImagePublicUrl);
-    if (coverAssetId && !samplePageFileAssetIds.includes(coverAssetId)) {
-      samplePageFileAssetIds.unshift(coverAssetId);
+
+    // Fallback: If no sample pages are provided, use the cover image as a sample page to satisfy BE validation
+    if (samplePageFileAssetIds.length === 0 && coverAssetId) {
+      samplePageFileAssetIds.push(coverAssetId);
     }
 
     const payload = {
@@ -257,9 +294,9 @@ export const seriesService = {
       synopsis: proposal.synopsis || proposal.description,
       publicationType: proposal.publicationType,
       genreIds: genreIds,
-      sourceZipFileAssetId: proposal.sourceZipFileAssetId || null,
+      sourceZipFileAssetId: extractAssetId(proposal.sourceZipFileAssetId) || null,
       samplePageFileAssetIds: samplePageFileAssetIds,
-      coverImagePublicUrl: proposal.coverImagePublicUrl || null
+      coverImageFileAssetId: coverAssetId || null
     };
 
     const res = await fetchAPI<{ data: any }>("/api/series", {
@@ -290,11 +327,14 @@ export const seriesService = {
     // Map sampleFileUrl back to its comma-separated file asset IDs
     const samplePageFileAssetIds = (proposal.sampleFileUrl || '')
       .split(',')
-      .filter(Boolean);
+      .map((url: string) => extractAssetId(url.trim()))
+      .filter((id: string | null): id is string => id !== null);
 
     const coverAssetId = extractAssetId(proposal.coverImagePublicUrl);
-    if (coverAssetId && !samplePageFileAssetIds.includes(coverAssetId)) {
-      samplePageFileAssetIds.unshift(coverAssetId);
+
+    // Fallback: If no sample pages are provided, use the cover image as a sample page to satisfy BE validation
+    if (samplePageFileAssetIds.length === 0 && coverAssetId) {
+      samplePageFileAssetIds.push(coverAssetId);
     }
 
     const payload = {
@@ -302,9 +342,9 @@ export const seriesService = {
       synopsis: proposal.synopsis || proposal.description,
       publicationType: proposal.publicationType,
       genreIds: genreIds,
-      sourceZipFileAssetId: proposal.sourceZipFileAssetId || null,
+      sourceZipFileAssetId: extractAssetId(proposal.sourceZipFileAssetId) || null,
       samplePageFileAssetIds: samplePageFileAssetIds,
-      coverImagePublicUrl: proposal.coverImagePublicUrl || null
+      coverImageFileAssetId: coverAssetId || null
     };
 
     const res = await fetchAPI<{ data: any }>(`/api/series/${id}`, {

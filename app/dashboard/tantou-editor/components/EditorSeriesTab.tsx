@@ -5,7 +5,8 @@ import {
   Search,
   Filter,
   ChevronDown,
-  PencilLine
+  PencilLine,
+  Star
 } from 'lucide-react'
 
 interface EditorSeriesTabProps {
@@ -136,70 +137,81 @@ export default function EditorSeriesTab({ supervisedSeries }: EditorSeriesTabPro
 
       {/* Grid display of series cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {filteredSeries.map((series, idx) => {
-          const displayCode = `S${String(idx + 1).padStart(2, '0')}`
-
+        {filteredSeries.map((series) => {
           return (
             <div
               key={series.id}
-              className="bg-card border border-border hover:border-primary/20 rounded-xl p-5 flex flex-col justify-between space-y-4 hover:shadow-md transition-all group"
+              className="bg-card border border-border hover:border-primary/25 flex flex-row hover:shadow-lg transition-all group overflow-hidden"
             >
-              <div>
-                {/* Top Accent Row */}
-                <div className="flex justify-between items-center">
-                  <span
-                    className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${series.status === 'Active' || series.status === 'Approved'
-                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                      : series.status === 'Under Review' || series.status === 'UnderReview'
-                        ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20'
-                        : series.status === 'BoardVoting' || series.status === 'Board Voting'
-                          ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                          : series.status === 'Rejected'
-                            ? 'bg-red-500/10 text-red-600 border-red-500/20'
-                            : 'bg-muted text-muted-foreground border-border'
-                      }`}
-                  >
-                    {series.status === 'UnderReview' ? 'Under Review' : series.status === 'BoardVoting' ? 'Board Voting' : (series.status || 'Active')}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground font-mono font-bold">
-                    {displayCode}
-                  </span>
-                </div>
-
-                {/* Title & Info */}
-                <h3 className="font-extrabold text-base text-foreground mt-3 group-hover:text-primary transition-colors">
-                  {series.title}
-                </h3>
-
-                {/* Genre pills */}
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {series.genre?.slice(0, 3).map((g: string) => (
-                    <span
-                      key={g}
-                      className="bg-muted text-muted-foreground text-[9px] font-bold px-2 py-0.5 rounded"
-                    >
-                      {g}
-                    </span>
-                  ))}
+              {/* Left Cover */}
+              <div className="w-28 sm:w-32 shrink-0 relative overflow-hidden bg-slate-900 aspect-[3/4]">
+                {series.coverImagePublicUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={series.coverImagePublicUrl}
+                    alt={series.title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className={`absolute inset-0 bg-gradient-to-br ${series.coverColor || 'from-blue-600 to-cyan-700'} opacity-90`} />
+                )}
+                {/* Badges on cover */}
+                <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
                   {series.type && (
-                    <span className="bg-primary/5 text-primary text-[9px] font-bold px-2 py-0.5 rounded border border-primary/10">
+                    <span className="bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-bold text-white uppercase border border-white/5">
                       {series.type}
                     </span>
                   )}
                 </div>
-
-                {/* Description snippet */}
-                <p className="text-xs text-muted-foreground leading-relaxed mt-3.5 line-clamp-3">
-                  {series.description || 'No description provided.'}
-                </p>
               </div>
 
-              {/* Bottom Metadata row */}
-              <div className="pt-3 border-t border-border/40 flex items-center text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="font-bold text-foreground truncate flex items-center">
-                    <PencilLine className="w-3.5 h-3.5 mr-1 text-primary shrink-0" /> {series.author || 'Unknown Mangaka'}
-                  </span>
+              {/* Right Content */}
+              <div className="p-4 flex-1 flex flex-col justify-between min-w-0 space-y-2">
+                <div>
+                  <div className="flex justify-between items-start gap-1">
+                    <h3 className="font-extrabold text-sm text-foreground truncate group-hover:text-primary transition-colors cursor-pointer" title={series.title}>
+                      {series.title}
+                    </h3>
+                    <span
+                      className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded border shrink-0 ${series.status === 'Active' || series.status === 'Approved'
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                        : series.status === 'Under Review' || series.status === 'UnderReview'
+                          ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600'
+                          : series.status === 'BoardVoting' || series.status === 'Board Voting'
+                            ? 'bg-blue-500/10 border-blue-500/20 text-blue-600'
+                            : series.status === 'Rejected'
+                              ? 'bg-red-500/10 border-red-500/20 text-red-600'
+                              : 'bg-muted text-muted-foreground border-border'
+                        }`}
+                    >
+                      {series.status === 'UnderReview' ? 'Under Review' : series.status === 'BoardVoting' ? 'Board Voting' : (series.status || 'Active')}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-semibold">by {series.author || 'Unknown Mangaka'}</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-1.5 line-clamp-2">
+                    {series.description || 'No description provided.'}
+                  </p>
+                </div>
+
+                {/* Genres & Rating footer */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/40 text-[10px]">
+                  <div className="flex flex-wrap gap-1 min-w-0">
+                    {series.genre?.slice(0, 2).map((g: string) => (
+                      <span
+                        key={g}
+                        className="bg-muted text-muted-foreground text-[8px] font-semibold px-1.5 py-0.5 rounded truncate"
+                      >
+                        {g}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-0.5 shrink-0 text-amber-500 font-bold">
+                    <Star className="w-3 h-3" />
+                    <span className="text-foreground">
+                      {(series.rating || (4.5 + (series.title.length % 5) * 0.1)).toFixed(1)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
