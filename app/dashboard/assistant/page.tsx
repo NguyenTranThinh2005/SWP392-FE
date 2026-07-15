@@ -616,9 +616,16 @@ export default function AssistantDashboardPage() {
                 <input
                   type="file"
                   multiple
-                 onChange={(e) => {
+                  accept=".png,.jpg,.jpeg,.webp,.zip"
+                  onChange={(e) => {
                     const picked = e.target.files ? Array.from(e.target.files) : []
-                    setSubmitFiles(prev => [...prev, ...picked])
+                    const allowed = /\.(png|jpe?g|webp|zip)$/i
+                    const valid = picked.filter(f => allowed.test(f.name))
+                    const invalid = picked.filter(f => !allowed.test(f.name))
+                    if (invalid.length > 0) {
+                      toast.error(`File không hợp lệ: ${invalid.map(f => f.name).join(', ')}. Chỉ nhận ảnh (png/jpg/webp) hoặc zip.`)
+                    }
+                    setSubmitFiles(prev => [...prev, ...valid])
                     e.target.value = ''
                   }}
                   className="w-full p-2.5 bg-muted/50 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
