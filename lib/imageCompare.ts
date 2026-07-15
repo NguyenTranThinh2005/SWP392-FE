@@ -140,10 +140,21 @@ export async function compareAny(urlA: string, urlB: string): Promise<{
   pages?: PageCompareResult[]
 }> {
   const isZip = (u: string) => /\.zip(\?|$)/i.test(u)
-  if (isZip(urlA) || isZip(urlB)) {
+  const aZip = isZip(urlA)
+  const bZip = isZip(urlB)
+
+  // Ca 2 deu zip -> so tung trang
+  if (aZip && bZip) {
     const r = await compareZips(urlA, urlB)
     return { isZip: true, diffPercent: r.avgDiffPercent, pages: r.pages }
   }
+
+  // Khac loai (1 zip, 1 anh) -> khong so sanh duoc truc tiep
+  if (aZip !== bZip) {
+    throw new Error('Hai lần nộp khác định dạng (một bên là file nén, một bên là ảnh) nên không so sánh trực tiếp được.')
+  }
+
+  // Ca 2 deu anh -> so thang
   const r = await compareImages(urlA, urlB)
   return { isZip: false, diffPercent: r.diffPercent, diffDataUrl: r.diffDataUrl }
 }

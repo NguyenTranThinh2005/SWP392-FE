@@ -1,36 +1,62 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { annotationService, type SubmissionAnnotation } from '@/services/annotationService'
+import { extractImagesFromZip } from '@/lib/imageCompare'
 
 interface Props {
   submissionId?: string
   imageUrl?: string
+  pageStart?: number
 }
 
-// Show submission image + feedback pins from Mangaka (assistant read-only)
-export function SubmissionFeedbackView({ submissionId, imageUrl }: Props) {
+// Hien anh bai nop + pin gop y cua Mangaka (assistant chi xem, doc)
+export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }: Props) {
   const [pins, setPins] = useState<SubmissionAnnotation[]>([])
+  const [pages, setPages] = useState<{ name: string; dataUrl: string }[]>([])
+  const [currentPage, setCurrentPage] = useState(0)
+  const [loading, setLoading] = useState(false)
 
+  // Load pin tu BE
   useEffect(() => {
+    console.log('DEBUG submissionId:', submissionId)
     if (!submissionId) return
     annotationService.getAnnotations(submissionId).then(setPins).catch(() => setPins([]))
   }, [submissionId])
 
+  // Neu la zip -> giai nen lay anh
+  useEffect(() => {
+    if (!imageUrl) return
+    const isZip = /\.zip(\?|$)/i.test(imageUrl)
+    if (isZip) {
+      setLoading(true)
+      extractImagesFromZip(imageUrl)
+        .then((imgs) => setPages(imgs))
+        .catch(() => setPages([]))
+        .finally(() => setLoading(false))
+    } else {
+      // anh don -> 1 trang
+      setPages([{ name: 'image', dataUrl: imageUrl }])
+    }
+  }, [imageUrl])
+
   if (!imageUrl) return null
-  const isZip = /\.zip(\?|$)/i.test(imageUrl)
+
+  // Pin cua trang dang xem (pageNo tinh tu 1, currentPage tu 0)
+  const pinsOnPage = pins.filter((p) => (p.pageNo || 1) === pageStart + currentPage)
+  const currentImg = pages[currentPage]
+  console.log('DEBUG pins:', pins.map(p => p.pageNo), '| currentPage:', currentPage, '| pages:', pages.length, '| pinsOnPage:', pinsOnPage.length)
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] uppercase font-bold text-muted-foreground">Your submission + feedback on image</p>
-      {isZip ? (
-        <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-2">
-          📦 ZIP archive — <a href={imageUrl} target="_blank" rel="noreferrer" className="text-primary underline">download to view</a>
-        </div>
-      ) : (
+      <p className="text-[10px] uppercase font-bold text-muted-foreground">Bài nộp của bạn + góp ý trên ảnh</p>
+
+      {loading && <p className="text-xs text-muted-foreground">Đang tải ảnh...</p>}
+
+      {currentImg && (
         <div className="relative inline-block max-w-full border border-border rounded-lg overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={imageUrl} alt="Submission" className="max-w-full max-h-80 object-contain pointer-events-none" />
-          {pins.map((pin, idx) => (
+          <img src={currentImg.dataUrl} alt="Bài nộp" className="max-w-full max-h-80 object-contain pointer-events-none" />
+          {pinsOnPage.map((pin, idx) => (
             <div
               key={idx}
               className="absolute -translate-x-1/2 -translate-y-1/2 group"
@@ -46,15 +72,45 @@ export function SubmissionFeedbackView({ submissionId, imageUrl }: Props) {
           ))}
         </div>
       )}
-      {pins.length > 0 && (
-        <div className="space-y-1">
-          {pins.map((pin, idx) => (
-            <p key={idx} className="text-[11px] text-red-600 dark:text-red-400">
-              <span className="font-bold">{idx + 1}.</span> (Page {pin.pageNo}) {pin.content}
-            </p>
-          ))}
+      {/* Chuyen trang neu nhieu trang */}
+      {pages.length > 1 && (
+        <div className="flex items-center gap-2 text-xs">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            className="px-2 py-1 rounded bg-muted disabled:opacity-40"
+          >
+            ‹ Trước
+          </button>
+          <span>Trang {currentPage + 1}/{pages.length}</span>
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.min(pages.length - 1, p + 1))}
+            disabled={currentPage === pages.length - 1}
+            className="px-2 py-1 rounded bg-muted disabled:opacity-40"
+          >
+            Sau ›
+          </button>
         </div>
       )}
+
+      {/* Danh sach text tat ca pin */}
+      {pins.length > 0 && (
+        <div className="space-y-1">
+          {[...pins]
+            .sort((a, b) => (a.pageNo || 0) - (b.pageNo || 0))
+            .map((pin, idx) => (
+              <p key={idx} className="text-[11px] text-red-600 dark:text-red-400">
+                <span className="font-bold">{idx + 1}.</span> (Trang {(pin.pageNo || pageStart) - pageStart + 1}) {pin.content}
+              </p>
+            ))}
+        </div>
+      )}
+
+      <a href={imageUrl} target="_blank" rel="noreferrer" className="text-[11px] text-primary underline block">
+        Tải bài nộp gốc
+      </a>
     </div>
   )
 }

@@ -100,8 +100,8 @@ export default function ChaptersPage() {
   const [isViewDetailModalOpen, setIsViewDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
 const [subCompareLoading, setSubCompareLoading] = useState(false)
-  const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string } | null>(null)
-  const [subCompareError, setSubCompareError] = useState('')
+const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string; pages?: any[] } | null>(null)  
+const [subCompareError, setSubCompareError] = useState('')
 
   const handleCompareSubmissions = async () => {
     const cur = activeTaskToReview?.submittedWorkUrl
@@ -110,7 +110,7 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
     setSubCompareError(''); setSubCompareLoading(true); setSubCompareResult(null)
     try {
       const r = await compareAny(prev, cur)
-      setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl })
+      setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl, pages: r.pages })
     } catch (e: any) {
       setSubCompareError('Comparison error: ' + (e?.message || 'cannot read file'))
     } finally { setSubCompareLoading(false) }
@@ -924,7 +924,7 @@ const payload = {
           await fetchAPI(`/api/submissions/${task.submissionId}/annotations`, {
             method: 'POST',
             body: JSON.stringify({
-              pageNo: p.page + 1,
+              pageNo: (task.pageStart || 1) + p.page,
               positionX: Math.min(1, Math.max(0, p.x / 100)),
               positionY: Math.min(1, Math.max(0, p.y / 100)),
               content: p.note.trim(),
@@ -2362,6 +2362,12 @@ const payload = {
                   onChange={(e) => setNewTaskRate(e.target.value === '' ? 0 : Number(e.target.value))}
                   className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
                 />
+                {newTaskRate > 0 && newTaskPageEnd >= newTaskPageStart && (
+                  <p className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                    Ước tính lương: {formatVND((newTaskPageEnd - newTaskPageStart + 1) * newTaskRate)}
+                    <span className="font-normal text-muted-foreground">({newTaskPageEnd - newTaskPageStart + 1} trang × {formatVND(newTaskRate)})</span>
+                  </p>
+                )}
               </div>
               {/* Instructions / Description */}
               <div className="space-y-1.5">
@@ -2704,10 +2710,28 @@ const payload = {
                             style={{ width: `${Math.min(subCompareResult.percent, 100)}%` }}
                           />
                         </div>
-                        {subCompareResult.diff && (
+                       {subCompareResult.diff && (
                           <div className="space-y-1">
                             <img src={subCompareResult.diff} alt="Vùng thay đổi" className="w-full border border-border rounded-lg" />
                             <p className="text-[10px] text-muted-foreground text-center">🔴 Red highlighted areas show differences from the previous submission</p>
+                          </div>
+                        )}
+                        {subCompareResult.pages && subCompareResult.pages.length > 0 && (
+                          <div className="space-y-2">
+                            {subCompareResult.pages.map((pg: any, idx: number) => (
+                              <div key={idx} className="space-y-1 border border-border rounded-lg p-2">
+                                <p className="text-[11px] font-bold text-muted-foreground">
+                                  Trang {idx + 1}
+                                  {pg.status === 'added' && ' — 🟢 Trang mới thêm'}
+                                  {pg.status === 'removed' && ' — ⚪ Trang đã xóa'}
+                                  {typeof pg.diffPercent === 'number' && ` — ${pg.diffPercent}% thay đổi`}
+                                </p>
+                                {pg.diffDataUrl && (
+                                  <img src={pg.diffDataUrl} alt={`Diff trang ${idx + 1}`} className="w-full border border-border rounded" />
+                                )}
+                              </div>
+                            ))}
+                            <p className="text-[10px] text-muted-foreground text-center">🔴 Vùng đỏ = chỗ thay đổi từng trang</p>
                           </div>
                         )}
                       </div>
@@ -2776,7 +2800,28 @@ const payload = {
                     className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
                   />
                 </div>
-
+               {(() => {
+                  const pages = (activeTaskToReview.pageEnd || 0) - (activeTaskToReview.pageStart || 0) + 1
+                  const rate = activeTaskToReview.ratePerPage || 0
+                  const total = pages * rate
+                  return (
+                    <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 text-xs space-y-1">
+                      <p className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                         Xem trước lương khi duyệt
+                      </p>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Số trang:</span><span className="font-semibold text-foreground">{pages}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Đơn giá/trang:</span><span className="font-semibold text-foreground">{formatVND(rate)}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-emerald-500/20 pt-1 mt-1">
+                        <span className="font-bold text-foreground">Tổng lương:</span>
+                        <span className="font-extrabold text-emerald-600">{formatVND(total)}</span>
+                      </div>
+                    </div>
+                  )
+                })()}
                 <div className="flex items-center gap-2.5 justify-end pt-2 border-t border-border">
                   <button
                     onClick={() => handleRejectTask(activeTaskToReview)}
