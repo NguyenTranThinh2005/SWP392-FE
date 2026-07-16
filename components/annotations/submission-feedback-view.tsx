@@ -62,11 +62,15 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
               className="absolute -translate-x-1/2 -translate-y-1/2 group"
               style={{ left: `${pin.positionX * 100}%`, top: `${pin.positionY * 100}%` }}
             >
-              <div className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow cursor-help">
+              <div className="w-6 h-6 rounded-full bg-red-500 ring-2 ring-white text-white text-[11px] font-bold flex items-center justify-center shadow-lg cursor-help transition-transform hover:scale-110">
                 {idx + 1}
               </div>
-              <div className="absolute left-6 top-0 hidden group-hover:block bg-black/85 text-white text-[10px] rounded px-2 py-1 whitespace-nowrap z-10 max-w-[200px]">
-                {pin.content}
+              <div className="absolute left-7 top-1/2 -translate-y-1/2 hidden group-hover:block z-20">
+                <div className="relative bg-neutral-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2 shadow-xl max-w-[240px] whitespace-normal">
+                  <span className="block text-[9px] uppercase tracking-wide text-red-300 font-bold mb-0.5">Góp ý #{idx + 1}</span>
+                  {pin.content}
+                  <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900" />
+                </div>
               </div>
             </div>
           ))}

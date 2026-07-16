@@ -1352,7 +1352,7 @@ const payload = {
                             <div className="space-y-1.5 min-w-0">
                               <div className="flex items-center gap-2.5 flex-wrap">
                                 <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                                  {task.type} (Pages {task.pages})
+                                  {task.type} · Trang {task.pageStart}–{task.pageEnd}
                                 </span>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTaskStatusClass(task.status)}`}>
                                   {task.status}
@@ -1602,7 +1602,7 @@ const payload = {
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 className="font-bold text-sm text-foreground">
-                                  {task.type} (Page {task.pages})
+                                  {task.type} · Trang {task.pageStart}–{task.pageEnd}
                                 </h3>
                               </div>
                               <p className="text-xs text-muted-foreground font-semibold mt-1">
@@ -1713,7 +1713,7 @@ const payload = {
                       <div key={task.id} className="bg-card border border-border/60 rounded-2xl p-4.5 space-y-3.5 hover:border-primary/10 transition-colors">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h4 className="font-bold text-xs text-foreground">{task.type} (Page {task.pages})</h4>
+                            <h4 className="font-bold text-xs text-foreground">{task.type} · Trang {task.pageStart}–{task.pageEnd}</h4>
                             <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">{getChapterInfo(task.chapterId)}</p>
                           </div>
                           {getTaskStatusBadge(task.status)}
@@ -2362,6 +2362,12 @@ const payload = {
                   onChange={(e) => setNewTaskRate(e.target.value === '' ? 0 : Number(e.target.value))}
                   className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
                 />
+                {newTaskPageEnd >= newTaskPageStart && newTaskPageStart > 0 && (
+                  <p className="text-xs font-bold text-primary flex items-center gap-1">
+                     Sẽ giao: Trang {newTaskPageStart}–{newTaskPageEnd}
+                    <span className="font-normal text-muted-foreground">({newTaskPageEnd - newTaskPageStart + 1} trang)</span>
+                  </p>
+                )}
                 {newTaskRate > 0 && newTaskPageEnd >= newTaskPageStart && (
                   <p className="text-xs text-emerald-600 font-bold flex items-center gap-1">
                     Ước tính lương: {formatVND((newTaskPageEnd - newTaskPageStart + 1) * newTaskRate)}
@@ -2523,8 +2529,17 @@ const payload = {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={zipPages[currentPage].dataUrl} alt="submission" className="max-h-[80vh] max-w-full object-contain pointer-events-none" />
                   {imagePins.map((pin, idx) => pin.page === currentPage && (
-                    <div key={idx} className="absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
-                      {idx + 1}
+                    <div key={idx} className="group/pin absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white transition-transform hover:scale-110 hover:z-30 cursor-help" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
+                  {idx + 1}
+                    {pin.note && pin.note.trim() && (
+                      <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden group-hover/pin:block z-40">
+                        <div className="relative bg-neutral-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2 shadow-xl max-w-[240px] whitespace-normal text-left font-normal">
+                          <span className="block text-[9px] uppercase tracking-wide text-red-300 font-bold mb-0.5">Góp ý #{idx + 1}</span>
+                          {pin.note}
+                          <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900" />
+                        </div>
+                      </div>
+                    )}
                     </div>
                   ))}
                 </div>
@@ -2773,7 +2788,7 @@ const payload = {
                       Manga: {getMangaTitleForTask(activeTaskToReview)}
                     </span>
                     <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded inline-block">
-                      {activeTaskToReview.type} (Page {activeTaskToReview.pages})
+                    {activeTaskToReview.type} · Trang {activeTaskToReview.pageStart}–{activeTaskToReview.pageEnd}
                     </span>
                   </div>
 
@@ -3023,7 +3038,7 @@ const payload = {
                   <div className="p-3.5 bg-muted/40 border border-border rounded-xl space-y-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Chapter Info</p>
                     <p className="font-bold text-foreground text-sm">{getChapterInfo(activeTaskToView.chapterId)}</p>
-                    <p className="text-xs text-muted-foreground font-semibold">Task: {activeTaskToView.type} (Page {activeTaskToView.pages})</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Task: {activeTaskToView.type} · Trang {activeTaskToView.pageStart}–{activeTaskToView.pageEnd}</p>
                   </div>
 
                   {/* Task details */}
