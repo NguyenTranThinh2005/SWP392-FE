@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { compareAny,extractImagesFromZip  } from '@/lib/imageCompare'
 import { getSalaryByAssistant, formatVND } from '@/lib/salary'
@@ -99,6 +99,17 @@ export default function ChaptersPage() {
   const [activeTaskToReview, setActiveTaskToReview] = useState<Task | null>(null)
   const [isViewDetailModalOpen, setIsViewDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsReviewModalOpen(false)
+        setIsTaskModalOpen(false)
+        setIsViewDetailModalOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 const [subCompareLoading, setSubCompareLoading] = useState(false)
 const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string; pages?: any[] } | null>(null)  
 const [subCompareError, setSubCompareError] = useState('')
@@ -1352,7 +1363,7 @@ const payload = {
                             <div className="space-y-1.5 min-w-0">
                               <div className="flex items-center gap-2.5 flex-wrap">
                                 <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                                  {task.type} (Pages {task.pages})
+                                  {task.type} · Trang {task.pageStart}–{task.pageEnd}
                                 </span>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTaskStatusClass(task.status)}`}>
                                   {task.status}
@@ -1602,7 +1613,7 @@ const payload = {
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 className="font-bold text-sm text-foreground">
-                                  {task.type} (Page {task.pages})
+                                  {task.type} · Trang {task.pageStart}–{task.pageEnd}
                                 </h3>
                               </div>
                               <p className="text-xs text-muted-foreground font-semibold mt-1">
@@ -1713,7 +1724,7 @@ const payload = {
                       <div key={task.id} className="bg-card border border-border/60 rounded-2xl p-4.5 space-y-3.5 hover:border-primary/10 transition-colors">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h4 className="font-bold text-xs text-foreground">{task.type} (Page {task.pages})</h4>
+                            <h4 className="font-bold text-xs text-foreground">{task.type} · Trang {task.pageStart}–{task.pageEnd}</h4>
                             <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">{getChapterInfo(task.chapterId)}</p>
                           </div>
                           {getTaskStatusBadge(task.status)}
@@ -2362,6 +2373,12 @@ const payload = {
                   onChange={(e) => setNewTaskRate(e.target.value === '' ? 0 : Number(e.target.value))}
                   className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
                 />
+                {newTaskPageEnd >= newTaskPageStart && newTaskPageStart > 0 && (
+                  <p className="text-xs font-bold text-primary flex items-center gap-1">
+                     Sẽ giao: Trang {newTaskPageStart}–{newTaskPageEnd}
+                    <span className="font-normal text-muted-foreground">({newTaskPageEnd - newTaskPageStart + 1} trang)</span>
+                  </p>
+                )}
                 {newTaskRate > 0 && newTaskPageEnd >= newTaskPageStart && (
                   <p className="text-xs text-emerald-600 font-bold flex items-center gap-1">
                     Ước tính lương: {formatVND((newTaskPageEnd - newTaskPageStart + 1) * newTaskRate)}
@@ -2523,8 +2540,17 @@ const payload = {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={zipPages[currentPage].dataUrl} alt="submission" className="max-h-[80vh] max-w-full object-contain pointer-events-none" />
                   {imagePins.map((pin, idx) => pin.page === currentPage && (
-                    <div key={idx} className="absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
-                      {idx + 1}
+                    <div key={idx} className="group/pin absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white transition-transform hover:scale-110 hover:z-30 cursor-help" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
+                  {idx + 1}
+                    {pin.note && pin.note.trim() && (
+                      <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden group-hover/pin:block z-40">
+                        <div className="relative bg-neutral-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2 shadow-xl max-w-[240px] whitespace-normal text-left font-normal">
+                          <span className="block text-[9px] uppercase tracking-wide text-red-300 font-bold mb-0.5">Góp ý #{idx + 1}</span>
+                          {pin.note}
+                          <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900" />
+                        </div>
+                      </div>
+                    )}
                     </div>
                   ))}
                 </div>
@@ -2628,8 +2654,8 @@ const payload = {
                   ) : /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) ? (
                     <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
                       <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
-                      <span className="text-sm font-bold text-foreground">Multi-page compressed file</span>
-                      <span className="text-xs">Click here to view & comment page-by-page</span>
+                     <span className="text-sm font-bold text-foreground">Bài nộp nhiều trang (nén)</span>
+                      <span className="text-xs">Bấm "Mở ảnh lớn" bên dưới để xem & góp ý từng trang</span>
                     </div>
                   ) : (
                     <ImageCommentLayer
@@ -2639,10 +2665,10 @@ const payload = {
                       onAddAnnotation={handleAddTaskAnnotation}
                     />
                   )}
-                  {imagePins.map((pin, idx) => (
+                  {activeTaskToReview.submittedWorkUrl && !/\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) && imagePins.map((pin, idx) => (
                     <div
                       key={idx}
-                      className="absolute w-6 h-6 -ml-3 -mt-3 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                      className="absolute w-6 h-6 -ml-3 -mt-3 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white"
                       style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
                     >
                       {idx + 1}
@@ -2655,7 +2681,7 @@ const payload = {
                     onClick={openPinOverlay}
                     className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
                   >
-                    Open lightbox for detailed feedback
+                    Mở ảnh lớn để góp ý chi tiết
                   </button>
                 )}
 
@@ -2712,26 +2738,38 @@ const payload = {
                         </div>
                        {subCompareResult.diff && (
                           <div className="space-y-1">
-                            <img src={subCompareResult.diff} alt="Vùng thay đổi" className="w-full border border-border rounded-lg" />
+                            <img src={subCompareResult.diff} alt="Changes" className="w-full border border-border rounded-lg" />
                             <p className="text-[10px] text-muted-foreground text-center">🔴 Red highlighted areas show differences from the previous submission</p>
                           </div>
                         )}
                         {subCompareResult.pages && subCompareResult.pages.length > 0 && (
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {subCompareResult.pages.map((pg: any, idx: number) => (
-                              <div key={idx} className="space-y-1 border border-border rounded-lg p-2">
-                                <p className="text-[11px] font-bold text-muted-foreground">
-                                  Trang {idx + 1}
-                                  {pg.status === 'added' && ' — 🟢 Trang mới thêm'}
-                                  {pg.status === 'removed' && ' — ⚪ Trang đã xóa'}
-                                  {typeof pg.diffPercent === 'number' && ` — ${pg.diffPercent}% thay đổi`}
-                                </p>
-                                {pg.diffDataUrl && (
-                                  <img src={pg.diffDataUrl} alt={`Diff trang ${idx + 1}`} className="w-full border border-border rounded" />
-                                )}
+                              <div key={idx} className="border border-border rounded-lg p-3 space-y-2 bg-muted/20">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-foreground">Page {idx + 1}</span>
+                                  {pg.status === 'added' && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600">🟢 New page</span>}
+                                  {pg.status === 'removed' && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-500/15 text-neutral-500">⚪ Removed</span>}
+                                  {pg.status === 'same' && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600">✓ No change</span>}
+                                  {pg.status === 'changed' && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pg.diffPercent > 20 ? 'bg-red-500/15 text-red-600' : 'bg-amber-500/15 text-amber-600'}`}>🔴 {pg.diffPercent}% changed</span>}
+                                </div>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                  <div className="space-y-1">
+                                    <p className="text-[9px] uppercase font-bold text-muted-foreground text-center">Old (v1)</p>
+                                    {pg.oldDataUrl ? <img src={pg.oldDataUrl} alt="old" className="w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="text-[9px] uppercase font-bold text-muted-foreground text-center">New (v2)</p>
+                                    {pg.newDataUrl ? <img src={pg.newDataUrl} alt="new" className="w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="text-[9px] uppercase font-bold text-red-500 text-center">Diff 🔴</p>
+                                    {pg.diffDataUrl ? <img src={pg.diffDataUrl} alt="diff" className="w-full aspect-[3/4] object-cover border border-red-300 rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                  </div>
+                                </div>
                               </div>
                             ))}
-                            <p className="text-[10px] text-muted-foreground text-center">🔴 Vùng đỏ = chỗ thay đổi từng trang</p>
+                            <p className="text-[10px] text-muted-foreground text-center">🔴 Red areas = what changed between v1 and v2</p>
                           </div>
                         )}
                       </div>
@@ -2773,7 +2811,7 @@ const payload = {
                       Manga: {getMangaTitleForTask(activeTaskToReview)}
                     </span>
                     <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded inline-block">
-                      {activeTaskToReview.type} (Page {activeTaskToReview.pages})
+                    {activeTaskToReview.type} · Trang {activeTaskToReview.pageStart}–{activeTaskToReview.pageEnd}
                     </span>
                   </div>
 
@@ -2807,16 +2845,16 @@ const payload = {
                   return (
                     <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 text-xs space-y-1">
                       <p className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                         Xem trước lương khi duyệt
+                         Salary Preview
                       </p>
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Số trang:</span><span className="font-semibold text-foreground">{pages}</span>
+                        <span>Pages:</span><span className="font-semibold text-foreground">{pages}</span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Đơn giá/trang:</span><span className="font-semibold text-foreground">{formatVND(rate)}</span>
+                        <span>Rate/page:</span><span className="font-semibold text-foreground">{formatVND(rate)}</span>
                       </div>
                       <div className="flex justify-between border-t border-emerald-500/20 pt-1 mt-1">
-                        <span className="font-bold text-foreground">Tổng lương:</span>
+                        <span className="font-bold text-foreground">Total:</span>
                         <span className="font-extrabold text-emerald-600">{formatVND(total)}</span>
                       </div>
                     </div>
@@ -3023,7 +3061,7 @@ const payload = {
                   <div className="p-3.5 bg-muted/40 border border-border rounded-xl space-y-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Chapter Info</p>
                     <p className="font-bold text-foreground text-sm">{getChapterInfo(activeTaskToView.chapterId)}</p>
-                    <p className="text-xs text-muted-foreground font-semibold">Task: {activeTaskToView.type} (Page {activeTaskToView.pages})</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Task: {activeTaskToView.type} · Trang {activeTaskToView.pageStart}–{activeTaskToView.pageEnd}</p>
                   </div>
 
                   {/* Task details */}
@@ -3112,3 +3150,6 @@ const payload = {
     </div>
   )
 }
+
+
+
