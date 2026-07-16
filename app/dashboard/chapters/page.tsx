@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { compareAny,extractImagesFromZip  } from '@/lib/imageCompare'
 import { getSalaryByAssistant, formatVND } from '@/lib/salary'
@@ -2643,8 +2643,8 @@ const payload = {
                   ) : /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) ? (
                     <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
                       <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
-                      <span className="text-sm font-bold text-foreground">Multi-page compressed file</span>
-                      <span className="text-xs">Click here to view & comment page-by-page</span>
+                     <span className="text-sm font-bold text-foreground">Bài nộp nhiều trang (nén)</span>
+                      <span className="text-xs">Bấm "Mở ảnh lớn" bên dưới để xem & góp ý từng trang</span>
                     </div>
                   ) : (
                     <ImageCommentLayer
@@ -2654,10 +2654,10 @@ const payload = {
                       onAddAnnotation={handleAddTaskAnnotation}
                     />
                   )}
-                  {imagePins.map((pin, idx) => (
+                  {activeTaskToReview.submittedWorkUrl && !/\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) && imagePins.map((pin, idx) => (
                     <div
                       key={idx}
-                      className="absolute w-6 h-6 -ml-3 -mt-3 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                      className="absolute w-6 h-6 -ml-3 -mt-3 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white"
                       style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
                     >
                       {idx + 1}
@@ -2670,7 +2670,7 @@ const payload = {
                     onClick={openPinOverlay}
                     className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
                   >
-                    Open lightbox for detailed feedback
+                    Mở ảnh lớn để góp ý chi tiết
                   </button>
                 )}
 
@@ -2727,22 +2727,22 @@ const payload = {
                         </div>
                        {subCompareResult.diff && (
                           <div className="space-y-1">
-                            <img src={subCompareResult.diff} alt="Vùng thay đổi" className="w-full border border-border rounded-lg" />
+                            <img src={subCompareResult.diff} alt="Changes" className="w-full border border-border rounded-lg" />
                             <p className="text-[10px] text-muted-foreground text-center">🔴 Red highlighted areas show differences from the previous submission</p>
                           </div>
                         )}
                         {subCompareResult.pages && subCompareResult.pages.length > 0 && (
-                          <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
                             {subCompareResult.pages.map((pg: any, idx: number) => (
                               <div key={idx} className="space-y-1 border border-border rounded-lg p-2">
                                 <p className="text-[11px] font-bold text-muted-foreground">
-                                  Trang {idx + 1}
-                                  {pg.status === 'added' && ' — 🟢 Trang mới thêm'}
-                                  {pg.status === 'removed' && ' — ⚪ Trang đã xóa'}
-                                  {typeof pg.diffPercent === 'number' && ` — ${pg.diffPercent}% thay đổi`}
+                                  Page {idx + 1}
+                                  {pg.status === 'added' && ' — 🟢 Added'}
+                                  {pg.status === 'removed' && ' — ⚪ Removed'}
+                                  {typeof pg.diffPercent === 'number' && ` — ${pg.diffPercent}% changed`}
                                 </p>
                                 {pg.diffDataUrl && (
-                                  <img src={pg.diffDataUrl} alt={`Diff trang ${idx + 1}`} className="w-full border border-border rounded" />
+                                  <img src={pg.diffDataUrl} alt={`Diff page ${idx + 1}`} className="w-full border border-border rounded" />
                                 )}
                               </div>
                             ))}
@@ -2822,16 +2822,16 @@ const payload = {
                   return (
                     <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 text-xs space-y-1">
                       <p className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                         Xem trước lương khi duyệt
+                         Salary Preview
                       </p>
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Số trang:</span><span className="font-semibold text-foreground">{pages}</span>
+                        <span>Pages:</span><span className="font-semibold text-foreground">{pages}</span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Đơn giá/trang:</span><span className="font-semibold text-foreground">{formatVND(rate)}</span>
+                        <span>Rate/page:</span><span className="font-semibold text-foreground">{formatVND(rate)}</span>
                       </div>
                       <div className="flex justify-between border-t border-emerald-500/20 pt-1 mt-1">
-                        <span className="font-bold text-foreground">Tổng lương:</span>
+                        <span className="font-bold text-foreground">Total:</span>
                         <span className="font-extrabold text-emerald-600">{formatVND(total)}</span>
                       </div>
                     </div>
@@ -3127,3 +3127,5 @@ const payload = {
     </div>
   )
 }
+
+
