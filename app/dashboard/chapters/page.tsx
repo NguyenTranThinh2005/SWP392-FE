@@ -99,6 +99,17 @@ export default function ChaptersPage() {
   const [activeTaskToReview, setActiveTaskToReview] = useState<Task | null>(null)
   const [isViewDetailModalOpen, setIsViewDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsReviewModalOpen(false)
+        setIsTaskModalOpen(false)
+        setIsViewDetailModalOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 const [subCompareLoading, setSubCompareLoading] = useState(false)
 const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string; pages?: any[] } | null>(null)  
 const [subCompareError, setSubCompareError] = useState('')
@@ -2732,21 +2743,33 @@ const payload = {
                           </div>
                         )}
                         {subCompareResult.pages && subCompareResult.pages.length > 0 && (
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-3">
                             {subCompareResult.pages.map((pg: any, idx: number) => (
-                              <div key={idx} className="space-y-1 border border-border rounded-lg p-2">
-                                <p className="text-[11px] font-bold text-muted-foreground">
-                                  Page {idx + 1}
-                                  {pg.status === 'added' && ' — 🟢 Added'}
-                                  {pg.status === 'removed' && ' — ⚪ Removed'}
-                                  {typeof pg.diffPercent === 'number' && ` — ${pg.diffPercent}% changed`}
-                                </p>
-                                {pg.diffDataUrl && (
-                                  <img src={pg.diffDataUrl} alt={`Diff page ${idx + 1}`} className="w-full border border-border rounded" />
-                                )}
+                              <div key={idx} className="border border-border rounded-lg p-3 space-y-2 bg-muted/20">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-foreground">Page {idx + 1}</span>
+                                  {pg.status === 'added' && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600">🟢 New page</span>}
+                                  {pg.status === 'removed' && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-500/15 text-neutral-500">⚪ Removed</span>}
+                                  {pg.status === 'same' && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600">✓ No change</span>}
+                                  {pg.status === 'changed' && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pg.diffPercent > 20 ? 'bg-red-500/15 text-red-600' : 'bg-amber-500/15 text-amber-600'}`}>🔴 {pg.diffPercent}% changed</span>}
+                                </div>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                  <div className="space-y-1">
+                                    <p className="text-[9px] uppercase font-bold text-muted-foreground text-center">Old (v1)</p>
+                                    {pg.oldDataUrl ? <img src={pg.oldDataUrl} alt="old" className="w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="text-[9px] uppercase font-bold text-muted-foreground text-center">New (v2)</p>
+                                    {pg.newDataUrl ? <img src={pg.newDataUrl} alt="new" className="w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="text-[9px] uppercase font-bold text-red-500 text-center">Diff 🔴</p>
+                                    {pg.diffDataUrl ? <img src={pg.diffDataUrl} alt="diff" className="w-full aspect-[3/4] object-cover border border-red-300 rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                  </div>
+                                </div>
                               </div>
                             ))}
-                            <p className="text-[10px] text-muted-foreground text-center">🔴 Vùng đỏ = chỗ thay đổi từng trang</p>
+                            <p className="text-[10px] text-muted-foreground text-center">🔴 Red areas = what changed between v1 and v2</p>
                           </div>
                         )}
                       </div>
@@ -3127,5 +3150,6 @@ const payload = {
     </div>
   )
 }
+
 
 

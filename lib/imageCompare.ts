@@ -1,4 +1,4 @@
-import pixelmatch from 'pixelmatch'
+﻿import pixelmatch from 'pixelmatch'
 import JSZip from 'jszip'
 
 // Tải 1 ảnh từ URL về dạng có thể đọc pixel
@@ -86,6 +86,8 @@ export interface PageCompareResult {
   nameA?: string
   nameB?: string
   status: 'changed' | 'same' | 'added' | 'removed' // them moi / da xoa / giong / khac
+  oldDataUrl?: string
+  newDataUrl?: string
   diffPercent?: number
   diffDataUrl?: string
 }
@@ -110,9 +112,9 @@ export async function compareZips(zipUrlOld: string, zipUrlNew: string): Promise
     const newImg = imagesNew[i]
 
     if (oldImg && !newImg) {
-      pages.push({ index: i, nameA: oldImg.name, status: 'removed' }) // trang da xoa
+      pages.push({ index: i, nameA: oldImg.name, status: 'removed', oldDataUrl: oldImg.dataUrl }) // trang da xoa
     } else if (!oldImg && newImg) {
-      pages.push({ index: i, nameB: newImg.name, status: 'added' })   // trang moi them
+      pages.push({ index: i, nameB: newImg.name, status: 'added', newDataUrl: newImg.dataUrl })   // trang moi them
     } else if (oldImg && newImg) {
       const result = await compareImages(oldImg.dataUrl, newImg.dataUrl)
       sumDiff += result.diffPercent
@@ -124,6 +126,8 @@ export async function compareZips(zipUrlOld: string, zipUrlNew: string): Promise
         status: result.diffPercent > 0 ? 'changed' : 'same',
         diffPercent: result.diffPercent,
         diffDataUrl: result.diffDataUrl,
+        oldDataUrl: oldImg.dataUrl,
+        newDataUrl: newImg.dataUrl,
       })
     }
   }
@@ -149,12 +153,31 @@ export async function compareAny(urlA: string, urlB: string): Promise<{
     return { isZip: true, diffPercent: r.avgDiffPercent, pages: r.pages }
   }
 
-  // Khac loai (1 zip, 1 anh) -> khong so sanh duoc truc tiep
+  // Khac loai (1 zip, 1 anh) -> coi anh don nhu zip 1 trang
   if (aZip !== bZip) {
-    throw new Error('Hai lần nộp khác định dạng (một bên là file nén, một bên là ảnh) nên không so sánh trực tiếp được.')
+    const zipUrl = aZip ? urlA : urlB
+    const imgUrl = aZip ? urlB : urlA
+    const zipImgs = await extractImagesFromZip(zipUrl)
+    if (!zipImgs.length) {
+      const rr = await compareImages(imgUrl, imgUrl)
+      return { isZip: false, diffPercent: 0, diffDataUrl: rr.diffDataUrl }
+    }
+    const firstPage = aZip ? zipImgs[0].dataUrl : imgUrl
+    const secondPage = aZip ? imgUrl : zipImgs[0].dataUrl
+    const rr = await compareImages(firstPage, secondPage)
+    const pages = [{
+      index: 0,
+      status: (rr.diffPercent > 0 ? 'changed' : 'same') as 'changed' | 'same',
+      diffPercent: rr.diffPercent,
+      diffDataUrl: rr.diffDataUrl,
+      oldDataUrl: firstPage,
+      newDataUrl: secondPage,
+    }]
+    return { isZip: true, diffPercent: rr.diffPercent, pages }
   }
 
   // Ca 2 deu anh -> so thang
   const r = await compareImages(urlA, urlB)
   return { isZip: false, diffPercent: r.diffPercent, diffDataUrl: r.diffDataUrl }
 }
+
