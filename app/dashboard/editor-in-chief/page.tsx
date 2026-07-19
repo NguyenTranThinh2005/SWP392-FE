@@ -1,9 +1,3 @@
-/**
- * EDITOR-IN-CHIEF WORKSPACE: Executive control panel for active serializations and board vote management.
- * Main features:
- * 1. Vote Tracking: Monitor Approve/Reject vote counts from the Editorial Board for each proposal.
- * 2. Veto Override: Direct action to Approve or Reject proposals immediately, bypassing board voting.
- */
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'

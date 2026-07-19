@@ -1,10 +1,3 @@
-/**
- * MY PROPOSALS PAGE (Authors - Mangakas): View and manage series proposals.
- * Main features:
- * 1. Proposals List: View and filter historical proposals by their review status.
- * 2. Restriction Check: Show warning and block new proposal creation if a pending proposal exists (BR-11).
- * 3. Draft Management: Soft delete draft proposals.
- */
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -69,7 +62,7 @@ export default function MyProposalsPage() {
           toast.success('Draft deleted successfully!')
         } else {
           toast.error(
-            'Failed to delete draft. It might be due to API role restrictions (AdminOnly).'
+            'Failed to delete draft'
           )
         }
       } catch (err: any) {

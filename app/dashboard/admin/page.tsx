@@ -1,10 +1,3 @@
-/**
- * ADMIN PAGE: Manage member accounts and system configuration.
- * Main features:
- * 1. View user accounts list with search, filter by role and status.
- * 2. Create new accounts and assign responsible editors (Tantou Editors) to authors (Mangakas).
- * 3. System Management: Manage genres list and system settings.
- */
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'

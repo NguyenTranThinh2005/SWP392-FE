@@ -1,11 +1,3 @@
-/**
- * TANTOU EDITOR WORKSPACE: Manage assigned series and creators (Mangakas).
- * Main features:
- * 1. Dashboard: Overview of active metrics and list of supervised creators.
- * 2. Series Management: Manage supervised series and edit chapters list.
- * 3. Approve Proposals: Accept, reject, or forward new series proposals to the Board.
- * 4. Manuscripts Review: Review submitted drafts (Approve / Reject / Request Revision) with comments.
- */
 'use client'
 
 import { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
