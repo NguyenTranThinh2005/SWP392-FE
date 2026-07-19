@@ -112,7 +112,7 @@ export const manuscriptService = {
       const chaptersList = (chaptersRes as any).data || chaptersRes || []
 
       // Fetch all series to resolve correct series titles (e.g. mapping seriesId -> title)
-      const seriesMap = new Map<string, string>()
+      const seriesMap = new Map<string, { title: string; coverImage?: string }>()
       try {
         const seriesRes = await fetchAPI<{ data: any[] } | any[]>('/api/series')
         const seriesList = (seriesRes as any).data || seriesRes || []
@@ -120,8 +120,9 @@ export const manuscriptService = {
           seriesList.forEach((s: any) => {
             const sId = s.seriesId || s.id || s.Id
             const sTitle = s.title || s.Title
-            if (sId && sTitle) {
-              seriesMap.set(sId, sTitle)
+            const sCover = s.coverImagePublicUrl || s.coverImageUrl || s.CoverImagePublicUrl
+            if (sId) {
+              seriesMap.set(sId, { title: sTitle || 'Manga', coverImage: sCover })
             }
           })
         }
@@ -177,11 +178,26 @@ export const manuscriptService = {
             })
           }
 
+          const seriesInfo = seriesMap.get(m.seriesId)
+          const seriesTitle = m.seriesTitle || seriesInfo?.title || 'Sakura Knights'
+          const coverImagePublicUrl = seriesInfo?.coverImage
+
+          const colors = [
+            'from-red-500 to-rose-700',
+            'from-emerald-500 to-teal-700',
+            'from-orange-500 to-red-600',
+            'from-sky-400 to-indigo-600',
+            'from-blue-600 to-cyan-700',
+            'from-pink-500 to-purple-600',
+          ]
+          const colorIdx = Math.abs(seriesTitle.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)) % colors.length
+          const coverColor = colors[colorIdx]
+
           return {
             id: m.manuscriptId || m.id,
             chapterId: m.chapterId,
             seriesId: m.seriesId || 'S01',
-            seriesTitle: m.seriesTitle || seriesMap.get(m.seriesId) || 'Sakura Knights',
+            seriesTitle,
             chapterNumber: m.chapterNumber || 1,
             chapterTitle: m.chapterTitle || 'Chương mới',
             latestVersion: m.versionLabel || `v${m.versionNo || 1}`,
@@ -189,7 +205,9 @@ export const manuscriptService = {
             progress: m.progress || 100,
             history: historyList,
             pages: ['Page 1', 'Page 2', 'Page 3', 'Page 4'],
-            fileUrl: m.fileUrl || m.FileUrl || undefined
+            fileUrl: m.fileUrl || m.FileUrl || undefined,
+            coverImagePublicUrl,
+            coverColor
           }
         })
 

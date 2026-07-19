@@ -21,6 +21,8 @@ export interface ManuscriptItem {
   history: ManuscriptVersion[]
   pages: string[] // mock page previews
   fileUrl?: string
+  coverImagePublicUrl?: string
+  coverColor?: string
 }
 
 export interface Annotation {

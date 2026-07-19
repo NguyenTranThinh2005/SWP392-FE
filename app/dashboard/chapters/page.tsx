@@ -1,5 +1,6 @@
 'use client'
 
+import { toast as sonnerToast } from 'sonner'
 import { compareAny,extractImagesFromZip  } from '@/lib/imageCompare'
 import { getSalaryByAssistant, formatVND } from '@/lib/salary'
 import { useCallback, useEffect, useState } from 'react'
@@ -78,7 +79,6 @@ export default function ChaptersPage() {
       } catch { }
     }
   }, [role])
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   // --- State for Mangaka Role ---
   const [mangakaSeries, setMangakaSeries] = useState<Series[]>([])
@@ -302,8 +302,11 @@ const [subCompareError, setSubCompareError] = useState('')
 
   // Trigger Toast Notification helper
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 4000)
+    if (type === 'success') {
+      sonnerToast.success(message)
+    } else {
+      sonnerToast.error(message)
+    }
   }
 
   // Load Initial Data
@@ -1075,36 +1078,14 @@ const payload = {
 
   return (
     <div className="space-y-6">
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-5 right-5 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-bold shadow-lg animate-in fade-in slide-in-from-top-4 duration-300 ${toast.type === 'success'
-          ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400'
-          : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400'
-          }`}>
-          {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertTriangle className="w-4 h-4 shrink-0" />}
-          {toast.message}
-        </div>
-      )}
 
       {/* Page Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 rounded-2xl p-6 sm:p-7">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-              <ClipboardList className="w-3.5 h-3.5" /> Workflow Board
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Chapters & Tasks Management
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {role === 'Mangaka'
-                ? 'Create chapters, assign duties to your assistants, and review submissions.'
-                : role === 'Assistant'
-                  ? 'Check your assigned drawing tasks, update work status, and submit drawings.'
-                  : 'Oversee and review chapter development and assistant tasks.'}
-            </p>
-          </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
+            <ClipboardList className="w-8 h-8 text-primary" />
+            Chapters & Tasks Management
+          </h1>
         </div>
       </div>
 

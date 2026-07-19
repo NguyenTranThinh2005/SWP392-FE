@@ -41,21 +41,6 @@ export default function WelcomeHeader({
             </div>
           )}
         </div>
-
-        {isBlocked ? (
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs font-semibold text-amber-600 shrink-0">
-            <AlertTriangle className="w-4 h-4" />
-            Pending proposal under review — new submissions temporarily locked
-          </div>
-        ) : (
-          <Link
-            href="/dashboard/series/new"
-            className="inline-flex items-center gap-2 shrink-0 bg-primary text-primary-foreground font-bold text-sm px-5 py-3 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            New Proposal
-          </Link>
-        )}
       </div>
     </div>
   )

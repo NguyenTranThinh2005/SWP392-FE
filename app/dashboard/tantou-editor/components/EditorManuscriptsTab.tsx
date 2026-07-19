@@ -13,8 +13,7 @@ import {
 import { toast } from 'sonner'
 import { manuscriptService } from '@/services/manuscriptService'
 import { chapterService } from '@/services/chapterService'
-import type { ManuscriptItem, Annotation } from '@/types/manuscript'
-import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
+import type { ManuscriptItem } from '@/types/manuscript'
 
 interface EditorManuscriptsTabProps {
   manuscripts: ManuscriptItem[]
@@ -28,28 +27,14 @@ export default function EditorManuscriptsTab({
   onRefresh
 }: EditorManuscriptsTabProps) {
   const [activeManuscriptId, setActiveManuscriptId] = useState<string | null>(null)
-  const [newAnnotationText, setNewAnnotationText] = useState('')
   const [feedbackText, setFeedbackText] = useState('')
-  const [annotations, setAnnotations] = useState<Annotation[]>([])
 
   const activeManuscript = useMemo(() => {
     return manuscripts.find((m) => m.id === activeManuscriptId)
   }, [manuscripts, activeManuscriptId])
 
-  useEffect(() => {
-    if (activeManuscript) {
-      setAnnotations(manuscriptService.getAnnotations(activeManuscript.id, activeManuscript.latestVersion))
-      manuscriptService.syncAnnotationsFromBackend(activeManuscript.id)
-        .then((synced) => {
-          if (synced) setAnnotations(synced)
-        })
-        .catch((e) => console.warn(e))
-    }
-  }, [activeManuscript])
-
   const handleOpenReview = (id: string) => {
     setActiveManuscriptId(id)
-    setNewAnnotationText('')
     setFeedbackText('')
   }
 
@@ -58,46 +43,7 @@ export default function EditorManuscriptsTab({
     onRefresh()
   }
 
-  const handleAddAnnotationSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!activeManuscript || !newAnnotationText.trim()) return
 
-    manuscriptService.addAnnotation(
-      activeManuscript.id,
-      activeManuscript.latestVersion,
-      1,
-      0.5,
-      0.5,
-      newAnnotationText.trim()
-    ).then((ann) => {
-      setAnnotations((prev) => [...prev, ann])
-      setNewAnnotationText('')
-      toast.success('Annotation added to this version draft!')
-    }).catch((err) => {
-      toast.error(err.message || 'Failed to add annotation')
-    })
-  }
-
-  const handleAddImageAnnotation = async (
-    pageNo: number,
-    x: number,
-    y: number,
-    text: string
-  ) => {
-    if (!activeManuscript) return
-
-    const ann = await manuscriptService.addAnnotation(
-      activeManuscript.id,
-      activeManuscript.latestVersion,
-      pageNo,
-      x,
-      y,
-      text
-    )
-
-    setAnnotations((prev) => [...prev, ann])
-    toast.success('Annotation added!')
-  }
 
   const handleDecision = async (status: 'APPROVED' | 'REVISION REQUIRED') => {
     if (!activeManuscript) return
@@ -213,11 +159,11 @@ export default function EditorManuscriptsTab({
 
                 {activeManuscript.fileUrl ? (
                   <div className="space-y-3">
-                    <ImageCommentLayer
-                      imageUrl={activeManuscript.fileUrl}
-                      pageNo={1}
-                      annotations={annotations}
-                      onAddAnnotation={handleAddImageAnnotation}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={activeManuscript.fileUrl}
+                      alt="Submitted Manuscript"
+                      className="w-full rounded-lg border border-border/85 object-contain max-h-[700px] mx-auto"
                     />
                     <div className="p-4 bg-muted/30 border border-border/80 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
@@ -244,56 +190,6 @@ export default function EditorManuscriptsTab({
                     No file link found for this version.
                   </div>
                 )}
-              </div>
-
-              {/* Annotations */}
-              <div className="bg-card border border-border p-5 rounded-xl space-y-4 shadow-sm">
-                <div className="flex items-center justify-between border-b border-border/40 pb-3">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wide text-foreground">
-                    Annotations
-                  </h4>
-                  <span className="text-[9px] text-muted-foreground bg-muted px-2 py-0.5 rounded border border-border/65">
-                    Locked to {activeManuscript.latestVersion}
-                  </span>
-                </div>
-
-                <div className="space-y-3 max-h-48 overflow-y-auto">
-                  {annotations.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic py-2">
-                      No annotations added to this version yet.
-                    </p>
-                  ) : (
-                    annotations.map((ann) => (
-                      <div
-                        key={ann.id}
-                        className="p-3 bg-muted/30 border border-border/30 rounded-lg space-y-1 text-xs"
-                      >
-                        <p className="text-foreground font-semibold">{ann.text}</p>
-                        <p className="text-[9px] text-muted-foreground/60">
-                          {new Date(ann.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Add Annotation Form */}
-                <form onSubmit={handleAddAnnotationSubmit} className="flex gap-2 pt-2 border-t border-border/30">
-                  <input
-                    type="text"
-                    placeholder="Type storyboard annotations..."
-                    value={newAnnotationText}
-                    onChange={(e) => setNewAnnotationText(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-muted/40 border border-border rounded-lg text-xs focus:outline-none focus:border-primary/40 text-foreground"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="bg-primary text-primary-foreground font-extrabold text-xs rounded-lg px-4 hover:bg-primary/95 transition-colors cursor-pointer"
-                  >
-                    Add
-                  </button>
-                </form>
               </div>
             </div>
 

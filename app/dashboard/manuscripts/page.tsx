@@ -16,7 +16,8 @@ import {
   ChevronDown,
   FileArchive,
   Download,
-  FileText
+  FileText,
+  Filter
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -24,8 +25,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
 import { manuscriptService } from '@/services/manuscriptService'
-import type { ManuscriptItem, Annotation } from '@/types/manuscript'
-import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
+import type { ManuscriptItem } from '@/types/manuscript'
 
 export default function ManuscriptsPage() {
   const { role } = useRole()
@@ -35,10 +35,9 @@ export default function ManuscriptsPage() {
   const [manuscripts, setManuscripts] = useState<ManuscriptItem[]>([])
   const [activeManuscriptId, setActiveManuscriptId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'ALL' | 'SUBMITTED' | 'APPROVED' | 'REVISION REQUIRED'>('ALL')
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string>('ALL')
 
   // Review Panel States
-  const [annotations, setAnnotations] = useState<Annotation[]>([])
-  const [newAnnotationText, setNewAnnotationText] = useState('')
   const [feedbackText, setFeedbackText] = useState('')
 
   // Load data from store
@@ -57,21 +56,27 @@ export default function ManuscriptsPage() {
     return manuscripts.find(m => m.id === activeManuscriptId)
   }, [manuscripts, activeManuscriptId])
 
+  // Extract unique series from manuscripts list
+  const uniqueSeriesList = useMemo(() => {
+    const map = new Map<string, string>()
+    manuscripts.forEach(m => {
+      if (m.seriesId && m.seriesTitle) {
+        map.set(m.seriesId, m.seriesTitle)
+      }
+    })
+    return Array.from(map.entries()).map(([id, title]) => ({ id, title }))
+  }, [manuscripts])
+
   const filteredManuscripts = useMemo(() => {
-    if (activeTab === 'ALL') return manuscripts
-    return manuscripts.filter(m => m.status === activeTab)
-  }, [manuscripts, activeTab])
-
-  useEffect(() => {
-    if (activeManuscript) {
-      setAnnotations(manuscriptService.getAnnotations(activeManuscript.id, activeManuscript.latestVersion))
-
-      // Background sync from Backend
-      manuscriptService.syncAnnotationsFromBackend(activeManuscript.id).then((synced) => {
-        setAnnotations(synced)
-      })
+    let result = manuscripts
+    if (activeTab !== 'ALL') {
+      result = result.filter(m => m.status === activeTab)
     }
-  }, [activeManuscript])
+    if (selectedSeriesId !== 'ALL') {
+      result = result.filter(m => m.seriesId === selectedSeriesId)
+    }
+    return result
+  }, [manuscripts, activeTab, selectedSeriesId])
 
   // Is authorized editor (Tantou Editor)
   const isTantouEditor = useMemo(() => {
@@ -80,47 +85,12 @@ export default function ManuscriptsPage() {
 
   const handleOpenReview = (id: string) => {
     setActiveManuscriptId(id)
-    setNewAnnotationText('')
     setFeedbackText('')
   }
 
   const handleBackToList = () => {
     setActiveManuscriptId(null)
     setManuscripts(manuscriptService.getManuscripts())
-  }
-  // Handle adding version-bound annotations (BR-78)
-  const handleAddAnnotation = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!activeManuscript || !newAnnotationText.trim()) return
-
-    manuscriptService.addAnnotation(activeManuscript.id, activeManuscript.latestVersion, 1, 0.5, 0.5, newAnnotationText.trim()).then((ann) => {
-      setAnnotations(prev => [...prev, ann])
-      setNewAnnotationText('')
-      toast.success('Annotation added to this version draft!')
-    }).catch((err) => {
-      toast.error(err.message || 'Failed to add annotation')
-    })
-  }
-
-  const handleAddImageAnnotation = async (
-    pageNo: number,
-    x: number,
-    y: number,
-    text: string
-  ) => {
-    if (!activeManuscript) return
-
-    const ann = await manuscriptService.addAnnotation(
-      activeManuscript.id,
-      activeManuscript.latestVersion,
-      pageNo,
-      x,
-      y,
-      text
-    )
-
-    setAnnotations(prev => [...prev, ann])
-    toast.success('Annotation added!')
   }
 
   // aandle decision outcomes (, )
@@ -213,11 +183,11 @@ export default function ManuscriptsPage() {
 
                 {activeManuscript.fileUrl ? (
                   <div className="space-y-3">
-                    <ImageCommentLayer
-                      imageUrl={activeManuscript.fileUrl}
-                      pageNo={1}
-                      annotations={annotations}
-                      onAddAnnotation={handleAddImageAnnotation}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={activeManuscript.fileUrl}
+                      alt="Submitted Manuscript"
+                      className="w-full rounded-lg border border-border/85 object-contain max-h-[700px] mx-auto"
                     />
                     <div className="p-4 bg-muted/30 border border-border/80 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
@@ -244,46 +214,6 @@ export default function ManuscriptsPage() {
                     No file link found for this version.
                   </div>
                 )}
-              </Card>
-
-              {/* Annotations panel */}
-              <Card className="border-border bg-card p-5 rounded-xl space-y-4 shadow-sm">
-                <div className="flex items-center justify-between border-b border-border pb-3">
-                  <h3 className="text-sm font-bold text-foreground">
-                    Annotations (version-bound)
-                  </h3>
-                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded border">
-                    Locked to {activeManuscript.latestVersion}
-                  </span>
-                </div>
-
-                <div className="space-y-3 max-h-48 overflow-y-auto">
-                  {annotations.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic py-2">No annotations for this version</p>
-                  ) : (
-                    annotations.map(ann => (
-                      <div key={ann.id} className="p-3 bg-muted/40 border border-border/50 rounded-lg space-y-1">
-                        <p className="text-xs text-foreground font-medium">{ann.text}</p>
-                        <p className="text-[9px] text-muted-foreground">{formatDateShort(ann.createdAt)}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Add Annotation Form */}
-                <form onSubmit={handleAddAnnotation} className="flex gap-2 pt-1">
-                  <input
-                    type="text"
-                    placeholder="Add annotation..."
-                    value={newAnnotationText}
-                    onChange={(e) => setNewAnnotationText(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-muted/65 border border-border rounded-lg text-xs focus:outline-none text-foreground"
-                    required
-                  />
-                  <Button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs rounded-lg px-4 cursor-pointer transition-colors">
-                    Add
-                  </Button>
-                </form>
               </Card>
             </div>
 
@@ -358,166 +288,164 @@ export default function ManuscriptsPage() {
       ) : (
         /* Manuscripts List View (Image 1 View) */
         <div className="space-y-8 animate-in fade-in duration-200">
-          {/* Page aeader */}
+          {/* Page Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
                 <Layers className="w-8 h-8 text-primary" />
                 Manuscripts Review
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Evaluate chapter storyboards, ink version cycles, and issue revision calls
-              </p>
-            </div>
-            <div className="text-xs bg-card border border-border px-3.5 py-2 rounded-lg text-muted-foreground font-semibold max-w-xs shrink-0 self-start md:self-center">
-              Logged in as: <strong className="text-primary">{role}</strong>
             </div>
           </div>
 
-          {/* Status Tabs Menu */}
-          <div className="flex border-b border-border">
-            {[
-              { id: 'ALL', label: 'All Manuscripts' },
-              { id: 'SUBMITTED', label: 'Pending Review' },
-              { id: 'APPROVED', label: 'Approved' },
-              { id: 'REVISION REQUIRED', label: 'Revision Required' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all cursor-pointer ${
-                  activeTab === tab.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
+          {/* Tabs & Filters bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border gap-4 pb-2 sm:pb-0">
+            {/* Status Tabs Menu */}
+            <div className="flex overflow-x-auto">
+              {[
+                { id: 'ALL', label: 'All Manuscripts' },
+                { id: 'SUBMITTED', label: 'Pending Review' },
+                { id: 'APPROVED', label: 'Approved' },
+                { id: 'REVISION REQUIRED', label: 'Revision Required' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`px-5 py-3 font-bold text-xs sm:text-sm border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+                    activeTab === tab.id
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Series Filter Dropdown */}
+            <div className="relative shrink-0 flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2 text-xs mr-2 self-start sm:self-auto">
+              <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground font-bold">Manga:</span>
+              <select
+                value={selectedSeriesId}
+                onChange={(e) => setSelectedSeriesId(e.target.value)}
+                className="bg-transparent text-foreground font-bold focus:outline-none cursor-pointer pr-4"
               >
-                {tab.label}
-              </button>
-            ))}
+                <option value="ALL">All Series</option>
+                {uniqueSeriesList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredManuscripts.map((m) => {
-              const isSpecialaistoryCard = m.id === 'M04'
               const latestVer = m.history[0]
 
               // Status colors styling
               const getBadgeColor = (status: string) => {
                 switch (status) {
-                  case 'APPROVED': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20'
-                  case 'SUBMITTED': return 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-500 border-indigo-500/20'
-                  case 'REVISION REQUIRED': return 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20'
+                  case 'APPROVED': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20'
+                  case 'PUBLISHED': return 'bg-primary/10 text-primary border border-primary/20'
+                  case 'SUBMITTED': return 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-500 border border-indigo-500/20'
+                  case 'REVISION REQUIRED': return 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border border-amber-500/20'
                   default: return 'bg-muted text-muted-foreground border-border'
                 }
               }
 
               return (
-                <Card
+                <div
                   key={m.id}
-                  className={`border border-border bg-card rounded-xl overflow-hidden hover:border-primary/20 transition-all ${isSpecialaistoryCard ? 'border-amber-500/15' : ''
-                    }`}
+                  className="bg-card border border-border overflow-hidden hover:border-primary/25 hover:shadow-lg transition-all p-5 rounded-xl flex flex-col justify-between group space-y-4"
                 >
-                  <div className="p-6 space-y-4">
-                    {/* aeader line */}
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-extrabold text-base text-foreground">
-                            {m.seriesTitle} — Ch. {m.chapterNumber} "{m.chapterTitle}"
-                          </h3>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Latest Version: <span className="font-semibold text-foreground">{m.latestVersion}</span> • Total versions: {m.history.length}
-                        </p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 
+                        onClick={() => handleOpenReview(m.id)}
+                        className="font-extrabold text-sm text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-1" 
+                        title={m.seriesTitle}
+                      >
+                        {m.seriesTitle}
+                      </h3>
+                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold shrink-0 border whitespace-nowrap ${getBadgeColor(m.status)}`}>
+                        {m.status}
+                      </span>
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground font-semibold truncate">
+                      Ch. {m.chapterNumber}: "{m.chapterTitle}"
+                    </p>
+
+                    {/* Mini Drawing Progress Bar */}
+                    <div className="space-y-1 pt-1">
+                      <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                        <span>Drawing Progress</span>
+                        <span className="font-bold text-foreground">{m.progress}%</span>
                       </div>
-
-                      <div className="flex items-center gap-2 self-end sm:self-start">
-                        <span className={`text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full border ${getBadgeColor(m.status)}`}>
-                          {m.status}
-                        </span>
-
-                        {/* Review action button: show to everyone but toggle view-only status internally */}
-                        {m.status === 'SUBMITTED' && (
-                          <Button
-                            onClick={() => handleOpenReview(m.id)}
-                            className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs px-4 py-1.5 h-8 rounded-lg cursor-pointer transition-colors"
-                          >
-                            <FileCheck className="w-3.5 h-3.5 mr-1" /> Review
-                          </Button>
-                        )}
+                      <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary rounded-full transition-all duration-300" 
+                          style={{ width: `${m.progress}%` }} 
+                        />
                       </div>
                     </div>
 
-                    {/* Body content */}
-                    {isSpecialaistoryCard ? (
-                      /* Special Detailed Revision aistory Card (Card 1 in screenshot) */
-                      <div className="space-y-3 pt-2 border-t border-border/40">
-                        <div className="space-y-2">
-                          {m.history.map((h, hIdx) => (
-                            <div
-                              key={hIdx}
-                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-muted/40 border border-border/30 p-3 rounded-lg hover:bg-muted/65 transition-all"
-                            >
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-bold text-foreground text-xs">{h.version}</span>
-                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${getBadgeColor(h.status)}`}>
-                                  {h.status}
-                                </span>
-                                <span className="text-muted-foreground text-[10px]">
-                                  Submitted: {formatDateShort(h.submittedAt)}
-                                </span>
-                                {h.reviewedAt && (
-                                  <span className="text-muted-foreground text-[10px]">
-                                    Reviewed: {formatDateShort(h.reviewedAt)}
-                                  </span>
-                                )}
-                              </div>
+                    <p className="text-[9px] text-muted-foreground/80 pt-1 border-t border-border/40">
+                      Latest: <span className="font-semibold text-foreground">{m.latestVersion}</span> • Total cycles: {m.history.length}
+                    </p>
 
-                              {h.revisionNumber && (
-                                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-500 border border-amber-500/20 font-bold text-[9px] rounded px-1.5 py-0.5 w-fit">
-                                  REV #{h.revisionNumber}/3
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
+                    {/* Compact version list history */}
+                    <div className="space-y-1 max-h-20 overflow-y-auto pt-1">
+                      {m.history.slice(0, 2).map((h, hIdx) => (
+                        <div key={hIdx} className="flex items-center justify-between gap-1 text-[9px] bg-muted/40 px-1.5 py-0.5 rounded">
+                          <span className="font-bold text-foreground/85">{h.version}</span>
+                          <span className="text-muted-foreground/60 scale-95 shrink-0">{formatDateShort(h.submittedAt)}</span>
                         </div>
+                      ))}
+                      {m.history.length > 2 && (
+                        <div className="text-[8px] text-muted-foreground/60 italic text-center">
+                          +{m.history.length - 2} more versions
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                        {/* Editor feedback box */}
-                        {latestVer.feedback && (
-                          <div className="bg-muted/45 p-4 rounded-lg border border-border/50 space-y-1 text-xs">
-                            <p className="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Editor Feedback:</p>
-                            <p className="text-muted-foreground leading-relaxed italic">
-                              "{latestVer.feedback}"
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                  {/* Action buttons */}
+                  <div className="pt-2 border-t border-border/40">
+                    {m.status === 'SUBMITTED' ? (
+                      <Button
+                        onClick={() => handleOpenReview(m.id)}
+                        className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-[10px] h-8 py-1 rounded-lg cursor-pointer transition-colors"
+                      >
+                        <FileCheck className="w-3 h-3 mr-1" /> Review
+                      </Button>
+                    ) : m.status === 'APPROVED' ? (
+                      <Button
+                        onClick={() => handleOpenReview(m.id)}
+                        className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/50 dark:hover:bg-slate-800 text-foreground font-bold text-[10px] h-8 py-1 rounded-lg cursor-pointer border border-border/40 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Approved
+                      </Button>
+                    ) : m.status === 'PUBLISHED' ? (
+                      <Button
+                        onClick={() => handleOpenReview(m.id)}
+                        className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/50 dark:hover:bg-slate-800 text-foreground font-bold text-[10px] h-8 py-1 rounded-lg cursor-pointer border border-border/40 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500" /> Published
+                      </Button>
                     ) : (
-                      /* Simple card list layouts (Cards 2 & 3 in screenshot) */
-                      <div className="space-y-2 pt-2 border-t border-border/40 text-xs">
-                        {m.history.map((h, hIdx) => (
-                          <div
-                            key={hIdx}
-                            className="flex flex-wrap items-center gap-3 bg-muted/20 border border-border/20 p-2.5 rounded-lg"
-                          >
-                            <span className="font-bold text-foreground">{h.version}</span>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border ${getBadgeColor(h.status)}`}>
-                              {h.status}
-                            </span>
-                            <span className="text-muted-foreground text-[10px]">
-                              Submitted: {formatDateShort(h.submittedAt)}
-                            </span>
-                            {h.reviewedAt && (
-                              <span className="text-muted-foreground text-[10px]">
-                                Reviewed: {formatDateShort(h.reviewedAt)}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <Button
+                        onClick={() => handleOpenReview(m.id)}
+                        className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/50 dark:hover:bg-slate-800 text-foreground font-bold text-[10px] h-8 py-1 rounded-lg cursor-pointer border border-border/40 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Revision
+                      </Button>
                     )}
                   </div>
-                </Card>
+                </div>
               )
             })}
           </div>
