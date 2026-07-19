@@ -205,6 +205,31 @@ export const proposalService = {
   },
 
   /**
+   * Update an existing active or approved series.
+   */
+  updateSeries: async (
+    id: string,
+    updates: Partial<Omit<Proposal, 'id' | 'mangakaId' | 'createdAt'>>
+  ): Promise<Proposal | null> => {
+    const existing = await proposalService.getProposalById(id);
+    if (!existing) return null;
+    const updatedData = { ...existing, ...updates };
+    const res = await seriesService.updateProposal(id, {
+      title: updatedData.title,
+      genre: updatedData.genre ? updatedData.genre.split(', ').filter(Boolean) : [],
+      publicationType: updatedData.publicationType,
+      synopsis: updatedData.synopsis,
+      sampleFileUrl: updatedData.sampleFileUrl,
+      coverImagePublicUrl: updatedData.coverImagePublicUrl,
+      mangakaId: updatedData.mangakaId,
+      sourceZipFileAssetId: updatedData.sourceZipFileAssetId,
+    });
+    const mapped = mapSeriesToProposal(res);
+    cacheSourceZipFileAssetId(mapped.id, updatedData.sourceZipFileAssetId);
+    return { ...mapped, sourceZipFileAssetId: updatedData.sourceZipFileAssetId || mapped.sourceZipFileAssetId };
+  },
+
+  /**
    * Update the status of any proposal.
    */
   updateProposalStatus: async (

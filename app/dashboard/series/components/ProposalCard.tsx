@@ -174,6 +174,17 @@ export default function ProposalCard({
                 </Link>
               </div>
             )}
+
+            {(proposal.status === 'Active' || proposal.status === 'Approved') && (
+              <div className="flex gap-2 sm:justify-end">
+                <Link
+                  href={`/dashboard/series/edit?id=${proposal.id}`}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/15 rounded-lg transition-colors"
+                >
+                  <FileEdit className="w-3.5 h-3.5" /> Cập nhật tác phẩm
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
