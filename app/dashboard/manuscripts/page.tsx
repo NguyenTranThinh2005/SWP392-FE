@@ -311,11 +311,10 @@ export default function ManuscriptsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-5 py-3 font-bold text-xs sm:text-sm border-b-2 whitespace-nowrap transition-all cursor-pointer ${
-                    activeTab === tab.id
+                  className={`px-5 py-3 font-bold text-xs sm:text-sm border-b-2 whitespace-nowrap transition-all cursor-pointer ${activeTab === tab.id
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -363,9 +362,9 @@ export default function ManuscriptsPage() {
                 >
                   <div className="space-y-3">
                     <div className="flex justify-between items-start gap-2">
-                      <h3 
+                      <h3
                         onClick={() => handleOpenReview(m.id)}
-                        className="font-extrabold text-sm text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-1" 
+                        className="font-extrabold text-sm text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-1"
                         title={m.seriesTitle}
                       >
                         {m.seriesTitle}
@@ -378,20 +377,6 @@ export default function ManuscriptsPage() {
                     <p className="text-[10px] text-muted-foreground font-semibold truncate">
                       Ch. {m.chapterNumber}: "{m.chapterTitle}"
                     </p>
-
-                    {/* Mini Drawing Progress Bar */}
-                    <div className="space-y-1 pt-1">
-                      <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-                        <span>Drawing Progress</span>
-                        <span className="font-bold text-foreground">{m.progress}%</span>
-                      </div>
-                      <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary rounded-full transition-all duration-300" 
-                          style={{ width: `${m.progress}%` }} 
-                        />
-                      </div>
-                    </div>
 
                     <p className="text-[9px] text-muted-foreground/80 pt-1 border-t border-border/40">
                       Latest: <span className="font-semibold text-foreground">{m.latestVersion}</span> • Total cycles: {m.history.length}

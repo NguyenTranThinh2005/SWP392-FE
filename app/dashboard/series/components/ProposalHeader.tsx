@@ -19,24 +19,6 @@ export default function ProposalHeader({ isBlocked }: ProposalHeaderProps) {
           Manage all your series proposals and track their Editorial Board review status.
         </p>
       </div>
-
-      {/* New Proposal button */}
-      <div className="shrink-0">
-        {isBlocked ? (
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-lg text-xs font-semibold text-amber-600">
-            <AlertTriangle className="w-4 h-4" />
-            <span>A proposal is awaiting approval — Temporarily Locked</span>
-          </div>
-        ) : (
-          <Link
-            href="/dashboard/series/new"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-bold text-sm px-5 py-2.5 rounded-lg shadow-sm shadow-primary/10 hover:bg-primary/90 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            New Proposal
-          </Link>
-        )}
-      </div>
     </div>
   )
 }
