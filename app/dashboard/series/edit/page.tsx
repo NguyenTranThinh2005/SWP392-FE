@@ -62,7 +62,7 @@ export default function EditSeriesPage() {
       try {
         // Double-check ownership
         if (series.mangakaId.toLowerCase() !== mangakaId.toLowerCase()) {
-          throw new Error('Bạn không có quyền chỉnh sửa tác phẩm này.')
+          throw new Error('You do not have permission to edit this series.')
         }
 
         await proposalService.updateSeries(seriesId, {
@@ -76,16 +76,16 @@ export default function EditSeriesPage() {
         // Dispatch notifications
         notificationStore.addNotification(
           'Series Updated',
-          `Tác phẩm "${data.title}" của bạn đã được cập nhật thành công.`,
+          `Your series "${data.title}" has been successfully updated.`,
           'Mangaka',
           'success'
         )
 
-        toast.success('Cập nhật tác phẩm thành công!')
+        toast.success('Series updated successfully!')
         setSuccessMessage(true)
         setTimeout(() => router.push('/dashboard/series'), 1200)
       } catch (err: any) {
-        toast.error(err?.message || 'Đã có lỗi xảy ra khi cập nhật tác phẩm.')
+        toast.error(err?.message || 'An error occurred while updating the series.')
         throw err
       } finally {
         setIsLoading(false)
@@ -106,15 +106,15 @@ export default function EditSeriesPage() {
     return (
       <div className="max-w-md mx-auto mt-12 bg-card border border-border rounded-xl p-8 text-center space-y-4">
         <AlertTriangle className="w-12 h-12 text-destructive mx-auto" />
-        <h3 className="font-bold text-lg text-foreground">Không tìm thấy tác phẩm</h3>
+        <h3 className="font-bold text-lg text-foreground">Series not found</h3>
         <p className="text-sm text-muted-foreground">
-          Đường dẫn không hợp lệ hoặc tác phẩm không tồn tại trong hệ thống.
+          Invalid URL or this series does not exist in the system.
         </p>
         <Link
           href="/dashboard/series"
           className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-lg"
         >
-          Quay lại danh sách
+          Back to list
         </Link>
       </div>
     )
@@ -126,15 +126,15 @@ export default function EditSeriesPage() {
     return (
       <div className="max-w-md mx-auto mt-12 bg-card border border-border rounded-xl p-8 text-center space-y-4">
         <AlertTriangle className="w-12 h-12 text-destructive mx-auto" />
-        <h3 className="font-bold text-lg text-foreground">Không có quyền truy cập</h3>
+        <h3 className="font-bold text-lg text-foreground">Access Denied</h3>
         <p className="text-sm text-muted-foreground">
-          Bạn không sở hữu tác phẩm này và không thể chỉnh sửa thông tin của nó.
+          You do not own this series and cannot edit its information.
         </p>
         <Link
           href="/dashboard/series"
           className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-lg"
         >
-          Quay lại danh sách
+          Back to list
         </Link>
       </div>
     )
@@ -148,11 +148,11 @@ export default function EditSeriesPage() {
           href="/dashboard/series"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors mb-3"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Quay lại danh sách
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to list
         </Link>
-        <h1 className="text-3xl font-extrabold tracking-tight">Cập nhật tác phẩm</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Update Series</h1>
         <p className="text-sm text-muted-foreground">
-          Chỉnh sửa thông tin tác phẩm của bạn. Thay đổi sẽ được cập nhật trực tiếp trong hệ thống.
+          Edit your series information. Changes will be updated immediately in the system.
         </p>
       </div>
 
@@ -161,9 +161,9 @@ export default function EditSeriesPage() {
         <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-sm animate-in fade-in duration-200">
           <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <div>
-            <p className="font-bold text-emerald-800 dark:text-emerald-300">Tác phẩm được cập nhật thành công!</p>
+            <p className="font-bold text-emerald-800 dark:text-emerald-300">Series updated successfully!</p>
             <p className="text-emerald-700/90 dark:text-emerald-400/95 text-xs mt-0.5">
-              Đang chuyển hướng về trang quản lý tác phẩm...
+              Redirecting to series management...
             </p>
           </div>
         </div>

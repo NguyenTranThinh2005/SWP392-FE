@@ -7,7 +7,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     const img = new Image()
     img.crossOrigin = 'anonymous' // cho phep canvas doc pixel anh tu domain khac
     img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('Không tải được ảnh: ' + url))
+    img.onerror = () => reject(new Error('Could not load image: ' + url))
     img.src = url
   })
 }
@@ -151,7 +151,7 @@ export async function compareAny(urlA: string, urlB: string): Promise<{
 
   // Khac loai (1 zip, 1 anh) -> khong so sanh duoc truc tiep
   if (aZip !== bZip) {
-    throw new Error('Hai lần nộp khác định dạng (một bên là file nén, một bên là ảnh) nên không so sánh trực tiếp được.')
+    throw new Error('The two submissions have different formats (one is a compressed file, one is an image) so they cannot be compared directly.')
   }
 
   // Ca 2 deu anh -> so thang

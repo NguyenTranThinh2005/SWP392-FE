@@ -34,7 +34,7 @@ export function SignupForm({
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="name">Full Name</FieldLabel>
-                <Input id="name" type="text" placeholder="Nguyễn Văn A" required />
+                <Input id="name" type="text" placeholder="John Doe" required />
               </Field>
               <Field>
                 <FieldLabel htmlFor="display-name">Display Name</FieldLabel>

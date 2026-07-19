@@ -76,7 +76,7 @@ function DialogContent({
               size="icon-sm"
             >
               <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-              <span className="sr-only">Đóng</span>
+              <span className="sr-only">Close</span>
             </Button>
           </DialogPrimitive.Close>
         )}
@@ -115,7 +115,7 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
-          <Button variant="outline">Đóng</Button>
+          <Button variant="outline">Close</Button>
         </DialogPrimitive.Close>
       )}
     </div>

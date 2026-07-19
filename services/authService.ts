@@ -100,10 +100,10 @@ export const authService = {
 
       return {
         data: updatedUser,
-        message: response.message || "Cập nhật thông tin cá nhân thành công!"
+        message: response.message || "Profile updated successfully!"
       };
     } else {
-      throw new Error("Không tìm thấy thông tin tài khoản hiện tại.");
+      throw new Error("Current account information not found.");
     }
   },
 
@@ -119,10 +119,10 @@ export const authService = {
       tokenService.setUserInfo(mappedUser);
       return {
         data: mappedUser,
-        message: response.message || "Cập nhật ảnh đại diện thành công!"
+        message: response.message || "Avatar updated successfully!"
       };
     } else {
-      throw new Error("Không thể cập nhật ảnh đại diện từ phản hồi hệ thống.");
+      throw new Error("Could not update avatar from system response.");
     }
   }
 };

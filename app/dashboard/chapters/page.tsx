@@ -226,14 +226,14 @@ const [subCompareError, setSubCompareError] = useState('')
     const activeId = activeTask?.id
 
     if (!activeTask) {
-      showToast('Khong tim thay task dang review, khong the luu annotation.', 'error')
+      showToast('Review task not found, cannot save annotation.', 'error')
       return
     }
 
     const endpoint = getTaskAnnotationEndpoint(activeTask)
 
     if (!activeId || !endpoint) {
-      showToast('Khong tim thay submission cua task nay, khong the luu annotation vao database.', 'error')
+      showToast('Submission for this task not found, cannot save annotation to database.', 'error')
       return
     }
 
@@ -260,9 +260,9 @@ const [subCompareError, setSubCompareError] = useState('')
       }
 
       setTaskAnnotations(prev => [...prev, newAnn])
-      showToast('Da them ghi chu tren anh!')
+      showToast('Added note on image!')
     } catch (error: any) {
-      showToast(error?.message || 'Khong the luu annotation vao database.', 'error')
+      showToast(error?.message || 'Cannot save annotation to database.', 'error')
     }
   }
 
@@ -516,13 +516,13 @@ ratePerPage: t.ratePerPage ?? 0,
         setChapterTasks([])
       }
 
-     // 3. Load Assistant list from backend (bọc try/catch: Assistant bị 403, không được kéo sập refreshData)
+     // 3. Load Assistant list from backend (try/catch block: Assistant gets 403, should not crash refreshData)
       let assistantsList: any[] = []
       try {
         const usersRes = await userService.getAssistants()
         assistantsList = (usersRes.data || []).filter((u: any) => u.roleName?.toLowerCase() === 'assistant')
       } catch (e) {
-        console.warn('Khong lay duoc danh sach assistant (co the do role Assistant):', e)
+        console.warn('Cannot retrieve assistant list (may be due to Assistant role):', e)
       }
 
       // Load all tasks to calculate active tasks per assistant
@@ -710,7 +710,7 @@ ratePerPage: t.ratePerPage ?? 0,
           await fetchAPI(`/api/chapters/${newChapterId}/reference-files`, { method: 'POST', body: JSON.stringify({ fileAssetIds }) })
         }
       }
-      showToast(`Đã tạo thành công Chapter ${created.chapterNo || created.number || newChapterNo}: ${created.title || newChapterTitle}!`)
+      showToast(`Successfully created Chapter ${created.chapterNo || created.number || newChapterNo}: ${created.title || newChapterTitle}!`)
       setIsChapterModalOpen(false)
 
       // Reset form states
@@ -1535,7 +1535,7 @@ const payload = {
                   </div>
                   <div>
                     <h2 className="font-bold text-sm text-foreground">{activeAssistant.name}</h2>
-                    <p className="text-xs text-muted-foreground font-semibold mt-0.5">Chuyên môn: {activeAssistant.specialty}</p>
+                    <p className="text-xs text-muted-foreground font-semibold mt-0.5">Specialty: {activeAssistant.specialty}</p>
                   </div>
                 </div>
                 <div className="text-right text-xs">
@@ -1548,10 +1548,10 @@ const payload = {
             {/* Stats Counter Row */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: 'Đã nộp / Hoàn thành', value: stats.completed, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                { label: 'Tasks được giao', value: stats.total, icon: ClipboardList, color: 'text-foreground', bg: 'bg-primary/10' },
-                { label: 'Chờ bắt đầu', value: stats.pending, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-                { label: 'Đang thực hiện', value: stats.working, icon: Play, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+                { label: 'Submitted / Completed', value: stats.completed, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+                { label: 'Assigned Tasks', value: stats.total, icon: ClipboardList, color: 'text-foreground', bg: 'bg-primary/10' },
+                { label: 'Awaiting Start', value: stats.pending, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+                { label: 'In Progress', value: stats.working, icon: Play, color: 'text-blue-500', bg: 'bg-blue-500/10' },
               ].map(({ label, value, icon: Icon, color, bg }) => (
                 <div key={label} className="bg-card border border-border rounded-2xl p-5 space-y-3 shadow-sm hover:border-primary/10 transition-colors">
                   <div className={`w-9 h-9 ${bg} ${color} rounded-xl flex items-center justify-center`}>
@@ -1646,7 +1646,7 @@ const payload = {
                           {/* Footer Actions */}
                           <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/40">
                             <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
-                              <CalendarDays className="w-3.5 h-3.5 text-muted-foreground/60" /> Deadline: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Ngay lập tức'}
+                              <CalendarDays className="w-3.5 h-3.5 text-muted-foreground/60" /> Deadline: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Immediately'}
                             </span>
 
                             <div>
@@ -1655,7 +1655,7 @@ const payload = {
                                   onClick={() => handleStartTask(task.id)}
                                   className="flex items-center gap-1 px-4.5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
                                 >
-                                  <Play className="w-3.5 h-3.5" /> Bắt đầu vẽ
+                                  <Play className="w-3.5 h-3.5" /> Start drawing
                                 </button>
                               ) : (
                                 <div className="flex items-center gap-2">
@@ -2059,7 +2059,7 @@ const payload = {
                           {(() => {
                             const d = new Date(newChapterPubDate)
                             d.setDate(d.getDate() - 14)
-                            return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                            return d.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
                           })()}
                         </strong>{' '}
                         (14 days before publication date)
@@ -2091,7 +2091,7 @@ const payload = {
               <div className="space-y-3 border-b border-border/50 pb-5">
                 <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <ScrollText className="w-4 h-4 text-violet-500" />
-                  3. Script / Storyboard <span className="text-xs font-normal text-muted-foreground ml-1">(Tùy chọn)</span>
+                  3. Script / Storyboard <span className="text-xs font-normal text-muted-foreground ml-1">(Optional)</span>
                 </h4>
                 <p className="text-xs text-muted-foreground">
                   Panel layout draft (storyboard/nemu) helps the Editor and Assistant understand the chapter structure.
@@ -2137,11 +2137,11 @@ const payload = {
                 )}
               </div>
 
-              {/* Section 4: Rough/Sequential Art Manuscript (Bắt buộc) */}
+              {/* Section 4: Rough/Sequential Art Manuscript (Required) */}
               <div className="space-y-3 border-b border-border/50 pb-5">
                 <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <ImageIcon className="w-4 h-4 text-primary" />
-                  4. Rough/Sequential Art Manuscript <span className="text-red-500">* Bắt buộc</span>
+                  4. Rough/Sequential Art Manuscript <span className="text-red-500">* Required</span>
                 </h4>
                 <p className="text-xs text-muted-foreground">
                   Attach rough sketches (pencil) or line art (ink) to start assigning drawing tasks.
@@ -2195,17 +2195,17 @@ const payload = {
                 )}
               </div>
 
-              {/* Section 5: Notes cho Editor */}
+              {/* Section 5: Notes for Editor */}
               <div className="space-y-3">
                 <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <MessageSquare className="w-4 h-4 text-amber-500" />
-                  5. Special Notes for Editor <span className="text-xs font-normal text-muted-foreground ml-1">(Tùy chọn)</span>
+                  5. Special Notes for Editor <span className="text-xs font-normal text-muted-foreground ml-1">(Optional)</span>
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Các yêu cầu dàn trang đặc biệt: Page đôi (double-spread), font thoại, thứ tự đọc đặc biệt, v.v.
+                  Special layout requirements: Double-spread, dialogue fonts, special reading order, etc.
                 </p>
                 <textarea
-                  placeholder="VD: Page 12-13 dùng double-spread cảnh chiến đấu lớn, tránh cắt giữa khi đóng gáy..."
+                  placeholder="e.g. Page 12-13 uses double-spread for large battle scenes, avoid cutting in the middle when binding..."
                   className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
                   value={newChapterNotes}
                   onChange={(e) => setNewChapterNotes(e.target.value)}
@@ -2357,15 +2357,15 @@ const payload = {
                 <input
                   type="number"
                   min={0}
-                  placeholder="VD: 50000"
+                  placeholder="e.g. 50000"
                   value={newTaskRate === 0 ? '' : newTaskRate}
                   onChange={(e) => setNewTaskRate(e.target.value === '' ? 0 : Number(e.target.value))}
                   className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
                 />
                 {newTaskRate > 0 && newTaskPageEnd >= newTaskPageStart && (
                   <p className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-                    Ước tính lương: {formatVND((newTaskPageEnd - newTaskPageStart + 1) * newTaskRate)}
-                    <span className="font-normal text-muted-foreground">({newTaskPageEnd - newTaskPageStart + 1} trang × {formatVND(newTaskRate)})</span>
+                    Estimated salary: {formatVND((newTaskPageEnd - newTaskPageStart + 1) * newTaskRate)}
+                    <span className="font-normal text-muted-foreground">({newTaskPageEnd - newTaskPageStart + 1} pages × {formatVND(newTaskRate)})</span>
                   </p>
                 )}
               </div>
@@ -2544,7 +2544,7 @@ const payload = {
                     <textarea
                       value={pin.note}
                       onChange={(e) => setImagePins(prev => prev.map((p, i) => i === idx ? { ...p, note: e.target.value } : p))}
-                      placeholder="Comments cho points này..."
+                      placeholder="Comments for this point..."
                       className="w-full text-xs px-2 py-1.5 border border-border rounded-lg bg-background resize-none"
                       rows={2}
                     />
@@ -2721,17 +2721,17 @@ const payload = {
                             {subCompareResult.pages.map((pg: any, idx: number) => (
                               <div key={idx} className="space-y-1 border border-border rounded-lg p-2">
                                 <p className="text-[11px] font-bold text-muted-foreground">
-                                  Trang {idx + 1}
-                                  {pg.status === 'added' && ' — 🟢 Trang mới thêm'}
-                                  {pg.status === 'removed' && ' — ⚪ Trang đã xóa'}
-                                  {typeof pg.diffPercent === 'number' && ` — ${pg.diffPercent}% thay đổi`}
+                                  Page {idx + 1}
+                                  {pg.status === 'added' && ' — 🟢 New page added'}
+                                  {pg.status === 'removed' && ' — ⚪ Page deleted'}
+                                  {typeof pg.diffPercent === 'number' && ` — ${pg.diffPercent}% change`}
                                 </p>
                                 {pg.diffDataUrl && (
-                                  <img src={pg.diffDataUrl} alt={`Diff trang ${idx + 1}`} className="w-full border border-border rounded" />
+                                  <img src={pg.diffDataUrl} alt={`Diff page ${idx + 1}`} className="w-full border border-border rounded" />
                                 )}
                               </div>
                             ))}
-                            <p className="text-[10px] text-muted-foreground text-center">🔴 Vùng đỏ = chỗ thay đổi từng trang</p>
+                            <p className="text-[10px] text-muted-foreground text-center">🔴 Red area = change per page</p>
                           </div>
                         )}
                       </div>
@@ -2794,7 +2794,7 @@ const payload = {
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-muted-foreground">Feedback Comments (Required if Rejecting)</label>
                   <textarea
-                    placeholder="Enter feedback comments... Các points tốt cần giữ, chi tiết cụ thể cần chỉnh sửa..."
+                    placeholder="Enter feedback comments... Key points to keep, specific details to be corrected..."
                     value={reviewFeedback}
                     onChange={(e) => setReviewFeedback(e.target.value)}
                     className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
@@ -2807,16 +2807,16 @@ const payload = {
                   return (
                     <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 text-xs space-y-1">
                       <p className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                         Xem trước lương khi duyệt
+                         Salary preview when approving
                       </p>
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Số trang:</span><span className="font-semibold text-foreground">{pages}</span>
+                        <span>Pages count:</span><span className="font-semibold text-foreground">{pages}</span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Đơn giá/trang:</span><span className="font-semibold text-foreground">{formatVND(rate)}</span>
+                        <span>Unit price/page:</span><span className="font-semibold text-foreground">{formatVND(rate)}</span>
                       </div>
                       <div className="flex justify-between border-t border-emerald-500/20 pt-1 mt-1">
-                        <span className="font-bold text-foreground">Tổng lương:</span>
+                        <span className="font-bold text-foreground">Total salary:</span>
                         <span className="font-extrabold text-emerald-600">{formatVND(total)}</span>
                       </div>
                     </div>
@@ -2857,7 +2857,7 @@ const payload = {
               <ClipboardList className="w-5 h-5 text-indigo-500" /> Submit Work completed
             </h3>
             <p className="text-xs text-muted-foreground mt-1.5">
-              Submit sản phẩm và ghi chú bản vẽ cho tác giả. Họ sẽ xét duyệt để phê duyệt hoặc yêu cầu bạn điều chỉnh thêm.
+              Submit your work and notes to the author. They will review it to approve or request further revisions.
             </p>
 
             <form onSubmit={handleSubmitWork} className="space-y-4 mt-4">

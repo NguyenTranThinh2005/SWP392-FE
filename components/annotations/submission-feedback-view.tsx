@@ -48,14 +48,14 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] uppercase font-bold text-muted-foreground">Bài nộp của bạn + góp ý trên ảnh</p>
+      <p className="text-[10px] uppercase font-bold text-muted-foreground">Your submission + comments on image</p>
 
-      {loading && <p className="text-xs text-muted-foreground">Đang tải ảnh...</p>}
+      {loading && <p className="text-xs text-muted-foreground">Loading image...</p>}
 
       {currentImg && (
         <div className="relative inline-block max-w-full border border-border rounded-lg overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={currentImg.dataUrl} alt="Bài nộp" className="max-w-full max-h-80 object-contain pointer-events-none" />
+          <img src={currentImg.dataUrl} alt="Submission" className="max-w-full max-h-80 object-contain pointer-events-none" />
           {pinsOnPage.map((pin, idx) => (
             <div
               key={idx}
@@ -81,16 +81,16 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
             disabled={currentPage === 0}
             className="px-2 py-1 rounded bg-muted disabled:opacity-40"
           >
-            ‹ Trước
+            ‹ Prev
           </button>
-          <span>Trang {currentPage + 1}/{pages.length}</span>
+          <span>Page {currentPage + 1}/{pages.length}</span>
           <button
             type="button"
             onClick={() => setCurrentPage((p) => Math.min(pages.length - 1, p + 1))}
             disabled={currentPage === pages.length - 1}
             className="px-2 py-1 rounded bg-muted disabled:opacity-40"
           >
-            Sau ›
+            Next ›
           </button>
         </div>
       )}
@@ -102,14 +102,14 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
             .sort((a, b) => (a.pageNo || 0) - (b.pageNo || 0))
             .map((pin, idx) => (
               <p key={idx} className="text-[11px] text-red-600 dark:text-red-400">
-                <span className="font-bold">{idx + 1}.</span> (Trang {(pin.pageNo || pageStart) - pageStart + 1}) {pin.content}
+                <span className="font-bold">{idx + 1}.</span> (Page {(pin.pageNo || pageStart) - pageStart + 1}) {pin.content}
               </p>
             ))}
         </div>
       )}
 
       <a href={imageUrl} target="_blank" rel="noreferrer" className="text-[11px] text-primary underline block">
-        Tải bài nộp gốc
+        Download original submission
       </a>
     </div>
   )

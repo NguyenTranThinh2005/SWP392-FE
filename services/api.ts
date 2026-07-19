@@ -26,13 +26,13 @@ export async function fetchAPI<T>(
     if (response.status === 401) {
       if (endpoint.includes("/api/auth/login") || endpoint.includes("/api/auth/refresh")) {
         if (endpoint.includes("/api/auth/login")) {
-          throw new Error("Tài khoản hoặc mật khẩu không chính xác.");
+          throw new Error("Incorrect email or password.");
         }
         tokenService.clearAll();
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
         }
-        throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        throw new Error("Session expired. Please log in again.");
       }
 
       // Try to refresh token and retry the request
@@ -56,7 +56,7 @@ export async function fetchAPI<T>(
 
         return retryResponse.json();
       } catch (refreshError) {
-        throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        throw new Error("Session expired. Please log in again.");
       }
     }
 

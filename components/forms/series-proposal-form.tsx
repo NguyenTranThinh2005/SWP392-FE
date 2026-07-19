@@ -26,7 +26,7 @@ const uploadSourceArchiveToBackend = async (file: File): Promise<string> => {
   });
 
   if (!response.ok) {
-    let errMsg = "Tải lên tệp tin nguồn ZIP/RAR thất bại.";
+    let errMsg = "Uploading source ZIP/RAR file failed.";
     try {
       const errRes = await response.json();
       if (errRes.message) errMsg = errRes.message;
@@ -38,7 +38,7 @@ const uploadSourceArchiveToBackend = async (file: File): Promise<string> => {
   const fileAssetIds: string[] = (resData?.data?.files || []).map((f: any) => f.fileAssetId).filter(Boolean);
 
   if (fileAssetIds.length === 0) {
-    throw new Error("Không tìm thấy file asset ID trả về cho tệp tin nguồn ZIP/RAR.");
+    throw new Error("Could not find file asset ID for source ZIP/RAR file.");
   }
 
   return fileAssetIds[0];
@@ -59,7 +59,7 @@ const uploadCoverImageToBackend = async (file: File): Promise<string> => {
   });
 
   if (!response.ok) {
-    let errMsg = "Tải lên ảnh bìa thất bại.";
+    let errMsg = "Uploading cover image failed.";
     try {
       const errRes = await response.json();
       if (errRes.message) errMsg = errRes.message;
@@ -71,7 +71,7 @@ const uploadCoverImageToBackend = async (file: File): Promise<string> => {
   const fileAssetIds: string[] = (resData?.data?.files || []).map((f: any) => f.fileAssetId).filter(Boolean);
 
   if (fileAssetIds.length === 0) {
-    throw new Error("Không tìm thấy file asset ID trả về cho ảnh bìa.");
+    throw new Error("Could not find file asset ID for cover image.");
   }
 
   return fileAssetIds[0];
@@ -120,11 +120,11 @@ export function SeriesProposalForm({
       if (publicUrl) {
         window.open(publicUrl, '_blank')
       } else {
-        toast.error('Không tìm thấy đường dẫn tải file.')
+        toast.error('Download URL not found.')
       }
     } catch (err: any) {
       console.error('Failed to download ZIP file:', err)
-      toast.error(err.message || 'Không thể tải tệp tin.')
+      toast.error(err.message || 'Could not download file.')
     } finally {
       setIsDownloadingZip(false)
     }
@@ -199,11 +199,11 @@ export function SeriesProposalForm({
     const file = e.target.files?.[0]
     if (file) {
       if (!file.type.startsWith('image/')) {
-        setError('Vui lòng chọn tệp tin hình ảnh (PNG, JPG, JPEG).')
+        setError('Please select an image file (PNG, JPG, JPEG).')
         return
       }
       if (file.size > 5 * 1024 * 1024) {
-        setError('Kích thước ảnh bìa không được vượt quá 5MB.')
+        setError('Cover image size must not exceed 5MB.')
         return
       }
       setCoverImageFile(file)
@@ -255,7 +255,7 @@ export function SeriesProposalForm({
 
       if (action === 'submit') {
         if (!sourceZipFile && !data.sourceZipFileAssetId) {
-          setError('Vui lòng tải lên tệp tin bản thảo ZIP/RAR.')
+          setError('Please upload a manuscript ZIP/RAR file.')
           return
         }
       }
@@ -276,7 +276,7 @@ export function SeriesProposalForm({
           setValue('sourceZipFileAssetId', zipAssetId)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Tải lên tệp tin thất bại.')
+        setError(err instanceof Error ? err.message : 'Failed to upload file.')
         return
       } finally {
         setIsUploading(false)
@@ -289,7 +289,7 @@ export function SeriesProposalForm({
       setCoverPreviewUrl('')
       setSelectedGenres([])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra. Vui lòng thử lại.')
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     }
   }
 
@@ -306,11 +306,11 @@ export function SeriesProposalForm({
         <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm animate-in fade-in duration-200">
           <AlertCircle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5" />
           <div>
-            <p className="font-bold text-amber-600">Đã có đề xuất đang xử lý</p>
+            <p className="font-bold text-amber-600">An active proposal is in progress</p>
             <p className="text-muted-foreground text-xs mt-0.5">
-              Bạn đã có đề xuất ở trạng thái <span className="font-semibold">Chờ duyệt</span> hoặc{' '}
-              <span className="font-semibold">Đang duyệt</span>. Không thể gửi hoặc lưu đề xuất khác
-              cho đến khi đề xuất hiện tại được xử lý.
+              You already have a proposal in <span className="font-semibold">Pending Review</span> or{' '}
+              <span className="font-semibold">Under Review</span> status. You cannot submit or save another proposal
+              until the current proposal is processed.
             </p>
           </div>
         </div>
@@ -329,7 +329,7 @@ export function SeriesProposalForm({
         <div className="md:col-span-2 space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="text-sm font-semibold text-foreground/80">
-              Tên bộ truyện <span className="text-destructive">*</span>
+              Series Title <span className="text-destructive">*</span>
             </label>
             <span className="text-[11px] text-muted-foreground font-mono">
               {titleValue.length}/100
@@ -337,7 +337,7 @@ export function SeriesProposalForm({
           </div>
           <input
             {...register('title')}
-            placeholder="Nhập tên bộ truyện..."
+            placeholder="Enter series title..."
             maxLength={100}
             className="w-full px-3.5 py-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50"
             disabled={isLoading || hasActivePendingProposal}
@@ -350,7 +350,7 @@ export function SeriesProposalForm({
         {/* Genre Field (Custom Multi-select Popover) */}
         <div className="space-y-1.5 relative" ref={dropdownRef}>
           <label className="text-sm font-semibold text-foreground/80">
-             Thể loại <span className="text-destructive">*</span>
+             Genre <span className="text-destructive">*</span>
           </label>
 
           {/* Hidden input to register genre with react-hook-form */}
@@ -366,7 +366,7 @@ export function SeriesProposalForm({
             disabled={isLoading || hasActivePendingProposal}
           >
             <span className="truncate text-foreground/90">
-              {selectedGenres.length > 0 ? selectedGenres.join(', ') : 'Chọn thể loại…'}
+              {selectedGenres.length > 0 ? selectedGenres.join(', ') : 'Select genre…'}
             </span>
             {isOpen ? (
               <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0 ml-2" />
@@ -423,16 +423,16 @@ export function SeriesProposalForm({
         {/* Publication Type */}
         <div className="space-y-1.5">
           <label className="text-sm font-semibold text-foreground/80">
-            Hình thức xuất bản <span className="text-destructive">*</span>
+            Publication Type <span className="text-destructive">*</span>
           </label>
           <select
             {...register('publicationType')}
             className="w-full px-3.5 py-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
             disabled={isLoading || hasActivePendingProposal}
           >
-            <option value="Weekly">Hàng tuần</option>
-            <option value="Monthly">Hàng tháng</option>
-            <option value="One-Shot">Truyện ngắn một kỳ</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Monthly">Monthly</option>
+            <option value="One-Shot">One-Shot</option>
           </select>
           {errors.publicationType && (
             <span className="text-destructive text-xs font-semibold">{errors.publicationType.message}</span>
@@ -444,16 +444,16 @@ export function SeriesProposalForm({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <label className="text-sm font-semibold text-foreground/80">
-            Tóm tắt nội dung <span className="text-destructive">*</span>
+            Synopsis <span className="text-destructive">*</span>
           </label>
           <span className={`text-[11px] font-mono font-semibold ${synopsisReady ? 'text-emerald-600' : 'text-amber-500'}`}>
             {synopsisLen}/{SYNOPSIS_MAX}
-            {!synopsisReady && ` (tối thiểu ${SYNOPSIS_MIN})`}
+            {!synopsisReady && ` (minimum ${SYNOPSIS_MIN})`}
           </span>
         </div>
         <textarea
           {...register('synopsis')}
-          placeholder="Mô tả mạch truyện, nhân vật chính, chủ đề và nhóm độc giả mục tiêu…"
+          placeholder="Describe plot progression, main characters, themes, and target audience..."
           rows={6}
           className="w-full px-3.5 py-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50 resize-none"
           disabled={isLoading || hasActivePendingProposal}
@@ -476,7 +476,7 @@ export function SeriesProposalForm({
         <div className="space-y-1.5">
           <label className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" />
-            Tài liệu bản thảo tác phẩm (ZIP/RAR) <span className="text-destructive">*</span>
+            Manuscript Document (ZIP/RAR) <span className="text-destructive">*</span>
           </label>
           <div className="flex items-center gap-3">
             <input
@@ -495,7 +495,7 @@ export function SeriesProposalForm({
               className={`px-4 py-2.5 bg-background border border-border rounded-lg text-sm font-semibold cursor-pointer hover:bg-muted/50 transition-colors ${isLoading || isUploading || hasActivePendingProposal ? 'opacity-60 cursor-not-allowed' : ''
                 }`}
             >
-              Chọn tệp ZIP/RAR
+              Choose ZIP/RAR file
             </label>
             {sourceZipFile ? (
               <span className="text-xs text-muted-foreground truncate max-w-[200px]">
@@ -503,18 +503,18 @@ export function SeriesProposalForm({
               </span>
             ) : sourceZipFileAssetIdValue ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-emerald-600 font-semibold">Đã tải lên tệp ZIP/RAR</span>
+                <span className="text-xs text-emerald-600 font-semibold">ZIP/RAR file uploaded</span>
                 <button
                   type="button"
                   onClick={handleDownloadSourceZip}
                   disabled={isDownloadingZip}
                   className="text-[11px] text-primary hover:underline font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isDownloadingZip ? '(Đang tải...)' : '(Tải xuống bản thảo đã lưu)'}
+                  {isDownloadingZip ? '(Downloading...)' : '(Download saved manuscript)'}
                 </button>
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground">Chưa chọn tệp</span>
+              <span className="text-xs text-muted-foreground">No file chosen</span>
             )}
           </div>
           <input type="hidden" {...register('sourceZipFileAssetId')} />
@@ -527,8 +527,8 @@ export function SeriesProposalForm({
         <div className="space-y-1.5">
           <label className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5" />
-            Ảnh bìa truyện
-            <span className="text-[10px] text-muted-foreground font-normal ml-1">(Tùy chọn)</span>
+            Cover Image
+            <span className="text-[10px] text-muted-foreground font-normal ml-1">(Optional)</span>
           </label>
           
           <div className="space-y-3">
@@ -537,7 +537,7 @@ export function SeriesProposalForm({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={coverPreviewUrl}
-                  alt="Ảnh bìa xem trước"
+                  alt="Cover preview"
                   className="w-full h-full object-cover"
                 />
                 {!isLoading && !isUploading && !hasActivePendingProposal && (
@@ -545,7 +545,7 @@ export function SeriesProposalForm({
                     type="button"
                     onClick={handleRemoveCoverImage}
                     className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/85 text-white rounded-full transition-all hover:scale-105"
-                    title="Xóa ảnh bìa"
+                    title="Remove cover image"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -556,8 +556,8 @@ export function SeriesProposalForm({
                 <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-lg cursor-pointer bg-card hover:bg-muted/40 transition-colors">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                    <p className="text-xs text-muted-foreground font-semibold">Tải lên ảnh bìa truyện</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1">PNG, JPG, JPEG (Tối đa 5MB)</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Upload cover image</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-1">PNG, JPG, JPEG (Max 5MB)</p>
                   </div>
                   <input
                     type="file"
@@ -592,7 +592,7 @@ export function SeriesProposalForm({
           disabled={isLoading || isUploading || hasActivePendingProposal}
           className="flex-1 py-2.5 font-semibold rounded-lg border-border"
         >
-          {isLoading || isUploading ? 'Đang xử lý…' : 'Lưu bản nháp'}
+          {isLoading || isUploading ? 'Processing…' : 'Save Draft'}
         </Button>
 
         {/* Submit for Review */}
@@ -604,7 +604,7 @@ export function SeriesProposalForm({
           disabled={isLoading || isUploading || hasActivePendingProposal}
           className="flex-1 py-2.5 font-bold rounded-lg shadow-sm"
         >
-          {isLoading || isUploading ? 'Đang xử lý…' : 'Gửi phê duyệt'}
+          {isLoading || isUploading ? 'Processing…' : 'Submit for Approval'}
         </Button>
       </div>
     </form>

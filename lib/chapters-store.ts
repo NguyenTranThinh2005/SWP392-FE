@@ -1,4 +1,4 @@
-﻿export type ChapterStatus = 'Draft' | 'In Progress' | 'Submitted' | 'Ready for Editor' | 'Published'
+export type ChapterStatus = 'Draft' | 'In Progress' | 'Submitted' | 'Ready for Editor' | 'Published'
 
 export type TaskStatus = 'Pending' | 'In-Progress' | 'Submitted' | 'Approved' | 'Rejected'
 
@@ -67,28 +67,28 @@ export interface Chapter {
 export const TASK_TYPE_SUGGESTIONS = [
   {
     name: 'Line Art',
-    description: 'Phác thảo nét vẽ và vẽ viền cho nhân vật/bối cảnh.',
-    template: 'Yêu cầu đi nét vẽ chi tiết cho nhân vật chính ở trang {pages}. Chú ý độ dày nét viền mặt và tóc.'
+    description: 'Sketch character and background line art.',
+    template: 'Detailed line art is required for the main character on page {pages}. Note the thickness of the face and hair outlines.'
   },
   {
     name: 'Coloring',
-    description: 'Tô màu, đánh bóng và xử lý nguồn sáng cảnh tranh.',
-    template: 'Thực hiện tô màu kỹ thuật số cho trang {pages}. Sử dụng tông màu hoàng hôn vàng ấm áp theo moodboard.'
+    description: 'Coloring, shading, and lighting effects.',
+    template: 'Perform digital coloring for page {pages}. Use warm golden sunset tones according to the moodboard.'
   },
   {
     name: 'Background Art',
-    description: 'Vẽ bối cảnh, môi trường và cảnh nền chi tiết.',
-    template: 'Vẽ chi tiết bối cảnh ngôi đền cổ ở hậu cảnh cho các trang {pages}. Tập trung vào họa tiết mái ngói.'
+    description: 'Draw detailed backgrounds, environments, and scenery.',
+    template: 'Draw the ancient temple background in detail for pages {pages}. Focus on the roof tile patterns.'
   },
   {
     name: 'Screentoning',
-    description: 'Dán lưới tông màu và tạo hiệu ứng chiều sâu cho trang truyện.',
-    template: 'Dán lưới screentone tạo chiều sâu bóng râm và vân sáng cho trang {pages}.'
+    description: 'Apply screentone grids to create depth and texture.',
+    template: 'Apply screentones to create shadow depth and light textures on page {pages}.'
   },
   {
     name: 'Clean-up',
-    description: 'Làm sạch nét vẽ phác thảo thô, căn chỉnh các khung tranh.',
-    template: 'Tẩy xóa nét nháp thô thừa và chuẩn hóa kích thước khung hình cho trang {pages}.'
+    description: 'Clean up rough sketch lines and align panels.',
+    template: 'Erase unnecessary rough drafts and standardize frame sizes for page {pages}.'
   }
 ]
 

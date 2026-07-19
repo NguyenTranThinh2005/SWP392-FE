@@ -33,7 +33,7 @@ export function calcTotalSalary(tasks: Task[]): number {
 }
 
 export function formatVND(amount: number): string {
-  return amount.toLocaleString('vi-VN') + ' ₫'
+  return amount.toLocaleString('en-US') + ' ₫'
 }
 
 // Chi tiet luong tung task (chi task Approved)
@@ -51,7 +51,7 @@ export function getSalaryBreakdown(tasks: Task[]): SalaryRow[] {
     .map(t => {
       const pages = Math.max((t.pageEnd ?? 0) - (t.pageStart ?? 0) + 1, 0)
       const rate = t.ratePerPage && t.ratePerPage > 0 ? t.ratePerPage : getRate(t.type)
-      return { taskId: t.id, type: t.type || 'Khác', pages, rate, amount: pages * rate }
+      return { taskId: t.id, type: t.type || 'Other', pages, rate, amount: pages * rate }
     })
 }
 
