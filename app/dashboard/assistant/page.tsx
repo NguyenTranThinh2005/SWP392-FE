@@ -82,7 +82,7 @@ export default function AssistantDashboardPage() {
               if (started.includes(taskId)) {
                 uiStatus = 'In-Progress'
               }
-            } catch {}
+            } catch { }
           }
 
           return {
@@ -202,19 +202,13 @@ export default function AssistantDashboardPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* Top Welcome Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 rounded-2xl p-6 sm:p-8">
+      <div className="relative overflow-hidden rounded-2xl p-6 sm:p-8">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
-              <Sparkles className="w-3.5 h-3.5" /> Assistant Workspace
-            </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               Assistant Dashboard
             </h1>
-            <p className="text-sm text-muted-foreground max-w-lg">
-              Welcome to your workspace. Track the status of your assigned tasks and go to the Tasks tab to start drawing.
-            </p>
           </div>
         </div>
       </div>
