@@ -66,7 +66,7 @@ export default function RankingPage() {
       setAllSeries(list.map(s => ({
         id: s.id,
         title: s.title,
-        genre: s.genre?.join(', ') || 'Fantasy'
+        genre: s.genre?.join(', ') || ''
       })))
     }).catch((err) => {
       console.warn("Failed to load active series:", err)
@@ -92,7 +92,7 @@ export default function RankingPage() {
                 id: r.voteRecordId || r.id,
                 seriesId: s.id,
                 seriesTitle: s.title,
-                genre: s.genre || 'Fantasy',
+                genre: s.genre || '',
                 chapterId: 'C_default',
                 chapterTitle: `Period: ${r.period}`,
                 period: r.period,
@@ -246,15 +246,14 @@ export default function RankingPage() {
       const XLSX = await import('xlsx')
       const templateData = allSeries.length > 0
         ? allSeries.map((s) => ({
-            "Series Title": s.title,
-            "Period": selectedPeriod || "2026-Q1",
-            "Readers": 1000,
-            "Votes": 800
-          }))
+          "Series Title": s.title,
+          "Period": selectedPeriod || "2026-Q1",
+          "Readers": 1000,
+          "Votes": 800
+        }))
         : [
-            { "Series Title": "Solo Leveling", "Period": "2026-Q1", "Readers": 1000, "Votes": 850 },
-            { "Series Title": "One Piece", "Period": "2026-Q1", "Readers": 1500, "Votes": 1200 }
-          ]
+          { "Series Title": "Sample Series Title", "Period": selectedPeriod || "2026-Q1", "Readers": 1000, "Votes": 800 }
+        ]
       const worksheet = XLSX.utils.json_to_sheet(templateData)
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, "RankingImportTemplate")
@@ -349,7 +348,7 @@ export default function RankingPage() {
           </div>
         ) : (
           <div className="text-[11px] bg-muted/50 border border-border p-2 rounded-lg text-muted-foreground max-w-xs text-center">
-            💡 <strong>Read-Only Mode:</strong> Only the Editorial Board is authorized to import ranking vote data.
+            <strong>Read-Only Mode:</strong> Only the Editorial Board is authorized to import ranking vote data.
           </div>
         )}
       </div>
@@ -380,14 +379,6 @@ export default function RankingPage() {
         onVote={handleVoteDiscontinue}
         selectedPeriod={selectedPeriod}
       />
-
-      {/* Rules Footnote */}
-      <div className="flex items-start gap-2.5 p-4 bg-muted/30 border border-border/40 rounded-xl text-[11px] text-muted-foreground leading-relaxed">
-        <Info className="w-4 h-4 text-muted-foreground/60 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-bold text-foreground">Rules enforced:</span> Entry authority, uniqueness, validation, formula, tie-break, auto-recalculate, bottom 20% flag
-        </div>
-      </div>
     </div>
   )
 }
