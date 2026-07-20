@@ -60,10 +60,27 @@ export default function RankingPage() {
     return role === 'EditorialBoard' || role === 'EditorInChief'
   }, [role])
 
-  // Fetch all active series
+  // Fetch all active series for ranking (Explicitly filter eligible statuses)
   useEffect(() => {
     seriesService.listSeries().then((list) => {
-      setAllSeries(list.map(s => ({
+      // Statuses allowed for ranking & Excel download
+      const ALLOWED_STATUSES = ['active', 'ongoing', 'published']
+      // Statuses strictly excluded (drafts, pending proposals, under review, cancelled)
+      const EXCLUDED_STATUSES = ['underreview', 'pendingreview', 'rejected', 'draft', 'boardvoting', 'cancelled', 'inactive']
+
+      const activeSeriesOnly = list.filter((s) => {
+        const rawStatus = (s.status || s.rawStatus || '').toLowerCase().replace(/[\s_]/g, '')
+
+        // 1. If explicitly in allowed active statuses -> ACCEPT
+        if (ALLOWED_STATUSES.includes(rawStatus)) return true
+        // 2. If in excluded proposal/review statuses -> REJECT
+        if (EXCLUDED_STATUSES.includes(rawStatus)) return false
+
+        // 3. Fallback: accept if not excluded
+        return true
+      })
+
+      setAllSeries(activeSeriesOnly.map(s => ({
         id: s.id,
         title: s.title,
         genre: s.genre?.join(', ') || ''
@@ -248,11 +265,11 @@ export default function RankingPage() {
         ? allSeries.map((s) => ({
           "Series Title": s.title,
           "Period": selectedPeriod || "2026-Q1",
-          "Readers": 1000,
-          "Votes": 800
+          "Readers": 0,
+          "Votes": 0
         }))
         : [
-          { "Series Title": "Sample Series Title", "Period": selectedPeriod || "2026-Q1", "Readers": 1000, "Votes": 800 }
+          { "Series Title": "Sample Series Title", "Period": selectedPeriod || "2026-Q1", "Readers": 0, "Votes": 0 }
         ]
       const worksheet = XLSX.utils.json_to_sheet(templateData)
       const workbook = XLSX.utils.book_new()
