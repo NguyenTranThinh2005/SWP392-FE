@@ -1,4 +1,4 @@
-import * as signalR from '@microsoft/signalr'
+﻿import * as signalR from '@microsoft/signalr'
 
 // Payload BE gui (khop RealtimeNotificationPayload)
 export interface RealtimeNotification {
@@ -10,48 +10,69 @@ export interface RealtimeNotification {
   link?: string
   createdAt: string
 }
-// URL hub - se thay bang URL that cua Bao
+
 const HUB_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5151') + '/hubs/notifications'
 
 let connection: signalR.HubConnection | null = null
+// Giu lai promise dang chay -> tranh tao ket noi thu 2 khi StrictMode chay effect 2 lan
+let startPromise: Promise<signalR.HubConnection | null> | null = null
 
-// Tao + start ket noi toi SignalR hub
 export async function startConnection(
   onReceive: (data: RealtimeNotification) => void
 ): Promise<signalR.HubConnection | null> {
-  // neu da co ket noi dang chay thi dung lai
+  // Da ket noi roi -> dung lai
   if (connection && connection.state === signalR.HubConnectionState.Connected) {
     return connection
+  }
+  // Dang ket noi do -> tra lai promise cu, KHONG tao cai moi
+  if (startPromise) {
+    return startPromise
   }
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
 
-  connection = new signalR.HubConnectionBuilder()
+  const conn = new signalR.HubConnectionBuilder()
     .withUrl(HUB_URL, {
-      accessTokenFactory: () => token || '', // gui token neu hub can auth
+      accessTokenFactory: () => token || '',
     })
-    .withAutomaticReconnect() // tu ket noi lai neu rot mang
+    .withAutomaticReconnect()
     .build()
 
-  // Lang nghe event tu BE - TEN EVENT se thay theo Bao (vd "ReceiveNotification")
-  connection.on('ReceiveNotification', (data: any) => {
+  conn.on('ReceiveNotification', (data: any) => {
     onReceive(data)
   })
 
-  try {
-    await connection.start()
-    console.log('SignalR: đã kết nối realtime')
-    return connection
-  } catch (err) {
-    console.error('SignalR: kết nối thất bại', err)
-    return null
-  }
+  startPromise = (async () => {
+    try {
+      await conn.start()
+      connection = conn
+      console.log('SignalR: da ket noi realtime')
+      return conn
+    } catch (err: any) {
+      const msg = String(err?.message || err)
+      // Loi vo hai khi StrictMode huy ket noi giua chung -> chi warn, khong bao do
+      if (msg.includes('stopped during negotiation') || msg.includes('The connection was stopped')) {
+        console.warn('SignalR: ket noi bi huy giua chung (dev StrictMode), se tu ket noi lai')
+      } else {
+        console.warn('SignalR: ket noi that bai -', msg)
+      }
+      connection = null
+      return null
+    } finally {
+      startPromise = null
+    }
+  })()
+
+  return startPromise
 }
 
-// Ngat ket noi (khi logout / roi trang)
 export async function stopConnection() {
+  // Neu dang ket noi do thi doi xong roi moi dung -> tranh huy giua negotiate
+  if (startPromise) {
+    try { await startPromise } catch { /* bo qua */ }
+  }
   if (connection) {
-    await connection.stop()
+    try { await connection.stop() } catch { /* bo qua */ }
     connection = null
   }
 }
