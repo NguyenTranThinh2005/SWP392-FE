@@ -2,20 +2,18 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRole } from '@/context/RoleContext'
-import { Trophy, FileSpreadsheet, Plus, Info } from 'lucide-react'
+import { Trophy, FileSpreadsheet, Info, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
 // Import backend APIs and logic helpers
 import { fetchAPI } from '@/services/api'
 import { seriesService } from '@/services/seriesService'
-import { chapterService } from '@/services/chapterService'
 
 // Import custom sub-components
 import PeriodTabs from './components/PeriodTabs'
 import PendingVotesCard from './components/PendingVotesCard'
 import RankingTable from './components/RankingTable'
-import ImportVoteDialog from './components/ImportVoteDialog'
 
 export interface VoteRecord {
   id: string
@@ -53,18 +51,7 @@ export default function RankingPage() {
   const [pendingVotes, setPendingVotes] = useState<VoteRecord[]>([])
   const [rankings, setRankings] = useState<RankingRow[]>([])
   const [allSeries, setAllSeries] = useState<any[]>([])
-  const [availableChapters, setAvailableChapters] = useState<any[]>([])
   const [votedSeries, setVotedSeries] = useState<Record<string, 'Discontinue' | 'Continue'>>({})
-
-  // Dialog state
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-
-  // Form states
-  const [formSeriesId, setFormSeriesId] = useState('')
-  const [formChapterId, setFormChapterId] = useState('')
-  const [formReaderCount, setFormReaderCount] = useState<number>(0)
-  const [formVoteCount, setFormVoteCount] = useState<number>(0)
-  const [formPeriod, setFormPeriod] = useState('2026-Q1')
 
   const periods = ['2026-Q2', '2026-Q1', '2025-Q4']
 
@@ -86,22 +73,6 @@ export default function RankingPage() {
       setAllSeries([])
     })
   }, [])
-
-  // Fetch chapters when formSeriesId changes
-  useEffect(() => {
-    if (!formSeriesId) {
-      setAvailableChapters([])
-      return
-    }
-    chapterService.getChaptersBySeries(formSeriesId).then((res) => {
-      setAvailableChapters(res.map(c => ({
-        id: c.id,
-        title: `Ch. ${c.number || (c as any).chapterNo || 1}: ${c.title}`
-      })))
-    }).catch(() => {
-      setAvailableChapters([{ id: 'C_default', title: 'Ch. 1: Storyboard Draft' }])
-    })
-  }, [formSeriesId])
 
   useEffect(() => {
     setMounted(true)
@@ -176,52 +147,6 @@ export default function RankingPage() {
     } catch (err) {
       console.error("Failed to refresh ranking/votes data from backend:", err)
     }
-  }
-
-  // Handle vote import submission (validations)
-  const handleImportSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!formSeriesId || !formChapterId) {
-      toast.error('Please select both a Series and a Chapter.')
-      return
-    }
-
-    if (formReaderCount < 0 || formVoteCount < 0) {
-      toast.error('Reader count and Vote count must be non-negative values.')
-      return
-    }
-
-    // constraint: readerCount >= voteCount
-    if (formVoteCount > formReaderCount) {
-      toast.error('Vote count cannot exceed total readers.')
-      return
-    }
-
-    const payload = {
-      seriesId: formSeriesId,
-      period: formPeriod,
-      readerCount: formReaderCount,
-      voteCount: formVoteCount
-    }
-
-    fetchAPI('/api/vote-records', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    }).then(() => {
-      toast.success('Vote record successfully imported as Pending Confirmation!')
-      setIsDialogOpen(false)
-
-      // Reset form fields
-      setFormSeriesId('')
-      setFormChapterId('')
-      setFormReaderCount(0)
-      setFormVoteCount(0)
-
-      refreshData()
-    }).catch((err: any) => {
-      toast.error(err.message || 'Failed to import vote data.')
-    })
   }
 
   // Handle Excel (.xlsx) file import
@@ -315,6 +240,32 @@ export default function RankingPage() {
     e.target.value = ''
   }
 
+  // Handle Download Excel Template
+  const handleDownloadTemplate = async () => {
+    try {
+      const XLSX = await import('xlsx')
+      const templateData = allSeries.length > 0
+        ? allSeries.map((s) => ({
+            "Series Title": s.title,
+            "Period": selectedPeriod || "2026-Q1",
+            "Readers": 1000,
+            "Votes": 800
+          }))
+        : [
+            { "Series Title": "Solo Leveling", "Period": "2026-Q1", "Readers": 1000, "Votes": 850 },
+            { "Series Title": "One Piece", "Period": "2026-Q1", "Readers": 1500, "Votes": 1200 }
+          ]
+      const worksheet = XLSX.utils.json_to_sheet(templateData)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, "RankingImportTemplate")
+      XLSX.writeFile(workbook, `Ranking_Vote_Import_Template_${selectedPeriod || '2026-Q1'}.xlsx`)
+      toast.success(`Excel template downloaded with ${allSeries.length} active series!`)
+    } catch (err) {
+      console.error("Failed to download template:", err)
+      toast.error("Failed to download template file.")
+    }
+  }
+
   // Handle vote confirmation
   const handleConfirmVote = (id: string, title: string) => {
     fetchAPI(`/api/vote-records/${id}/confirm`, {
@@ -372,7 +323,15 @@ export default function RankingPage() {
 
         {/* Import Buttons: only visible to Editorial Board or Editor-in-Chief */}
         {isAuthorized ? (
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <Button
+              onClick={handleDownloadTemplate}
+              variant="outline"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-bold text-xs px-3.5 py-2.5 rounded-lg shadow-sm cursor-pointer transition-all border-border text-foreground hover:bg-accent"
+            >
+              <Download className="w-4 h-4 text-emerald-500" /> Download Template
+            </Button>
+
             {/* Hidden File Input for Excel Import */}
             <input
               type="file"
@@ -387,13 +346,6 @@ export default function RankingPage() {
             >
               <FileSpreadsheet className="w-4 h-4" /> Import Excel (.xlsx)
             </label>
-
-            <Button
-              onClick={() => setIsDialogOpen(true)}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-md cursor-pointer transition-all"
-            >
-              <Plus className="w-4 h-4" /> Enter Vote Data
-            </Button>
           </div>
         ) : (
           <div className="text-[11px] bg-muted/50 border border-border p-2 rounded-lg text-muted-foreground max-w-xs text-center">
@@ -436,26 +388,6 @@ export default function RankingPage() {
           <span className="font-bold text-foreground">Rules enforced:</span> Entry authority, uniqueness, validation, formula, tie-break, auto-recalculate, bottom 20% flag
         </div>
       </div>
-
-      {/* Manual Input Dialog */}
-      <ImportVoteDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        formSeriesId={formSeriesId}
-        setFormSeriesId={setFormSeriesId}
-        formChapterId={formChapterId}
-        setFormChapterId={setFormChapterId}
-        formReaderCount={formReaderCount}
-        setFormReaderCount={setFormReaderCount}
-        formVoteCount={formVoteCount}
-        setFormVoteCount={setFormVoteCount}
-        formPeriod={formPeriod}
-        setFormPeriod={setFormPeriod}
-        allSeries={allSeries}
-        availableChapters={availableChapters}
-        periods={periods}
-        onSubmit={handleImportSubmit}
-      />
     </div>
   )
 }
