@@ -66,7 +66,7 @@ export default function RankingPage() {
       // Statuses allowed for ranking & Excel download
       const ALLOWED_STATUSES = ['active', 'ongoing', 'published']
       // Statuses strictly excluded (drafts, pending proposals, under review, cancelled)
-      const EXCLUDED_STATUSES = ['underreview', 'pendingreview', 'rejected', 'draft', 'boardvoting', 'cancelled', 'inactive']
+      const EXCLUDED_STATUSES = ['underreview', 'pendingreview', 'rejected', 'draft', 'boardvoting', 'cancelled', 'inactive', 'expired']
 
       const activeSeriesOnly = list.filter((s) => {
         const rawStatus = (s.status || s.rawStatus || '').toLowerCase().replace(/[\s_]/g, '')
