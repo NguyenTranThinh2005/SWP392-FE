@@ -43,6 +43,22 @@ import { fetchAPI } from '@/services/api'
 import { API_BASE_URL } from '@/lib/constants'
 import { toast } from 'sonner'
 
+const parseGenres = (genre: any): string[] => {
+  if (!genre) return []
+  if (Array.isArray(genre)) return genre.filter(Boolean)
+  if (typeof genre === 'string') {
+    if (genre.includes(',')) {
+      return genre.split(',').map((s) => s.trim()).filter(Boolean)
+    }
+    const splitPascal = genre.match(/[A-Z][a-z0-9]*/g)
+    if (splitPascal && splitPascal.length > 1) {
+      return splitPascal
+    }
+    return [genre.trim()]
+  }
+  return []
+}
+
 // Status badge configurations for Editorial Board view
 const STATUS_CONFIG: Record<
   ProposalStatus,
@@ -513,9 +529,22 @@ export default function ReviewProposalsPage() {
                     <span className="text-muted-foreground font-semibold">Publication Type</span>
                     <span className="font-bold text-foreground uppercase">{proposal.publicationType || proposal.type}</span>
                   </div>
-                  <div className="flex justify-between py-1.5">
-                    <span className="text-muted-foreground font-semibold">Genres</span>
-                    <span className="font-bold text-foreground">{proposal.genre}</span>
+                  <div className="flex justify-between items-center py-2 gap-2">
+                    <span className="text-muted-foreground font-semibold shrink-0">Genres</span>
+                    <div className="flex flex-wrap gap-1.5 justify-end">
+                      {parseGenres(proposal.genre).length > 0 ? (
+                        parseGenres(proposal.genre).map((g) => (
+                          <span
+                            key={g}
+                            className="bg-muted text-muted-foreground text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-border/40"
+                          >
+                            {g}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground italic text-xs">N/A</span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className="text-muted-foreground font-semibold">Date Submitted</span>
@@ -839,7 +868,7 @@ export default function ReviewProposalsPage() {
                                     setCustomApproveComment('')
                                   }}
                                   disabled={votingLoading}
-                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-750 text-white rounded-lg text-xs font-bold disabled:opacity-50"
+                                  className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-bold disabled:opacity-50"
                                 >
                                   {votingLoading ? 'Submitting...' : 'Submit Approve Vote'}
                                 </button>
@@ -850,7 +879,7 @@ export default function ReviewProposalsPage() {
                               <button
                                 onClick={() => setShowApproveCommentModal(true)}
                                 disabled={votingLoading}
-                                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider disabled:opacity-50"
+                                className="flex-1 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider disabled:opacity-50"
                               >
                                 <ThumbsUp className="w-4 h-4" /> Vote Approve
                               </button>
@@ -1233,18 +1262,6 @@ export default function ReviewProposalsPage() {
                 key={proposal.id}
                 className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/25 hover:shadow-lg transition-all flex flex-col"
               >
-                {/* Visual Header */}
-                <div
-                  className={`h-1.5 w-full ${proposal.status === 'Approved'
-                    ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
-                    : proposal.status === 'Rejected'
-                      ? 'bg-gradient-to-r from-red-400 to-rose-500'
-                      : proposal.status === 'Under Review'
-                        ? 'bg-gradient-to-r from-blue-400 to-indigo-500'
-                        : 'bg-gradient-to-r from-amber-400 to-orange-500'
-                    }`}
-                />
-
                 <div className="p-6 flex flex-col flex-1 gap-4">
                   {/* Proposal Header Info */}
                   <div className="flex items-start justify-between gap-3">
@@ -1279,10 +1296,10 @@ export default function ReviewProposalsPage() {
 
                   {/* Badges / Meta */}
                   <div className="flex flex-wrap gap-2">
-                    {proposal.genre.split(', ').map((g: string) => (
+                    {parseGenres(proposal.genre).map((g: string) => (
                       <span
                         key={g}
-                        className="bg-muted text-muted-foreground text-xs font-semibold px-2.5 py-0.5 rounded-lg"
+                        className="bg-muted text-muted-foreground text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-border/40"
                       >
                         {g}
                       </span>

@@ -242,7 +242,7 @@ export default function EditorManuscriptsTab({
                       <FileCheck className="w-4 h-4" /> Publish Manuscript
                     </button>
                   ) : activeManuscript.status === 'PUBLISHED' ? (
-                    <div className="w-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-bold text-xs py-2.5 rounded-lg flex items-center justify-center gap-1.5">
+                    <div className="w-full bg-primary/10 text-primary border border-primary/20 font-bold text-xs py-2.5 rounded-lg flex items-center justify-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" /> Published
                     </div>
                   ) : (
@@ -250,7 +250,7 @@ export default function EditorManuscriptsTab({
                       <button
                         onClick={() => handleDecision('APPROVED')}
                         disabled={activeManuscript.progress < 100}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-lg cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs py-2.5 rounded-lg cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5 shadow-sm"
                       >
                         <CheckCircle2 className="w-4 h-4" /> Approve & Lock
                       </button>

@@ -13,13 +13,29 @@ import {
   CheckCircle2,
   FileArchive,
   Download,
-  Search,
   XCircle,
+  Search,
   X
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { seriesService, type SeriesProposal } from '@/services/seriesService'
 import { API_BASE_URL } from '@/lib/constants'
+
+const parseGenres = (genre: any): string[] => {
+  if (!genre) return []
+  if (Array.isArray(genre)) return genre.filter(Boolean)
+  if (typeof genre === 'string') {
+    if (genre.includes(',')) {
+      return genre.split(',').map((s) => s.trim()).filter(Boolean)
+    }
+    const splitPascal = genre.match(/[A-Z][a-z0-9]*/g)
+    if (splitPascal && splitPascal.length > 1) {
+      return splitPascal
+    }
+    return [genre.trim()]
+  }
+  return []
+}
 
 interface EditorProposalsTabProps {
   supervisedSeries: any[]
@@ -242,14 +258,14 @@ export default function EditorProposalsTab({
                       <div>
                         <span className="text-[10px] font-bold text-muted-foreground uppercase block tracking-wider">Genre</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {proposal.genre && proposal.genre.length > 0 ? (
-                            proposal.genre.map((g: string) => (
-                              <span key={g} className="bg-muted px-1.5 py-0.5 rounded text-[9px] font-bold text-muted-foreground">
+                          {parseGenres(proposal.genre).length > 0 ? (
+                            parseGenres(proposal.genre).map((g: string) => (
+                              <span key={g} className="bg-muted px-2 py-0.5 rounded-md text-[10px] font-bold text-muted-foreground border border-border/40">
                                 {g}
                               </span>
                             ))
                           ) : (
-                            <span className="text-muted-foreground">N/A</span>
+                            <span className="text-muted-foreground text-xs italic">N/A</span>
                           )}
                         </div>
                       </div>
@@ -328,7 +344,7 @@ export default function EditorProposalsTab({
                             <div className="flex flex-col sm:flex-row gap-2 pt-1">
                               <button
                                 onClick={() => handleUpdateStatus('BoardVoting')}
-                                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+                                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" /> Approve & Send to Board
                               </button>
@@ -354,7 +370,7 @@ export default function EditorProposalsTab({
                               </>
                             ) : proposal.status === 'Approved' || proposal.status === 'Active' ? (
                               <>
-                                <CheckCircle2 className="w-7 h-7 text-emerald-500 shrink-0" />
+                                <CheckCircle2 className="w-7 h-7 text-primary shrink-0" />
                                 <div className="space-y-0.5">
                                   <p className="text-[11px] font-extrabold text-foreground">
                                     {proposal.rawStatus === 'Approved' ? 'Proposal Approved' : 'Approved & Active'}
@@ -381,7 +397,7 @@ export default function EditorProposalsTab({
                             <div className="pt-1">
                               <button
                                 onClick={() => handleUpdateStatus('Active')}
-                                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+                                className="w-full py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
                               >
                                 <CheckCircle2 className="w-4 h-4" /> Activate Series
                               </button>
@@ -499,7 +515,7 @@ export default function EditorProposalsTab({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-2xl font-black text-foreground">Proposal Review</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-[10px] text-muted-foreground mt-0.5">
                 Manage and evaluate proposals submitted by your assigned Mangakas.
               </p>
             </div>
@@ -567,8 +583,7 @@ export default function EditorProposalsTab({
                 return (
                   <div
                     key={proposal.id}
-                    className={`bg-card border border-border border-l-4 p-5 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center rounded-xl hover:shadow-md transition-all ${isOverdue ? 'border-l-destructive' : 'border-l-primary'
-                      }`}
+                    className="bg-card border border-border p-5 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center rounded-xl hover:shadow-md transition-all"
                   >
                     {/* Info */}
                     <div className="flex-1 space-y-2">
@@ -607,7 +622,7 @@ export default function EditorProposalsTab({
 
                       <div className="flex gap-2 flex-wrap pt-0.5">
                         {informationComplete && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-600 border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-extrabold bg-primary/10 text-primary border border-primary/20">
                             <CheckCircle className="w-3.5 h-3.5" /> Info Complete
                           </span>
                         )}
@@ -627,10 +642,7 @@ export default function EditorProposalsTab({
                       {!isRejected && (
                         <button
                           onClick={() => setSelectedProposalId(proposal.id)}
-                          className={`w-full md:w-auto px-4 py-2.5 text-xs font-black rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${isApprovedOrActive
-                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                            : 'bg-primary hover:bg-primary/95 text-primary-foreground'
-                            }`}
+                          className="w-full md:w-auto px-4 py-2.5 text-xs font-black rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
                           <FileText className="w-4 h-4" />
                           {isApprovedOrActive ? 'View Details' : 'Review & Decide'}

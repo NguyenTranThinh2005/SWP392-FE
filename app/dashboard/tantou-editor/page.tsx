@@ -1,11 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
-import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import {
-  Sparkles,
-} from 'lucide-react'
 import { useRole } from '@/context/RoleContext'
 import {
   type Chapter,
@@ -181,10 +177,6 @@ function TantouEditorWorkspace() {
           <h1 className="text-2xl font-black text-foreground tracking-tight mt-1.5">
             Welcome, <span className="text-primary">{currentUserName}</span>
           </h1>
-        </div>
-        <div className="flex items-center gap-2 bg-card border border-border px-3.5 py-1.5 rounded-lg text-xs font-bold text-muted-foreground shadow-sm">
-          <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-          Active: {assignedMangakas.length} Assigned Mangaka{assignedMangakas.length !== 1 ? 's' : ''}
         </div>
       </div>
 

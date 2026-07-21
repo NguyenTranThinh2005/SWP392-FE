@@ -229,7 +229,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
         <Button
           type="submit"
           disabled={submitting}
-          className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl mt-4 cursor-pointer transition-all"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl mt-4 cursor-pointer transition-all"
         >
           {submitting ? 'Creating...' : 'Create New Account'}
         </Button>

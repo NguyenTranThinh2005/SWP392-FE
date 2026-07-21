@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRole } from '@/context/RoleContext'
-import { Trophy, FileSpreadsheet, Info, Download } from 'lucide-react'
+import { Trophy, FileSpreadsheet, Info, Download, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -42,29 +42,79 @@ export interface RankingRow {
   status: 'TOP 3' | 'BOTTOM 20%' | '—'
 }
 
+// Helper to generate dynamic quarters range (e.g. 2024-Q1 to 2027-Q4)
+const generateDefaultPeriods = (): string[] => {
+  const currentYear = new Date().getFullYear()
+  const startYear = currentYear - 2
+  const endYear = currentYear + 1
+
+  const list: string[] = []
+  for (let y = endYear; y >= startYear; y--) {
+    for (let q = 4; q >= 1; q--) {
+      list.push(`${y}-Q${q}`)
+    }
+  }
+  return list
+}
+
 export default function RankingPage() {
   const { role } = useRole()
   const [mounted, setMounted] = useState(false)
 
   // State variables
   const [selectedPeriod, setSelectedPeriod] = useState<string>('2026-Q1')
+  const [allVoteRecords, setAllVoteRecords] = useState<VoteRecord[]>([])
   const [pendingVotes, setPendingVotes] = useState<VoteRecord[]>([])
   const [rankings, setRankings] = useState<RankingRow[]>([])
   const [allSeries, setAllSeries] = useState<any[]>([])
   const [votedSeries, setVotedSeries] = useState<Record<string, 'Discontinue' | 'Continue'>>({})
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true)
+  
+  const [periods, setPeriods] = useState<string[]>(() => {
+    const defaults = generateDefaultPeriods()
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('custom_ranking_periods')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed)) {
+            return Array.from(new Set([...defaults, ...parsed])).sort((a, b) => b.localeCompare(a))
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load custom periods from localStorage", e)
+      }
+    }
+    return defaults
+  })
 
-  const periods = ['2026-Q2', '2026-Q1', '2025-Q4']
+  // Add new custom period
+  const handleAddPeriod = (newPeriod: string) => {
+    setPeriods(prev => {
+      if (prev.includes(newPeriod)) return prev
+      const updated = [...prev, newPeriod].sort((a, b) => b.localeCompare(a))
+      try {
+        localStorage.setItem('custom_ranking_periods', JSON.stringify(updated))
+      } catch (e) {}
+      return updated
+    })
+  }
 
   // Determine if active user is Authorized Admin for Vote Imports
   const isAuthorized = useMemo(() => {
     return role === 'EditorialBoard' || role === 'EditorInChief'
   }, [role])
 
+  // Determine if the current selected period is already confirmed & locked
+  const isPeriodLocked = useMemo(() => {
+    return allVoteRecords.some(r => r.confirmed && r.period === selectedPeriod)
+  }, [allVoteRecords, selectedPeriod])
+
   // Fetch all active series for ranking (Explicitly filter eligible statuses)
   useEffect(() => {
     seriesService.listSeries().then((list) => {
       // Statuses allowed for ranking & Excel download
-      const ALLOWED_STATUSES = ['active', 'ongoing', 'published']
+      const ALLOWED_STATUSES = ['active']
       // Statuses strictly excluded (drafts, pending proposals, under review, cancelled)
       const EXCLUDED_STATUSES = ['underreview', 'pendingreview', 'rejected', 'draft', 'boardvoting', 'cancelled', 'inactive', 'expired']
 
@@ -88,6 +138,7 @@ export default function RankingPage() {
     }).catch((err) => {
       console.warn("Failed to load active series:", err)
       setAllSeries([])
+      setIsLoadingData(false)
     })
   }, [])
 
@@ -98,6 +149,7 @@ export default function RankingPage() {
 
   const refreshData = async () => {
     if (allSeries.length === 0) return
+    setIsLoadingData(true)
     try {
       const allRecordsList = await Promise.all(
         allSeries.map(async (s) => {
@@ -128,7 +180,17 @@ export default function RankingPage() {
       )
 
       const flatRecords = allRecordsList.flat()
+      setAllVoteRecords(flatRecords)
       setPendingVotes(flatRecords.filter(r => !r.confirmed))
+
+      // Auto-extract any unique periods from backend vote records
+      const fetchedPeriods = Array.from(new Set(flatRecords.map(r => r.period))).filter(Boolean) as string[]
+      if (fetchedPeriods.length > 0) {
+        setPeriods(prev => {
+          const merged = Array.from(new Set([...prev, ...fetchedPeriods]))
+          return merged.sort((a, b) => b.localeCompare(a))
+        })
+      }
 
       // Calculate rankings for the selected period
       const confirmedForPeriod = flatRecords.filter(r => r.confirmed && r.period === selectedPeriod)
@@ -163,6 +225,8 @@ export default function RankingPage() {
       setRankings(calculatedRankings)
     } catch (err) {
       console.error("Failed to refresh ranking/votes data from backend:", err)
+    } finally {
+      setIsLoadingData(false)
     }
   }
 
@@ -170,6 +234,13 @@ export default function RankingPage() {
   const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Prevent import if period is already confirmed & locked
+    if (isPeriodLocked) {
+      toast.error(`Rankings for period "${selectedPeriod}" have already been confirmed & locked. Further Excel imports are disabled.`)
+      e.target.value = ''
+      return
+    }
 
     const reader = new FileReader()
     reader.onload = async (evt) => {
@@ -194,11 +265,19 @@ export default function RankingPage() {
         for (const row of rows) {
           // Expected columns: Series Title, Period, Readers, Votes
           const seriesTitle = row["Series Title"] || row["SeriesTitle"] || row["Title"]
-          const period = row["Period"]
+          const period = row["Period"] || selectedPeriod
           const readerCount = parseInt(row["Readers"] || row["ReaderCount"] || row["Reader Count"] || "0", 10)
           const voteCount = parseInt(row["Votes"] || row["VoteCount"] || row["Vote Count"] || "0", 10)
 
           if (!seriesTitle || !period) {
+            errorsCount++
+            continue
+          }
+
+          // Check if this row's period is locked
+          const isRowPeriodLocked = allVoteRecords.some(r => r.confirmed && r.period === period.toString())
+          if (isRowPeriodLocked) {
+            console.warn(`Period ${period} is already confirmed & locked. Skipping row for "${seriesTitle}".`)
             errorsCount++
             continue
           }
@@ -245,7 +324,7 @@ export default function RankingPage() {
         }
 
         if (errorsCount > 0) {
-          toast.warning(`Skipped ${errorsCount} invalid rows. Double check series titles or counts.`)
+          toast.warning(`Skipped ${errorsCount} invalid or locked rows. Double check series titles or locked periods.`)
         }
 
       } catch (err) {
@@ -292,6 +371,25 @@ export default function RankingPage() {
     }).catch(() => {
       toast.error('Failed to confirm vote record.')
     })
+  }
+
+  // Handle confirm all pending votes & lock ranking
+  const handleConfirmAllVotes = async () => {
+    if (pendingVotes.length === 0) return
+    if (!confirm(`Are you sure you want to confirm all ${pendingVotes.length} pending vote record(s) and lock rankings for period "${selectedPeriod}"?`)) {
+      return
+    }
+
+    try {
+      await Promise.all(
+        pendingVotes.map(v => fetchAPI(`/api/vote-records/${v.id}/confirm`, { method: 'PUT' }))
+      )
+      toast.success(`All vote records confirmed! Rankings for "${selectedPeriod}" have been locked.`)
+      refreshData()
+    } catch (err) {
+      console.error("Failed to confirm all votes:", err)
+      toast.error("Failed to confirm all vote records.")
+    }
   }
 
   // Handle Chief Editor Veto / Discontinuation of Series
@@ -345,23 +443,35 @@ export default function RankingPage() {
               variant="outline"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-bold text-xs px-3.5 py-2.5 rounded-lg shadow-sm cursor-pointer transition-all border-border text-foreground hover:bg-accent"
             >
-              <Download className="w-4 h-4 text-emerald-500" /> Download Template
+              <Download className="w-4 h-4 text-primary" /> Download Template
             </Button>
 
-            {/* Hidden File Input for Excel Import */}
-            <input
-              type="file"
-              id="excel-import-file"
-              accept=".xlsx, .xls"
-              className="hidden"
-              onChange={handleExcelImport}
-            />
-            <label
-              htmlFor="excel-import-file"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-md cursor-pointer transition-all"
-            >
-              <FileSpreadsheet className="w-4 h-4" /> Import Excel (.xlsx)
-            </label>
+            {isLoadingData ? (
+              <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-muted/65 border border-border text-muted-foreground font-semibold text-xs px-4 py-2.5 rounded-lg opacity-70">
+                Checking Lock Status...
+              </div>
+            ) : isPeriodLocked ? (
+              <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm font-semibold">
+                <Lock className="w-4 h-4 text-amber-500" /> Ranking Locked ({selectedPeriod})
+              </div>
+            ) : (
+              <>
+                {/* Hidden File Input for Excel Import */}
+                <input
+                  type="file"
+                  id="excel-import-file"
+                  accept=".xlsx, .xls"
+                  className="hidden"
+                  onChange={handleExcelImport}
+                />
+                <label
+                  htmlFor="excel-import-file"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm cursor-pointer transition-all"
+                >
+                  <FileSpreadsheet className="w-4 h-4" /> Import Excel (.xlsx)
+                </label>
+              </>
+            )}
           </div>
         ) : (
           <div className="text-[11px] bg-muted/50 border border-border p-2 rounded-lg text-muted-foreground max-w-xs text-center">
@@ -376,14 +486,17 @@ export default function RankingPage() {
           pendingVotes={pendingVotes}
           isAuthorized={isAuthorized}
           onConfirm={handleConfirmVote}
+          onConfirmAll={handleConfirmAllVotes}
         />
       )}
 
-      {/* Period Selector Tabs */}
+      {/* Period Selector Tabs Carousel */}
       <PeriodTabs
         periods={periods}
         selectedPeriod={selectedPeriod}
         onSelectPeriod={setSelectedPeriod}
+        onAddPeriod={handleAddPeriod}
+        isAuthorized={isAuthorized}
       />
 
       {/* Main Ranking Table Component */}

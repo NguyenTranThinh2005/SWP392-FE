@@ -183,7 +183,7 @@ export default function AssignEditorModal({
             )}
           </div>
 
-          <Button type="submit" disabled={isReassigning || loadingHistory || !selectedEditorId || !activeAssignmentId} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl mt-2 cursor-pointer transition-all">
+          <Button type="submit" disabled={isReassigning || loadingHistory || !selectedEditorId || !activeAssignmentId} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl mt-2 cursor-pointer transition-all">
             {isReassigning ? 'Changing Editor...' : 'Confirm Editor Change'}
           </Button>
         </form>

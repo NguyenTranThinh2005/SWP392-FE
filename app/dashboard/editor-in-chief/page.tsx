@@ -137,30 +137,25 @@ export default function EditorInChiefDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Top Banner */}
-      <div className="relative overflow-hidden border-red-500/10 rounded-2xl p-8">
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-red-500 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
-              <ShieldAlert className="w-3.5 h-3.5" /> Chief Executive Control
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-              Editor-in-Chief Workspace
-            </h1>
-            <p className="text-sm text-muted-foreground max-w-xl">
-              Supervise active serializations, override board voting (Veto Finalization), and execute direct actions on proposals.
-            </p>
-          </div>
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
+            Editor-in-Chief Workspace
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Supervise active serializations, override board voting (Veto Finalization), and execute direct actions on proposals.
+          </p>
+        </div>
 
-          <div className="flex gap-4">
-            <div className="bg-card/60 backdrop-blur-md border border-border p-4 rounded-2xl text-center shrink-0">
-              <p className="text-2xl font-black text-foreground">{pendingOverrideProposals.length}</p>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Pending Override</p>
-            </div>
-            <div className="bg-card/60 backdrop-blur-md border border-border p-4 rounded-2xl text-center shrink-0">
-              <p className="text-2xl font-black text-emerald-500">{activeSeries.length}</p>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Active Series</p>
-            </div>
+        <div className="flex gap-3">
+          <div className="bg-card border border-border px-5 py-3 rounded-2xl text-center shadow-xs">
+            <p className="text-2xl font-black text-foreground">{pendingOverrideProposals.length}</p>
+            <p className="text-[10px] text-muted-foreground uppercase font-extrabold tracking-wider mt-0.5">Pending Override</p>
+          </div>
+          <div className="bg-card border border-border px-5 py-3 rounded-2xl text-center shadow-xs">
+            <p className="text-2xl font-black text-primary">{activeSeries.length}</p>
+            <p className="text-[10px] text-muted-foreground uppercase font-extrabold tracking-wider mt-0.5">Active Series</p>
           </div>
         </div>
       </div>
@@ -190,11 +185,8 @@ export default function EditorInChiefDashboard() {
               return (
                 <div
                   key={proposal.id}
-                  className="bg-card border border-border rounded-2xl overflow-hidden hover:border-red-500/25 transition-all flex flex-col md:flex-row"
+                  className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/25 transition-all flex flex-col md:flex-row"
                 >
-                  {/* Left color bar */}
-                  <div className="w-full md:w-2 bg-gradient-to-b from-amber-500 to-red-500" />
-
                   <div className="p-6 flex-1 flex flex-col md:flex-row justify-between gap-6">
                     {/* Info details */}
                     <div className="flex-1 space-y-4">
@@ -227,7 +219,7 @@ export default function EditorInChiefDashboard() {
 
                       {/* Vote breakdown */}
                       <div className="flex gap-4 text-xs font-bold">
-                        <div className="text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                        <div className="text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
                           Approve: {approveVotes}
                         </div>
                         <div className="text-red-500 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">
@@ -242,7 +234,7 @@ export default function EditorInChiefDashboard() {
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => handleVetoDecision(proposal.id, 'Approved')}
-                          className="flex items-center justify-center gap-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all"
+                          className="flex items-center justify-center gap-1 px-3 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl transition-all"
                         >
                           <Check className="w-3.5 h-3.5" /> Direct Approve
                         </button>

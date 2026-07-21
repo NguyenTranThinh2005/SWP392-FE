@@ -1192,7 +1192,7 @@ const payload = {
                           setSelectedChapterId(chap.id)
                           refreshData()
                         }}
-                        className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${isSelected ? 'bg-primary/5 border-l-4 border-primary' : 'hover:bg-muted/30'
+                        className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 font-bold' : 'hover:bg-muted/30'
                           }`}
                       >
                         <div className="space-y-1 min-w-0">
@@ -2796,7 +2796,7 @@ const payload = {
                   </button>
                   <button
                     onClick={() => handleApproveTask(activeTaskToReview)}
-                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
+                    className="flex-1 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
                   >
                     Approve & Complete
                   </button>

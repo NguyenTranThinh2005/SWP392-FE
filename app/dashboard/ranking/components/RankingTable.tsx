@@ -162,7 +162,7 @@ export default function RankingTable({
                                     </Button>
                                     <Button
                                       onClick={() => onVote(row.seriesId, 'Approved', row.seriesTitle)}
-                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] px-2 py-1 rounded cursor-pointer transition-colors"
+                                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[9px] px-2 py-1 rounded cursor-pointer transition-colors"
                                     >
                                       Vote Continue
                                     </Button>

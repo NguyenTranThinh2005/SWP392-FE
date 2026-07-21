@@ -255,7 +255,7 @@ export default function ManuscriptsPage() {
                     <Button
                       onClick={() => handleDecision('APPROVED')}
                       disabled={activeManuscript.progress < 100}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5"
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs py-2.5 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5"
                     >
                       <CheckCircle2 className="w-4 h-4" /> Approve (Lock)
                     </Button>
@@ -272,7 +272,7 @@ export default function ManuscriptsPage() {
                       🔒 <strong>View-only mode:</strong> Only the assigned Tantou Editor (Nakamura Takeshi) can approve or request revisions.
                     </div>
                     <div className="grid grid-cols-1 gap-2.5 opacity-50">
-                      <Button disabled className="w-full bg-emerald-600 text-white text-xs font-bold py-2.5 rounded-lg">
+                      <Button disabled className="w-full bg-primary text-primary-foreground text-xs font-bold py-2.5 rounded-lg">
                         Approve (Lock)
                       </Button>
                       <Button disabled className="w-full bg-amber-600 text-white text-xs font-bold py-2.5 rounded-lg">
