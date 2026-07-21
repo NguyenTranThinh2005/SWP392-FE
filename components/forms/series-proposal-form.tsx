@@ -106,6 +106,10 @@ export function SeriesProposalForm({
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string>(
     defaultValues?.coverImagePublicUrl ?? ''
   )
+  const [sampleFiles, setSampleFiles] = useState<File[]>([])
+  const [samplePreviewUrls, setSamplePreviewUrls] = useState<string[]>(
+    defaultValues?.sampleFileUrl ? defaultValues.sampleFileUrl.split(',').map(s => s.trim()).filter(Boolean) : []
+  )
   const [isUploading, setIsUploading] = useState(false)
   const [isDownloadingZip, setIsDownloadingZip] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -184,6 +188,12 @@ export function SeriesProposalForm({
         setSelectedGenres(defaultValues.genre.split(', ').filter(Boolean))
       }
       setCoverPreviewUrl(defaultValues.coverImagePublicUrl ?? '')
+      if (defaultValues.sampleFileUrl) {
+        setSamplePreviewUrls(defaultValues.sampleFileUrl.split(',').map(s => s.trim()).filter(Boolean))
+      } else {
+        setSamplePreviewUrls([])
+      }
+      setSampleFiles([])
     }
   }, [defaultValues, reset])
 
@@ -192,8 +202,13 @@ export function SeriesProposalForm({
       if (coverPreviewUrl && coverPreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(coverPreviewUrl)
       }
+      samplePreviewUrls.forEach((url) => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url)
+        }
+      })
     }
-  }, [coverPreviewUrl])
+  }, [coverPreviewUrl, samplePreviewUrls])
 
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -220,6 +235,49 @@ export function SeriesProposalForm({
     }
     setCoverPreviewUrl('')
     setValue('coverImagePublicUrl', '')
+  }
+
+  const handleSampleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
+    const validFiles: File[] = []
+    const newPreviewUrls: string[] = []
+
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        setError('Please select only image files (PNG, JPG, JPEG) for sample pages.')
+        return
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Sample page image size must not exceed 5MB.')
+        return
+      }
+      validFiles.push(file)
+      newPreviewUrls.push(URL.createObjectURL(file))
+    }
+
+    setError(null)
+    setSampleFiles((prev) => [...prev, ...validFiles])
+    setSamplePreviewUrls((prev) => [...prev, ...newPreviewUrls])
+  }
+
+  const handleRemoveSamplePage = (index: number) => {
+    const urlToRemove = samplePreviewUrls[index]
+    if (urlToRemove.startsWith('blob:')) {
+      URL.revokeObjectURL(urlToRemove)
+      let fileIdx = 0
+      for (let i = 0; i < index; i++) {
+        if (samplePreviewUrls[i].startsWith('blob:')) {
+          fileIdx++
+        }
+      }
+      setSampleFiles((prev) => prev.filter((_, idx) => idx !== fileIdx))
+    }
+
+    const newUrls = samplePreviewUrls.filter((_, idx) => idx !== index)
+    setSamplePreviewUrls(newUrls)
+    setValue('sampleFileUrl', newUrls.filter((url) => !url.startsWith('blob:')).join(','))
   }
 
   const synopsisValue = watch('synopsis') ?? ''
@@ -275,6 +333,21 @@ export function SeriesProposalForm({
           finalData.sourceZipFileAssetId = zipAssetId
           setValue('sourceZipFileAssetId', zipAssetId)
         }
+
+        // Upload newly added sample pages (using uploadCoverImageToBackend as category 2 is ProposalSamplePage)
+        const uploadedSampleUrls: string[] = []
+        for (const file of sampleFiles) {
+          const sampleAssetId = await uploadCoverImageToBackend(file)
+          const sampleUrl = `${API_BASE_URL}/api/files/${sampleAssetId}`
+          uploadedSampleUrls.push(sampleUrl)
+        }
+
+        // Combine previously saved remote URLs with newly uploaded ones
+        const savedSampleUrls = samplePreviewUrls.filter((url) => !url.startsWith('blob:'))
+        const finalSampleUrls = [...savedSampleUrls, ...uploadedSampleUrls]
+
+        finalData.sampleFileUrl = finalSampleUrls.join(',')
+        setValue('sampleFileUrl', finalSampleUrls.join(','))
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to upload file.')
         return
@@ -288,6 +361,8 @@ export function SeriesProposalForm({
       setCoverImageFile(null)
       setCoverPreviewUrl('')
       setSelectedGenres([])
+      setSampleFiles([])
+      setSamplePreviewUrls([])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     }
@@ -578,6 +653,63 @@ export function SeriesProposalForm({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Sample Pages Upload */}
+      <div className="space-y-2.5 border-t border-border/60 pt-6">
+        <label className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
+          <BookOpen className="w-3.5 h-3.5" />
+          Sample Pages (Artwork Preview)
+          <span className="text-[10px] text-muted-foreground font-normal ml-1">(Optional)</span>
+        </label>
+        <p className="text-xs text-muted-foreground">
+          Upload representative artwork pages to show the Editorial Board. Max 5MB per page.
+        </p>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4 mt-3">
+          {samplePreviewUrls.map((url, idx) => (
+            <div key={idx} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border bg-muted/20 shadow-sm group animate-in fade-in duration-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt={`Sample page ${idx + 1}`}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute top-1.5 left-1.5 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                Page {idx + 1}
+              </div>
+              {!isLoading && !isUploading && !hasActivePendingProposal && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSamplePage(idx)}
+                  className="absolute top-1.5 right-1.5 p-1.5 bg-destructive/90 hover:bg-destructive text-white rounded-full transition-all hover:scale-110 shadow-md opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  title="Remove sample page"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ))}
+
+          {!isLoading && !isUploading && !hasActivePendingProposal && (
+            <label className="flex flex-col items-center justify-center aspect-[3/4] border-2 border-dashed border-border rounded-lg cursor-pointer bg-card hover:bg-muted/40 transition-colors hover:border-primary group">
+              <div className="flex flex-col items-center justify-center p-3 text-center">
+                <Upload className="w-6 h-6 text-muted-foreground mb-1 group-hover:text-primary transition-colors" />
+                <span className="text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">Add Pages</span>
+              </div>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleSampleImagesChange}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
+
+        {/* Hidden input to keep React Hook Form synchronized */}
+        <input type="hidden" {...register('sampleFileUrl')} />
       </div>
 
       {/* Action Buttons */}
