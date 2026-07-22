@@ -304,7 +304,6 @@ export default function UserListTab({
         isOpen={editingUser !== null}
         onClose={() => setEditingUser(null)}
         user={editingUser}
-        rolesList={rolesList}
         onSuccess={onRefreshUsers}
       />
 

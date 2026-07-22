@@ -12,21 +12,18 @@ import {
 import { toast } from 'sonner'
 import { type User } from '@/types/user'
 import { userService } from '@/services/userService'
-import { type RoleResponse } from '@/services/systemService'
 
 interface EditUserModalProps {
   isOpen: boolean
   onClose: () => void
   user: User | null
-  rolesList: RoleResponse[]
   onSuccess: () => void
 }
 
-export default function EditUserModal({ isOpen, onClose, user, rolesList, onSuccess }: EditUserModalProps) {
+export default function EditUserModal({ isOpen, onClose, user, onSuccess }: EditUserModalProps) {
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
-  const [roleId, setRoleId] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [updating, setUpdating] = useState(false)
@@ -36,18 +33,16 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
       setName(user.name)
       setUsername(user.username || '')
       setEmail(user.email)
-      const matchedRole = rolesList.find(r => r.roleName.toLowerCase() === user.role.toLowerCase())
-      setRoleId(matchedRole?.roleId || '')
       setPassword('')
       setConfirmPassword('')
     }
-  }, [user, rolesList])
+  }, [user])
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
 
-    if (!name.trim() || !username.trim() || !email.trim() || !roleId) {
+    if (!name.trim() || !username.trim() || !email.trim()) {
       toast.error('Please fill in all required fields.')
       return
     }
@@ -68,7 +63,6 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
         displayName: name.trim(),
         userName: username.trim(),
         email: email.trim(),
-        roleId: roleId,
         newPassword: password ? password : undefined
       })
 
@@ -138,24 +132,6 @@ export default function EditUserModal({ isOpen, onClose, user, rolesList, onSucc
               className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground"
               required
             />
-          </div>
-
-          {/* System Role */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              System Role <span className="text-destructive">*</span>
-            </label>
-            <select
-              value={roleId}
-              onChange={(e) => setRoleId(e.target.value)}
-              className="w-full px-3 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer"
-              required
-            >
-              <option value="">-- Select role --</option>
-              {rolesList.map(role => (
-                <option key={role.roleId} value={role.roleId}>{role.roleName}</option>
-              ))}
-            </select>
           </div>
 
           {/* New Password */}

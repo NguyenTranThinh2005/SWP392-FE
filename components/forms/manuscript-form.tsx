@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { manuscriptSchema, type ManuscriptInput } from '@/lib/validation'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
 interface ManuscriptFormProps {
   seriesId: string
@@ -14,8 +14,6 @@ interface ManuscriptFormProps {
 }
 
 export function ManuscriptForm({ seriesId, seriesTitle, onSubmit, isLoading }: ManuscriptFormProps) {
-  const [error, setError] = useState<string | null>(null)
-
   const {
     register,
     handleSubmit,
@@ -30,11 +28,10 @@ export function ManuscriptForm({ seriesId, seriesTitle, onSubmit, isLoading }: M
 
   const handleFormSubmit = async (data: ManuscriptInput) => {
     try {
-      setError(null)
       await onSubmit(data)
       reset({ seriesId })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit manuscript.')
+      toast.error(err instanceof Error ? err.message : 'Failed to submit manuscript.')
     }
   }
 
@@ -44,8 +41,6 @@ export function ManuscriptForm({ seriesId, seriesTitle, onSubmit, isLoading }: M
         <h2 className="text-2xl font-bold">Submit Manuscript</h2>
         <p className="text-gray-600">Series: {seriesTitle}</p>
       </div>
-
-      {error && <div className="p-4 bg-red-50 text-red-700 rounded border border-red-200">{error}</div>}
 
       <div className="space-y-2">
         <label className="block text-sm font-medium">Manuscript File URL</label>

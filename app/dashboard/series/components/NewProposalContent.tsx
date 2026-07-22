@@ -12,7 +12,7 @@ import { useRole } from '@/context/RoleContext'
 import { notificationStore } from '@/store/notificationStore'
 import { toast } from 'sonner'
 
-const { hasPendingProposal, isTitleDuplicate, saveDraft, submitProposal, getProposalById, updateDraft } = proposalService
+const { hasPendingProposal, isTitleDuplicate, checkDuplicateImage, saveDraft, submitProposal, getProposalById, updateDraft } = proposalService
 
 export default function NewProposalContent() {
   const router = useRouter()
@@ -82,6 +82,22 @@ export default function NewProposalContent() {
         const isBlockedNow = await hasPendingProposal(mangakaId)
         if (isBlockedNow) {
           throw new Error('You already have a proposal pending review or under review. This action cannot be performed.')
+        }
+
+        // Image Duplicate Check using imageCompare.ts
+        const imagesToCheck: string[] = []
+        if (data.coverImagePublicUrl) imagesToCheck.push(data.coverImagePublicUrl)
+        if (data.sampleFileUrl) {
+          imagesToCheck.push(...data.sampleFileUrl.split(',').map((s) => s.trim()).filter(Boolean))
+        }
+
+        if (imagesToCheck.length > 0) {
+          const dupResult = await checkDuplicateImage(imagesToCheck, editId || undefined)
+          if (dupResult.isDuplicate) {
+            throw new Error(
+              `Image duplicate detected! The selected image matches an existing proposal ("${dupResult.duplicateProposalTitle}" - Status: ${dupResult.duplicateProposalStatus}). Proposal creation blocked.`
+            )
+          }
         }
 
         if (action === 'draft') {

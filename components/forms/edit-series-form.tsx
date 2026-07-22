@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronUp, AlertCircle, BookOpen, Upload, X } from 'lucide-react'
 import { API_BASE_URL } from '@/lib/constants'
 import { systemService } from '@/services/systemService'
+import { proposalService } from '@/services/proposalService'
+import { toast } from 'sonner'
 
 const uploadCoverImageToBackend = async (file: File): Promise<string> => {
   const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
@@ -74,7 +76,6 @@ export function EditSeriesForm({
   isLoading,
   defaultValues,
 }: EditSeriesFormProps) {
-  const [error, setError] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [genres, setGenres] = useState<string[]>([])
   const [selectedGenres, setSelectedGenres] = useState<string[]>(
@@ -152,15 +153,14 @@ export function EditSeriesForm({
     const file = e.target.files?.[0]
     if (file) {
       if (!file.type.startsWith('image/')) {
-        setError('Please select an image file (PNG, JPG, JPEG).')
+        toast.error('Please select an image file (PNG, JPG, JPEG).')
         return
       }
       if (file.size > 5 * 1024 * 1024) {
-        setError('Cover image size must not exceed 5MB.')
+        toast.error('Cover image size must not exceed 5MB.')
         return
       }
       setCoverImageFile(file)
-      setError(null)
       const localUrl = URL.createObjectURL(file)
       setCoverPreviewUrl(localUrl)
     }
@@ -202,8 +202,15 @@ export function EditSeriesForm({
 
   const handleFormSubmit = async (data: EditSeriesInput) => {
     try {
-      setError(null)
       const finalData = { ...data }
+
+      if (coverPreviewUrl) {
+        const dupCheck = await proposalService.checkDuplicateImage([coverPreviewUrl], (defaultValues as any)?.id)
+        if (dupCheck.isDuplicate) {
+          toast.error(`Duplicate cover image detected: matches "${dupCheck.duplicateProposalTitle}" (${dupCheck.duplicateProposalStatus})`)
+          return
+        }
+      }
 
       setIsUploading(true)
 
@@ -215,7 +222,7 @@ export function EditSeriesForm({
           setValue('coverImagePublicUrl', coverUrl)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Uploading cover image failed.')
+        toast.error(err instanceof Error ? err.message : 'Uploading cover image failed.')
         return
       } finally {
         setIsUploading(false)
@@ -223,7 +230,7 @@ export function EditSeriesForm({
 
       await onSubmit(finalData)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
+      toast.error(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     }
   }
 
@@ -233,13 +240,6 @@ export function EditSeriesForm({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      {/* API / network error */}
-      {error && (
-        <div className="flex items-start gap-2 p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg text-sm animate-in fade-in duration-200">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <div>{error}</div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Title Field */}

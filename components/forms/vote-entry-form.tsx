@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { voteEntrySchema, type VoteEntryInput } from '@/lib/validation'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
 interface VoteEntryFormProps {
   series: { id: string; title: string }[]
@@ -14,7 +15,6 @@ interface VoteEntryFormProps {
 }
 
 export function VoteEntryForm({ series, chapters, onSubmit, isLoading }: VoteEntryFormProps) {
-  const [error, setError] = useState<string | null>(null)
   const [selectedSeriesId, setSelectedSeriesId] = useState<string>('')
 
   const {
@@ -34,20 +34,17 @@ export function VoteEntryForm({ series, chapters, onSubmit, isLoading }: VoteEnt
 
   const handleFormSubmit = async (data: VoteEntryInput) => {
     try {
-      setError(null)
       await onSubmit(data)
       reset()
       setSelectedSeriesId('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit vote data.')
+      toast.error(err instanceof Error ? err.message : 'Failed to submit vote data.')
     }
   }
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 max-w-2xl">
       <h2 className="text-2xl font-bold">Enter Reader Vote Data</h2>
-
-      {error && <div className="p-4 bg-red-50 text-red-700 rounded border border-red-200">{error}</div>}
 
       <div className="space-y-2">
         <label className="block text-sm font-medium">Series</label>

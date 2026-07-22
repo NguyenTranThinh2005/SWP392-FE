@@ -1,5 +1,6 @@
 import { seriesService } from "@/services/seriesService";
 import type { Proposal, ProposalStatus } from "@/types/proposal";
+import { compareImages } from "@/lib/imageCompare";
 
 const SOURCE_ZIP_CACHE_KEY = 'proposal_source_zip_file_asset_ids';
 
@@ -119,6 +120,85 @@ export const proposalService = {
         p.status === 'Approved' &&
         p.id !== excludeId
     );
+  },
+
+  /**
+   * Checks if any of the provided image URLs match an image from an existing proposal
+   * in Draft, Under Review, Board Voting, Pending Review, Approved, or Active status.
+   * Uses imageCompare.ts (compareImages) for visual comparison.
+   */
+  checkDuplicateImage: async (
+    newImageUrls: string[],
+    excludeId?: string
+  ): Promise<{
+    isDuplicate: boolean;
+    duplicateProposalTitle?: string;
+    duplicateProposalStatus?: string;
+    diffPercent?: number;
+  }> => {
+    const validNewUrls = newImageUrls.map((u) => u.trim()).filter(Boolean);
+    if (validNewUrls.length === 0) return { isDuplicate: false };
+
+    const proposals = await proposalService.getProposals();
+
+    const targetStatuses: ProposalStatus[] = [
+      'Draft',
+      'Pending Review',
+      'Under Review',
+      'Board Voting',
+      'Approved',
+      'Active'
+    ];
+
+    const candidateProposals = proposals.filter((p) => {
+      if (excludeId && p.id === excludeId) return false;
+      return targetStatuses.includes(p.status);
+    });
+
+    for (const newUrl of validNewUrls) {
+      for (const targetProp of candidateProposals) {
+        const targetUrls: string[] = [];
+        if (targetProp.coverImagePublicUrl) {
+          targetUrls.push(targetProp.coverImagePublicUrl);
+        }
+        if (targetProp.sampleFileUrl) {
+          targetUrls.push(
+            ...targetProp.sampleFileUrl.split(',').map((s) => s.trim()).filter(Boolean)
+          );
+        }
+
+        for (const targetUrl of targetUrls) {
+          if (!targetUrl) continue;
+
+          // Direct URL string match
+          if (newUrl === targetUrl) {
+            return {
+              isDuplicate: true,
+              duplicateProposalTitle: targetProp.title,
+              duplicateProposalStatus: targetProp.status,
+              diffPercent: 0
+            };
+          }
+
+          // Visual pixel comparison via compareImages
+          try {
+            const result = await compareImages(newUrl, targetUrl);
+            if (result.diffPercent <= 5) {
+              return {
+                isDuplicate: true,
+                duplicateProposalTitle: targetProp.title,
+                duplicateProposalStatus: targetProp.status,
+                diffPercent: result.diffPercent
+              };
+            }
+          } catch {
+            // Ignore error loading single image (e.g., CORS or invalid image URL)
+          }
+        }
+      }
+    }
+
+    return { isDuplicate: false };
   },
 
   /**

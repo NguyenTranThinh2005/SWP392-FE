@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronUp, AlertCircle, BookOpen, FileText, Upload, X } from 'lucide-react'
 import { API_BASE_URL } from '@/lib/constants'
 import { systemService } from '@/services/systemService'
+import { proposalService } from '@/services/proposalService'
 import { toast } from 'sonner'
 import { fetchAPI } from '@/services/api'
 
@@ -94,7 +95,6 @@ export function SeriesProposalForm({
   hasActivePendingProposal = false,
   defaultValues,
 }: SeriesProposalFormProps) {
-  const [error, setError] = useState<string | null>(null)
   const [action, setAction] = useState<'draft' | 'submit'>('submit')
   const [isOpen, setIsOpen] = useState(false)
   const [genres, setGenres] = useState<string[]>([])
@@ -214,15 +214,14 @@ export function SeriesProposalForm({
     const file = e.target.files?.[0]
     if (file) {
       if (!file.type.startsWith('image/')) {
-        setError('Please select an image file (PNG, JPG, JPEG).')
+        toast.error('Please select an image file (PNG, JPG, JPEG).')
         return
       }
       if (file.size > 5 * 1024 * 1024) {
-        setError('Cover image size must not exceed 5MB.')
+        toast.error('Cover image size must not exceed 5MB.')
         return
       }
       setCoverImageFile(file)
-      setError(null)
       const localUrl = URL.createObjectURL(file)
       setCoverPreviewUrl(localUrl)
     }
@@ -246,18 +245,17 @@ export function SeriesProposalForm({
 
     for (const file of files) {
       if (!file.type.startsWith('image/')) {
-        setError('Please select only image files (PNG, JPG, JPEG) for sample pages.')
+        toast.error('Please select only image files (PNG, JPG, JPEG) for sample pages.')
         return
       }
       if (file.size > 5 * 1024 * 1024) {
-        setError('Sample page image size must not exceed 5MB.')
+        toast.error('Sample page image size must not exceed 5MB.')
         return
       }
       validFiles.push(file)
       newPreviewUrls.push(URL.createObjectURL(file))
     }
 
-    setError(null)
     setSampleFiles((prev) => [...prev, ...validFiles])
     setSamplePreviewUrls((prev) => [...prev, ...newPreviewUrls])
   }
@@ -308,12 +306,24 @@ export function SeriesProposalForm({
 
   const handleFormSubmit = async (data: SeriesProposalInput) => {
     try {
-      setError(null)
       const finalData = { ...data }
 
       if (action === 'submit') {
         if (!sourceZipFile && !data.sourceZipFileAssetId) {
-          setError('Please upload a manuscript ZIP/RAR file.')
+          toast.error('Please upload a manuscript ZIP/RAR file.')
+          return
+        }
+      }
+
+      // Pre-check for duplicate images via imageCompare.ts
+      const previewImagesToCheck: string[] = []
+      if (coverPreviewUrl) previewImagesToCheck.push(coverPreviewUrl)
+      if (samplePreviewUrls.length > 0) previewImagesToCheck.push(...samplePreviewUrls)
+
+      if (previewImagesToCheck.length > 0) {
+        const previewDup = await proposalService.checkDuplicateImage(previewImagesToCheck)
+        if (previewDup.isDuplicate) {
+          toast.error(`Image duplicate detected: matches "${previewDup.duplicateProposalTitle}" (${previewDup.duplicateProposalStatus})`)
           return
         }
       }
@@ -349,7 +359,7 @@ export function SeriesProposalForm({
         finalData.sampleFileUrl = finalSampleUrls.join(',')
         setValue('sampleFileUrl', finalSampleUrls.join(','))
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to upload file.')
+        toast.error(err instanceof Error ? err.message : 'Failed to upload file.')
         return
       } finally {
         setIsUploading(false)
@@ -364,7 +374,7 @@ export function SeriesProposalForm({
       setSampleFiles([])
       setSamplePreviewUrls([])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
+      toast.error(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     }
   }
 
@@ -388,14 +398,6 @@ export function SeriesProposalForm({
               until the current proposal is processed.
             </p>
           </div>
-        </div>
-      )}
-
-      {/* API / network error */}
-      {error && (
-        <div className="flex items-start gap-2 p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg text-sm animate-in fade-in duration-200">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <div>{error}</div>
         </div>
       )}
 

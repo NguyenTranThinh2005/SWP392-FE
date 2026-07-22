@@ -24,14 +24,13 @@ import {
   FieldDescription,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { AlertCircle } from "lucide-react"
+import { toast } from "sonner"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const {
@@ -48,12 +47,11 @@ export function LoginForm({
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      setError(null)
       setIsLoading(true)
       await authService.login(data)
       router.push("/dashboard")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid login information. Please try again.")
+      toast.error(err instanceof Error ? err.message : "Invalid login information. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -66,13 +64,6 @@ export function LoginForm({
           <CardTitle className="text-xl">Welcome back</CardTitle>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="flex items-start gap-2 p-3.5 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl text-xs mb-4 animate-in fade-in duration-200">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div>{error}</div>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
               <Field>

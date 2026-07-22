@@ -51,7 +51,7 @@ export async function fetchAPI<T>(
         });
 
         if (!retryResponse.ok) {
-          throw new Error(`API error after retry: ${retryResponse.statusText || retryResponse.status}`);
+          throw new Error(`Request failed after retry (${retryResponse.statusText || retryResponse.status})`);
         }
 
         return retryResponse.json();
@@ -60,11 +60,26 @@ export async function fetchAPI<T>(
       }
     }
 
-    let errorMessage = `API error: ${response.statusText || response.status}`;
+    let errorMessage = response.statusText || `Request failed (${response.status})`;
     try {
       const errorData = await response.json();
-      if (errorData && errorData.message) {
-        errorMessage = errorData.message;
+      if (typeof errorData === 'string' && errorData.trim()) {
+        errorMessage = errorData;
+      } else if (errorData && typeof errorData === 'object') {
+        if (errorData.message && typeof errorData.message === 'string') {
+          errorMessage = errorData.message;
+        } else if (errorData.detail && typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail;
+        } else if (errorData.title && typeof errorData.title === 'string' && !errorData.errors) {
+          errorMessage = errorData.title;
+        } else if (errorData.errors && typeof errorData.errors === 'object') {
+          const firstKey = Object.keys(errorData.errors)[0];
+          if (firstKey && Array.isArray(errorData.errors[firstKey]) && errorData.errors[firstKey].length > 0) {
+            errorMessage = errorData.errors[firstKey][0];
+          } else if (firstKey && typeof errorData.errors[firstKey] === 'string') {
+            errorMessage = errorData.errors[firstKey];
+          }
+        }
       }
     } catch { }
     throw new Error(errorMessage);

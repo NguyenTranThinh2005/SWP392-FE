@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { chapterTaskSchema, type ChapterTaskInput } from '@/lib/validation'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
 interface ChapterTaskFormProps {
   chapters: { id: string; title: string }[]
@@ -14,8 +15,6 @@ interface ChapterTaskFormProps {
 }
 
 export function ChapterTaskForm({ chapters, assistants, onSubmit, isLoading }: ChapterTaskFormProps) {
-  const [error, setError] = useState<string | null>(null)
-
   const {
     register,
     handleSubmit,
@@ -30,19 +29,16 @@ export function ChapterTaskForm({ chapters, assistants, onSubmit, isLoading }: C
 
   const handleFormSubmit = async (data: ChapterTaskInput) => {
     try {
-      setError(null)
       await onSubmit(data)
       reset()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign task.')
+      toast.error(err instanceof Error ? err.message : 'Failed to assign task.')
     }
   }
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 max-w-2xl">
       <h2 className="text-2xl font-bold">Assign Chapter Task</h2>
-
-      {error && <div className="p-4 bg-red-50 text-red-700 rounded border border-red-200">{error}</div>}
 
       <div className="space-y-2">
         <label className="block text-sm font-medium">Chapter</label>
