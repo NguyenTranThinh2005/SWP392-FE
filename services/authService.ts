@@ -43,12 +43,12 @@ export const authService = {
   },
 
   logout: async () => {
-    tokenService.clearAll();
     try {
       await fetchAPI<any>('/api/auth/logout', { method: 'POST' });
     } catch (err) {
-      console.warn("Logout endpoint failed on backend, local session cleared", err);
+      // Ignore - backend session may already be expired, local cleanup still proceeds
     }
+    tokenService.clearAll();
   },
 
   getCurrentUser: async () => {

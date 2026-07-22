@@ -106,9 +106,20 @@ export function SeriesProposalForm({
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string>(
     defaultValues?.coverImagePublicUrl ?? ''
   )
+  const normalizeSampleUrl = (url: string) => {
+    const trimmed = url.trim()
+    if (!trimmed) return ''
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:') || trimmed.startsWith('/')) {
+      return trimmed
+    }
+    return `${API_BASE_URL}/api/files/${trimmed}`
+  }
+
   const [sampleFiles, setSampleFiles] = useState<File[]>([])
   const [samplePreviewUrls, setSamplePreviewUrls] = useState<string[]>(
-    defaultValues?.sampleFileUrl ? defaultValues.sampleFileUrl.split(',').map(s => s.trim()).filter(Boolean) : []
+    defaultValues?.sampleFileUrl
+      ? defaultValues.sampleFileUrl.split(',').map(s => normalizeSampleUrl(s)).filter(Boolean)
+      : []
   )
   const [isUploading, setIsUploading] = useState(false)
   const [isDownloadingZip, setIsDownloadingZip] = useState(false)
@@ -187,9 +198,9 @@ export function SeriesProposalForm({
       if (defaultValues.genre) {
         setSelectedGenres(defaultValues.genre.split(', ').filter(Boolean))
       }
-      setCoverPreviewUrl(defaultValues.coverImagePublicUrl ?? '')
+      setCoverPreviewUrl(defaultValues.coverImagePublicUrl ? normalizeSampleUrl(defaultValues.coverImagePublicUrl) : '')
       if (defaultValues.sampleFileUrl) {
-        setSamplePreviewUrls(defaultValues.sampleFileUrl.split(',').map(s => s.trim()).filter(Boolean))
+        setSamplePreviewUrls(defaultValues.sampleFileUrl.split(',').map(s => normalizeSampleUrl(s)).filter(Boolean))
       } else {
         setSamplePreviewUrls([])
       }
@@ -321,7 +332,13 @@ export function SeriesProposalForm({
       if (samplePreviewUrls.length > 0) previewImagesToCheck.push(...samplePreviewUrls)
 
       if (previewImagesToCheck.length > 0) {
-        const previewDup = await proposalService.checkDuplicateImage(previewImagesToCheck)
+        const currentProposalId =
+          (defaultValues as any)?.id ||
+          (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('edit') || undefined : undefined)
+        const previewDup = await proposalService.checkDuplicateImage(
+          previewImagesToCheck,
+          currentProposalId
+        )
         if (previewDup.isDuplicate) {
           toast.error(`Image duplicate detected: matches "${previewDup.duplicateProposalTitle}" (${previewDup.duplicateProposalStatus})`)
           return
@@ -427,7 +444,7 @@ export function SeriesProposalForm({
         {/* Genre Field (Custom Multi-select Popover) */}
         <div className="space-y-1.5 relative" ref={dropdownRef}>
           <label className="text-sm font-semibold text-foreground/80">
-             Genre <span className="text-destructive">*</span>
+            Genre <span className="text-destructive">*</span>
           </label>
 
           {/* Hidden input to register genre with react-hook-form */}
@@ -607,7 +624,7 @@ export function SeriesProposalForm({
             Cover Image
             <span className="text-[10px] text-muted-foreground font-normal ml-1">(Optional)</span>
           </label>
-          
+
           <div className="space-y-3">
             {coverPreviewUrl ? (
               <div className="relative w-40 aspect-[3/4] rounded-lg overflow-hidden border border-border shadow-sm group">
@@ -646,10 +663,10 @@ export function SeriesProposalForm({
                 </label>
               </div>
             )}
-            
+
             {/* Hidden input to keep React Hook Form synchronized */}
             <input type="hidden" {...register('coverImagePublicUrl')} />
-            
+
             {errors.coverImagePublicUrl && (
               <span className="text-destructive text-xs font-semibold block">{errors.coverImagePublicUrl.message}</span>
             )}
@@ -662,7 +679,7 @@ export function SeriesProposalForm({
         <label className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
           <BookOpen className="w-3.5 h-3.5" />
           Sample Pages (Artwork Preview)
-          <span className="text-[10px] text-muted-foreground font-normal ml-1">(Optional)</span>
+          <span className="text-[15px] text-destructive font-normal ml-1">*</span>
         </label>
         <p className="text-xs text-muted-foreground">
           Upload representative artwork pages to show the Editorial Board. Max 5MB per page.

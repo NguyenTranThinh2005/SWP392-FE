@@ -151,7 +151,11 @@ export const proposalService = {
     ];
 
     const candidateProposals = proposals.filter((p) => {
-      if (excludeId && p.id === excludeId) return false;
+      if (excludeId) {
+        const normPId = p.id.toLowerCase().trim();
+        const normExId = excludeId.toLowerCase().trim();
+        if (normPId === normExId) return false;
+      }
       return targetStatuses.includes(p.status);
     });
 

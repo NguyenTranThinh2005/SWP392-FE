@@ -215,11 +215,6 @@ export default function EditorProposalsTab({
                         <AlertTriangle className="w-3 h-3" /> Escalated
                       </span>
                     )}
-                    {informationComplete && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-600 border border-emerald-500/20">
-                        <CheckCircle className="w-3 h-3" /> Info Complete
-                      </span>
-                    )}
                   </p>
                 </div>
               </div>
@@ -632,11 +627,6 @@ export default function EditorProposalsTab({
                       </div>
 
                       <div className="flex gap-2 flex-wrap pt-0.5">
-                        {informationComplete && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-extrabold bg-primary/10 text-primary border border-primary/20">
-                            <CheckCircle className="w-3.5 h-3.5" /> Info Complete
-                          </span>
-                        )}
                         <span className="bg-muted px-2 py-0.5 rounded text-[9px] font-bold text-muted-foreground uppercase">
                           {proposal.type || 'Weekly'}
                         </span>
