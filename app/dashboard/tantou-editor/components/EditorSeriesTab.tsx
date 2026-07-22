@@ -5,8 +5,7 @@ import {
   Search,
   Filter,
   ChevronDown,
-  PencilLine,
-  Star
+  PencilLine
 } from 'lucide-react'
 
 interface EditorSeriesTabProps {
@@ -193,8 +192,8 @@ export default function EditorSeriesTab({ supervisedSeries }: EditorSeriesTabPro
                   </p>
                 </div>
 
-                {/* Genres & Rating footer */}
-                <div className="flex items-center justify-between pt-2 border-t border-border/40 text-[10px]">
+                {/* Genres footer */}
+                <div className="pt-2 border-t border-border/40 text-[10px]">
                   <div className="flex flex-wrap gap-1 min-w-0">
                     {series.genre?.slice(0, 2).map((g: string) => (
                       <span
@@ -204,13 +203,6 @@ export default function EditorSeriesTab({ supervisedSeries }: EditorSeriesTabPro
                         {g}
                       </span>
                     ))}
-                  </div>
-
-                  <div className="flex items-center gap-0.5 shrink-0 text-amber-500 font-bold">
-                    <Star className="w-3 h-3" />
-                    <span className="text-foreground">
-                      {(series.rating || (4.5 + (series.title.length % 5) * 0.1)).toFixed(1)}
-                    </span>
                   </div>
                 </div>
               </div>

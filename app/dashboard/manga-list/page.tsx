@@ -178,7 +178,7 @@ export default function MangaListPage() {
             <div
               key={manga.id}
               onClick={() => handleOpenDetail(manga)}
-              className="bg-card border border-border overflow-hidden hover:border-primary/40 hover:shadow-md transition-all flex flex-row group cursor-pointer rounded-2xl"
+              className="bg-card border border-border overflow-hidden hover:border-primary/40 hover:shadow-md transition-all flex flex-row group cursor-pointer"
             >
               {/* Left Cover */}
               <div className="w-28 sm:w-32 shrink-0 relative overflow-hidden bg-slate-900 aspect-[3/4]">
@@ -299,10 +299,10 @@ export default function MangaListPage() {
                         {selectedManga.title}
                       </h2>
                       <span className={`px-2 py-0.5 rounded text-xs font-bold ${selectedManga.status === 'Active'
-                          ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                          : selectedManga.status === 'Rejected'
-                            ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                            : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                        : selectedManga.status === 'Rejected'
+                          ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                          : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                         }`}>
                         {selectedManga.status}
                       </span>

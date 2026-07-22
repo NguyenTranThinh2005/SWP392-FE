@@ -201,11 +201,6 @@ export default function EditorDashboardTab({
                       </p>
                     </div>
                     <div className="flex items-center gap-2.5 shrink-0">
-                      {series.rating && (
-                        <span className="text-[10px] font-bold text-sky-500 bg-sky-500/5 px-2 py-0.5 rounded-md border border-sky-500/10">
-                          {series.rating}% Score
-                        </span>
-                      )}
                       <span
                         className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${series.status === 'Active'
                           ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'

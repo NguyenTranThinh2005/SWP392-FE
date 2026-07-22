@@ -185,7 +185,7 @@ export default function EditorInChiefDashboard() {
               return (
                 <div
                   key={proposal.id}
-                  className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/25 transition-all flex flex-col md:flex-row"
+                  className="bg-card border border-border overflow-hidden hover:border-primary/25 transition-all flex flex-col md:flex-row"
                 >
                   <div className="p-6 flex-1 flex flex-col md:flex-row justify-between gap-6">
                     {/* Info details */}
