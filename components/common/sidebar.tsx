@@ -39,7 +39,7 @@ function SidebarInner() {
     ],
     TantouEditor: [
       { label: 'Dashboard', href: '/dashboard/tantou-editor?tab=dashboard', icon: LayoutDashboard },
-      { label: 'Series', href: '/dashboard/tantou-editor?tab=series', icon: BookOpen },
+      { label: 'Manga List', href: '/dashboard/manga-list', icon: BookOpen },
       { label: 'Approve Proposals', href: '/dashboard/tantou-editor?tab=proposals', icon: ClipboardList },
       { label: 'Manuscripts', href: '/dashboard/tantou-editor?tab=manuscripts', icon: Layers },
       { label: 'Ranking', href: '/dashboard/ranking', icon: Trophy },

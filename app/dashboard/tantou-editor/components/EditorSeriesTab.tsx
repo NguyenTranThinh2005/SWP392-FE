@@ -1,12 +1,15 @@
-'use client'
-
 import { useState } from 'react'
 import {
   Search,
   Filter,
   ChevronDown,
-  PencilLine
+  BookOpen,
+  X,
+  Layers,
+  Clock,
+  FileText
 } from 'lucide-react'
+import { chapterService, type Chapter } from '@/services/chapterService'
 
 interface EditorSeriesTabProps {
   supervisedSeries: any[]
@@ -17,6 +20,21 @@ export default function EditorSeriesTab({ supervisedSeries }: EditorSeriesTabPro
   const [selectedGenre, setSelectedGenre] = useState('All Genres')
   const [selectedType, setSelectedType] = useState('All Types')
   const [selectedStatus, setSelectedStatus] = useState('All')
+
+  // Modal state
+  const [selectedManga, setSelectedManga] = useState<any | null>(null)
+  const [chapters, setChapters] = useState<Chapter[]>([])
+  const [loadingChapters, setLoadingChapters] = useState(false)
+
+  const handleOpenManga = (series: any) => {
+    setSelectedManga(series)
+    setLoadingChapters(true)
+    chapterService
+      .getChaptersBySeries(series.id)
+      .then(setChapters)
+      .catch(() => setChapters([]))
+      .finally(() => setLoadingChapters(false))
+  }
 
   const filteredSeries = supervisedSeries.filter((s) => {
     // Apply Search query
@@ -51,9 +69,9 @@ export default function EditorSeriesTab({ supervisedSeries }: EditorSeriesTabPro
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       <div>
-        <h2 className="text-2xl font-black text-foreground">Series</h2>
+        <h2 className="text-2xl font-black text-foreground">Manga List</h2>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {filteredSeries.length} series found
+          {filteredSeries.length} manga found
         </p>
       </div>
 
@@ -140,7 +158,8 @@ export default function EditorSeriesTab({ supervisedSeries }: EditorSeriesTabPro
           return (
             <div
               key={series.id}
-              className="bg-card border border-border hover:border-primary/25 flex flex-row hover:shadow-lg transition-all group overflow-hidden"
+              onClick={() => handleOpenManga(series)}
+              className="bg-card border border-border hover:border-primary/25 flex flex-row hover:shadow-lg transition-all group overflow-hidden cursor-pointer rounded-xl"
             >
               {/* Left Cover */}
               <div className="w-28 sm:w-32 shrink-0 relative overflow-hidden bg-slate-900 aspect-[3/4]">
@@ -152,7 +171,9 @@ export default function EditorSeriesTab({ supervisedSeries }: EditorSeriesTabPro
                     className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
-                  <div className={`absolute inset-0 bg-gradient-to-br ${series.coverColor || 'from-blue-600 to-cyan-700'} opacity-90`} />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${series.coverColor || 'from-blue-600 to-cyan-700'} opacity-90 flex items-center justify-center p-2 text-white font-black text-center text-xs`} >
+                    {series.title}
+                  </div>
                 )}
                 {/* Badges on cover */}
                 <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
@@ -210,6 +231,166 @@ export default function EditorSeriesTab({ supervisedSeries }: EditorSeriesTabPro
           )
         })}
       </div>
+
+      {/* Manga Detail Modal */}
+      {selectedManga && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSelectedManga(null)}
+        >
+          <div
+            className="bg-card border border-border rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-primary" />
+                <h2 className="font-extrabold text-base text-foreground">Manga Details</h2>
+              </div>
+              <button
+                onClick={() => setSelectedManga(null)}
+                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div className="flex flex-col sm:flex-row gap-6">
+                {/* Cover Image */}
+                <div className="w-40 sm:w-48 shrink-0 mx-auto sm:mx-0">
+                  <div className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-900 border border-border shadow-md relative group">
+                    {selectedManga.coverImagePublicUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={selectedManga.coverImagePublicUrl}
+                        alt={selectedManga.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${selectedManga.coverColor || 'from-blue-600 to-cyan-700'} flex items-center justify-center p-4 text-white font-black text-center text-lg`}>
+                        {selectedManga.title}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Details Info */}
+                <div className="flex-1 space-y-4 min-w-0">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-xl font-extrabold text-foreground tracking-tight">
+                        {selectedManga.title}
+                      </h2>
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${selectedManga.status === 'Active' || selectedManga.status === 'Approved'
+                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                        : selectedManga.status === 'Rejected'
+                          ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                          : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                        }`}>
+                        {selectedManga.status || 'Active'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-muted-foreground mt-1">
+                      Author: <span className="text-foreground">{selectedManga.author || 'Unknown'}</span>
+                    </p>
+                  </div>
+
+                  {/* Metadata Row */}
+                  <div className="grid grid-cols-2 gap-3 text-xs bg-muted/30 border border-border/60 p-3 rounded-xl">
+                    <div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block">Publication</span>
+                      <span className="font-extrabold text-foreground">{selectedManga.type || 'Weekly'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block">Total Chapters</span>
+                      <span className="font-extrabold text-foreground">
+                        {loadingChapters ? 'Loading...' : `${chapters.length} Chapters`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Genres */}
+                  <div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block mb-1.5">Genres</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedManga.genre && selectedManga.genre.length > 0 ? (
+                        selectedManga.genre.map((g: string) => (
+                          <span
+                            key={g}
+                            className="bg-muted text-muted-foreground text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-border/40"
+                          >
+                            {g}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">N/A</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Synopsis / Description</span>
+                    <p className="text-xs text-foreground leading-relaxed font-medium bg-card border border-border/40 p-3 rounded-xl max-h-36 overflow-y-auto whitespace-pre-wrap">
+                      {selectedManga.description || 'No description provided.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chapters List Section */}
+              <div className="border-t border-border/60 pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" /> Chapter List ({chapters.length})
+                  </h3>
+                </div>
+
+                {loadingChapters ? (
+                  <div className="py-8 text-center text-xs text-muted-foreground">
+                    Loading chapters...
+                  </div>
+                ) : chapters.length > 0 ? (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {chapters.map((ch) => (
+                      <div
+                        key={ch.id}
+                        className="flex items-center justify-between p-3 bg-muted/20 border border-border/60 rounded-xl hover:border-primary/30 transition-all text-xs"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-black text-primary bg-primary/10 px-2 py-1 rounded-md text-[10px]">
+                            Ch. {ch.number}
+                          </span>
+                          <div>
+                            <span className="font-extrabold text-foreground block">{ch.title}</span>
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                              <span><FileText className="w-3 h-3 inline mr-0.5" /> {ch.totalPages} Pages</span>
+                              {ch.publicationDate && (
+                                <span><Clock className="w-3 h-3 inline mr-0.5" /> {ch.publicationDate}</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/40">
+                          {ch.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 bg-muted/20 border border-border/60 rounded-xl text-center text-xs text-muted-foreground font-semibold">
+                    No chapters available for this manga.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+

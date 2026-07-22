@@ -142,13 +142,13 @@ export default function ProposalCard({
                   onClick={() => onDelete(proposal.id)}
                   className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[9px] font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/5 border border-border rounded-lg transition-colors cursor-pointer"
                 >
-                  <Trash2 className="w-3 h-3" /> Xóa
+                  <Trash2 className="w-3 h-3" /> Delete
                 </button>
                 <Link
                   href={`/dashboard/series/new?edit=${proposal.id}`}
                   className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[9px] font-semibold bg-primary/10 text-primary hover:bg-primary/15 rounded-lg transition-colors"
                 >
-                  <FileEdit className="w-3 h-3" /> Sửa
+                  <FileEdit className="w-3 h-3" /> Edit
                 </Link>
               </>
             )}
@@ -157,7 +157,7 @@ export default function ProposalCard({
                 href={`/dashboard/series/edit?id=${proposal.id}`}
                 className="inline-flex items-center justify-center gap-1 px-2.5 py-1 text-[9px] font-semibold bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/15 rounded-lg transition-colors"
               >
-                <FileEdit className="w-3 h-3" /> Cập nhật
+                <FileEdit className="w-3 h-3" /> Update
               </Link>
             )}
           </div>

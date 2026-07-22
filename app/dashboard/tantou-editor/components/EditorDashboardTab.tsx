@@ -30,14 +30,14 @@ export default function EditorDashboardTab({
       {/* Stats Summary Strip */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Link
-          href="/dashboard/tantou-editor?tab=series"
+          href="/dashboard/manga-list"
           className="bg-card border border-border hover:border-primary/20 p-6 rounded-xl flex items-center gap-4 transition-all shadow-sm group cursor-pointer"
         >
           <div className="text-primary group-hover:scale-105 transition-transform">
             <BookOpen className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground font-semibold">My Series</p>
+            <p className="text-xs text-muted-foreground font-semibold">Manga List</p>
             <p className="text-2xl font-black text-foreground leading-none mt-1">
               {stats.seriesCount}
             </p>
@@ -170,10 +170,10 @@ export default function EditorDashboardTab({
             <div className="flex justify-between items-center pb-2 border-b border-border/40">
               <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-primary" />
-                Series Overview
+                Manga Overview
               </h3>
               <Link
-                href="/dashboard/tantou-editor?tab=series"
+                href="/dashboard/manga-list"
                 className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5"
               >
                 View All <ChevronRight className="w-3.5 h-3.5" />

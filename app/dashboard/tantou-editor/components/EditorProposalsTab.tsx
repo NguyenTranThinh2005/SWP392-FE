@@ -121,12 +121,23 @@ export default function EditorProposalsTab({
       // Always hide Draft proposals
       if ((p.status || '').toLowerCase() === 'draft') return false;
 
-      const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.author.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = (p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.author || '').toLowerCase().includes(searchQuery.toLowerCase());
       if (proposalFilter === 'All') return matchesSearch;
 
       const pStatus = (p.status || '').toLowerCase().replace(/[\s_]+/g, '');
       const filterVal = proposalFilter.toLowerCase().replace(/[\s_]+/g, '');
+
+      if (filterVal === 'underreview') {
+        return matchesSearch && ['proposed', 'pendingreview', 'underreview'].includes(pStatus);
+      }
+      if (filterVal === 'approved') {
+        return matchesSearch && ['approved', 'active'].includes(pStatus);
+      }
+      if (filterVal === 'boardvoting') {
+        return matchesSearch && ['boardvoting'].includes(pStatus);
+      }
+
       return matchesSearch && pStatus === filterVal;
     });
   }, [supervisedSeries, searchQuery, proposalFilter])

@@ -130,15 +130,21 @@ function TantouEditorWorkspace() {
   // FEATURE: Filter series supervised by the current editor
   const supervisedSeries = useMemo(() => {
     const assignedIds = new Set(assignedMangakas.map(m => m.id.toLowerCase()))
-    const filteredList = seriesList.filter(
-      (s) => s.mangakaId && assignedIds.has(s.mangakaId.toLowerCase())
-    )
+    const filteredList = seriesList.filter((s) => {
+      // 1. Mangaka is assigned to this editor
+      const isMangakaAssigned = s.mangakaId && assignedIds.has(s.mangakaId.toLowerCase())
+      // 2. Editor is directly assigned to this series/proposal
+      const isEditorAssigned = s.tantouEditorId && currentUserId && s.tantouEditorId.toLowerCase() === currentUserId.toLowerCase()
+      // 3. Fallback: If no assigned mangakas in state yet, show proposals assigned to editor or non-draft proposals
+      const fallbackShow = assignedIds.size === 0
+      return isMangakaAssigned || isEditorAssigned || fallbackShow
+    })
     return [...filteredList].sort((a, b) => {
       const dateA = new Date(a.submittedAt || a.createdAt || 0).getTime()
       const dateB = new Date(b.submittedAt || b.createdAt || 0).getTime()
       return dateB - dateA
     })
-  }, [seriesList, assignedMangakas])
+  }, [seriesList, assignedMangakas, currentUserId])
 
   // FEATURE: Calculate count of pending items (manuscripts submitted, chapters ready for editor)
   const pendingReviewsCount = useMemo(() => {
