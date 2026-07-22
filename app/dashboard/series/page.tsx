@@ -93,6 +93,21 @@ export default function MyProposalsPage() {
       {/* Page header */}
       <ProposalHeader isBlocked={isBlocked} />
 
+      {/* Warning banner when mangaka has an active/pending proposal */}
+      {isBlocked && (
+        <div className="flex items-start gap-3.5 p-4 bg-amber-500/10 border border-amber-500/25 rounded-xl text-sm animate-in fade-in duration-200">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="font-bold text-amber-900 dark:text-amber-200 text-sm">
+              You have a pending proposal
+            </h4>
+            <p className="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+              Each Mangaka can only submit 1 proposal at a time. You cannot create a new proposal until the current proposal (Pending Review / Under Review / Board Voting) completes the review process by the Editorial Board.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Stats strip */}
       <ProposalStats counts={counts} />
 

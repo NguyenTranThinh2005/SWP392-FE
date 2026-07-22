@@ -104,7 +104,7 @@ export const proposalService = {
     return list.some(
       (p) =>
         p.mangakaId.toLowerCase() === mangakaId.toLowerCase() &&
-        (p.status === 'Pending Review' || p.status === 'Under Review')
+        (p.status === 'Pending Review' || p.status === 'Under Review' || p.status === 'Board Voting')
     );
   },
 
