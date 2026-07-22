@@ -39,9 +39,17 @@ export async function startConnection(
     .build()
 
   conn.on('ReceiveNotification', (data: any) => {
+    console.log('📩 [ReceiveNotification]:', JSON.stringify(data, null, 2))
     onReceive(data)
   })
-
+  // Bat MOI event de xem BE dung ten gi
+  const originalOn = conn.on.bind(conn)
+  ;['Notification','ReceiveMessage','SendNotification','Notify','NewNotification','ReceiveNoti'].forEach(evt => {
+    conn.on(evt, (data: any) => {
+      console.log(`📩 [${evt}]:`, JSON.stringify(data, null, 2))
+      onReceive(data)
+    })
+  })
   startPromise = (async () => {
     try {
       await conn.start()

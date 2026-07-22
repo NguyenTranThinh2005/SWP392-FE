@@ -822,6 +822,17 @@ ratePerPage: t.ratePerPage ?? 0,
       setSubmitManuscriptUploading(false)
     }
   }
+  const openTaskModal = () => {
+    // Goi y trang bat dau = trang cuoi lon nhat da giao + 1
+    const maxEnd = chapterTasks.length > 0
+      ? Math.max(...chapterTasks.map((t: any) => t.pageEnd || 0))
+      : 0
+   const nextStart = maxEnd + 1
+    const chapterEnd = selectedChapter?.totalPages || nextStart
+    setNewTaskPageStart(nextStart)
+    setNewTaskPageEnd(chapterEnd >= nextStart ? chapterEnd : nextStart)
+    setIsTaskModalOpen(true)
+  }
   // 2. Tạo Task & Giao việc cho Assistant
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault()
@@ -838,7 +849,19 @@ ratePerPage: t.ratePerPage ?? 0,
       showToast('Please select an assistant to assign the task!', 'error')
       return
     }
-
+    // Chong trung trang: khoang moi khong duoc de len task da giao
+    const overlap = chapterTasks.find((t: any) =>
+      newTaskPageStart <= (t.pageEnd || 0) && newTaskPageEnd >= (t.pageStart || 0)
+    )
+    if (overlap) {
+      showToast(`Pages ${overlap.pageStart}–${overlap.pageEnd} are already assigned. Please start from a free page.`, 'error')
+      return
+    }
+    // Khong vuot tong so trang
+    if (selectedChapter && newTaskPageEnd > (selectedChapter.totalPages || 0)) {
+      showToast(`This chapter has only ${selectedChapter.totalPages} pages.`, 'error')
+      return
+    }
 const payload = {
         chapterId: selectedChapterId,
         assistantId: newTaskAssistantId,
@@ -1338,7 +1361,7 @@ const payload = {
                         <ClipboardList className="w-4 h-4 text-primary" /> Tasks Assigned to Assistants
                       </h3>
                       <button
-                        onClick={() => setIsTaskModalOpen(true)}
+                        onClick={openTaskModal}
                         className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add Task
@@ -2305,6 +2328,11 @@ const payload = {
               </div>
 
               {/* Pages Range: Start & End */}
+              {chapterTasks.length > 0 && (
+                <p className="text-xs font-semibold text-primary mb-1">
+                  Đã giao đến trang {Math.max(...chapterTasks.map((t: any) => t.pageEnd || 0))}/{selectedChapter?.totalPages || '?'}. Nên bắt đầu từ trang {Math.max(...chapterTasks.map((t: any) => t.pageEnd || 0)) + 1}.
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted-foreground">Start Page</label>
