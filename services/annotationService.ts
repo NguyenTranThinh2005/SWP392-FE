@@ -29,7 +29,7 @@ export const annotationService = {
       const list = res?.data ?? res
       return Array.isArray(list) ? list : []
     } catch (err) {
-      console.warn('Khong tai duoc annotations:', err)
+      console.warn('Cannot load annotations:', err)
       return []
     }
   }
