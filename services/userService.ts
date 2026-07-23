@@ -23,6 +23,8 @@ export interface UserProfileResponse {
   deletedAt: string | null;
   assignedEditorId?: string;
   assignedEditorName?: string;
+  assignedAssistantId?: string;
+  assignedAssistantName?: string;
 }
 
 export interface UserAssignmentResponse {
@@ -72,6 +74,13 @@ export const userService = {
     return fetchAPI<{ data?: any; message: string }>("/api/reassign", {
       method: "POST",
       body: JSON.stringify({ assignmentId, mangakaId, fromUserId: editorId }),
+    });
+  },
+
+  assignAssistantToMangaka: async (mangakaId: string, assistantId: string, assignmentId?: string) => {
+    return fetchAPI<{ data?: any; message: string }>("/api/reassign", {
+      method: "POST",
+      body: JSON.stringify({ assignmentId: assignmentId || "", mangakaId, fromUserId: assistantId }),
     });
   },
 

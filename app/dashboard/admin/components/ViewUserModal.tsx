@@ -16,9 +16,10 @@ interface ViewUserModalProps {
   onClose: () => void
   user: User | null
   getEditorName: (editorId?: string) => string
+  getAssistantName?: (assistantId?: string) => string
 }
 
-export default function ViewUserModal({ isOpen, onClose, user, getEditorName }: ViewUserModalProps) {
+export default function ViewUserModal({ isOpen, onClose, user, getEditorName, getAssistantName }: ViewUserModalProps) {
   if (!user) return null
 
   return (
@@ -84,10 +85,18 @@ export default function ViewUserModal({ isOpen, onClose, user, getEditorName }: 
           </div>
 
           {user.role === 'Mangaka' && (
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-muted-foreground font-semibold">Responsible Editor:</span>
-              <span className="col-span-2 text-foreground font-bold">{getEditorName(user.editorId)}</span>
-            </div>
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground font-semibold">Responsible Editor:</span>
+                <span className="col-span-2 text-foreground font-bold">{getEditorName(user.editorId)}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground font-semibold">Assigned Assistant:</span>
+                <span className="col-span-2 text-foreground font-bold">
+                  {getAssistantName ? getAssistantName(user.assistantId) : 'Unassigned'}
+                </span>
+              </div>
+            </>
           )}
 
           <div className="grid grid-cols-3 gap-2">

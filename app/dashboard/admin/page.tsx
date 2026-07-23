@@ -68,7 +68,12 @@ export default function AdminPage() {
             role,
             status,
             avatarUrl: (u as any).avatarUrl || undefined,
-            editorId: u.assignedEditorId || undefined,
+            editorId: u.assignedEditorId || (u as any).editorId || undefined,
+            assistantId: u.assignedAssistantId || (u as any).assistantId || undefined,
+            assignedEditorId: u.assignedEditorId,
+            assignedEditorName: u.assignedEditorName,
+            assignedAssistantId: u.assignedAssistantId,
+            assignedAssistantName: u.assignedAssistantName,
             createdAt: u.createdAt
           }
 
@@ -100,6 +105,11 @@ export default function AdminPage() {
     return usersList.filter(u => u.role === 'TantouEditor' && u.status === 'Active')
   }, [usersList])
 
+  // FEATURE: Filter active assistants for assigning to mangakas
+  const assistants = useMemo(() => {
+    return usersList.filter(u => u.role === 'Assistant' && u.status === 'Active')
+  }, [usersList])
+
   // FEATURE: Look up editor display name by responsible editor ID
   const getEditorName = useCallback((editorId?: string) => {
     if (!editorId) return 'Unassigned'
@@ -107,9 +117,14 @@ export default function AdminPage() {
     return ed ? ed.name : 'Unknown'
   }, [usersList])
 
+  // FEATURE: Look up assistant display name by assistant ID
+  const getAssistantName = useCallback((assistantId?: string) => {
+    if (!assistantId) return 'Unassigned'
+    const ast = usersList.find(u => u.id === assistantId)
+    return ast ? ast.name : 'Unknown'
+  }, [usersList])
+
   if (!mounted) return null
-
-
 
   return (
     <div className="space-y-6">
@@ -167,7 +182,9 @@ export default function AdminPage() {
           role={role}
           rolesList={rolesList}
           editors={editors}
+          assistants={assistants}
           getEditorName={getEditorName}
+          getAssistantName={getAssistantName}
           onRefreshUsers={refreshUsers}
         />
       )}
@@ -176,6 +193,7 @@ export default function AdminPage() {
         <CreateUserTab
           rolesList={rolesList}
           editors={editors}
+          assistants={assistants}
           onSuccess={() => {
             refreshUsers()
             setActiveTab('list')

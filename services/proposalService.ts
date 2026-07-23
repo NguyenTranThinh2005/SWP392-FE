@@ -110,14 +110,16 @@ export const proposalService = {
   },
 
   /**
-   * Returns true if there is already an Active series with this exact title.
+   * Returns true if there is already a series or proposal with this exact title (excluding current proposal).
    */
   isTitleDuplicate: async (title: string, excludeId?: string): Promise<boolean> => {
+    if (!title || !title.trim()) return false;
     const list = await proposalService.getProposals();
+    const cleanTitle = title.trim().toLowerCase();
     return list.some(
       (p) =>
-        p.title.toLowerCase() === title.toLowerCase() &&
-        p.status === 'Approved' &&
+        p.title.trim().toLowerCase() === cleanTitle &&
+        p.status !== 'Rejected' &&
         p.id !== excludeId
     );
   },

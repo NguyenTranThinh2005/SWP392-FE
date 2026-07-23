@@ -326,15 +326,24 @@ export function SeriesProposalForm({
         }
       }
 
-      // Pre-check for duplicate images via imageCompare.ts
+      // Pre-check for duplicate title and duplicate images
+      const currentProposalId =
+        (defaultValues as any)?.id ||
+        (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('edit') || undefined : undefined)
+
+      if (data.title) {
+        const isDupTitle = await proposalService.isTitleDuplicate(data.title, currentProposalId)
+        if (isDupTitle) {
+          toast.error(`Title "${data.title}" is already used by an existing proposal or active series.`)
+          return
+        }
+      }
+
       const previewImagesToCheck: string[] = []
       if (coverPreviewUrl) previewImagesToCheck.push(coverPreviewUrl)
       if (samplePreviewUrls.length > 0) previewImagesToCheck.push(...samplePreviewUrls)
 
       if (previewImagesToCheck.length > 0) {
-        const currentProposalId =
-          (defaultValues as any)?.id ||
-          (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('edit') || undefined : undefined)
         const previewDup = await proposalService.checkDuplicateImage(
           previewImagesToCheck,
           currentProposalId

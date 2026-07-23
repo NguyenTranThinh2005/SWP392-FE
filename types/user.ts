@@ -9,9 +9,12 @@ export interface User {
   username?: string;
   status?: 'Active' | 'Inactive';
   editorId?: string;
+  assistantId?: string;
   assignedEditorId?: string;
   assignedEditorName?: string;
   assignedEditorEmail?: string;
+  assignedAssistantId?: string;
+  assignedAssistantName?: string;
   assignedMangakas?: { id: string; name: string; email: string }[];
   createdAt?: string;
 }

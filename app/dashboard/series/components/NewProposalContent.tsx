@@ -100,6 +100,11 @@ export default function NewProposalContent() {
           }
         }
 
+        // Title duplicate check (runs for both Save Draft and Submit for Approval)
+        if (await isTitleDuplicate(data.title, editId || undefined)) {
+          throw new Error(`Title "${data.title}" is already used by an existing proposal or active series`)
+        }
+
         if (action === 'draft') {
           if (editId) {
             await updateDraft(editId, {
@@ -112,7 +117,6 @@ export default function NewProposalContent() {
               sourceZipFileAssetId: data.sourceZipFileAssetId,
             }, false)
           } else {
-            // Draft: no validation, just save
             await saveDraft({
               title: data.title,
               genre: data.genre,
@@ -127,11 +131,6 @@ export default function NewProposalContent() {
           setSuccessMessage('draft')
           setTimeout(() => router.push('/dashboard/series'), 1200)
           return
-        }
-
-        // Submit — run check
-        if (await isTitleDuplicate(data.title, editId || undefined)) {
-          throw new Error(`Title "${data.title}" is already used by an existing proposal or active series`)
         }
 
         if (editId) {

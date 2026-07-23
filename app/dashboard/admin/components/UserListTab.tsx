@@ -29,13 +29,16 @@ import { type RoleResponse } from '@/services/systemService'
 import ViewUserModal from './ViewUserModal'
 import EditUserModal from './EditUserModal'
 import AssignEditorModal from './AssignEditorModal'
+import AssignAssistantModal from './AssignAssistantModal'
 
 interface UserListTabProps {
   usersList: User[]
   role: string
   rolesList: RoleResponse[]
   editors: User[]
+  assistants: User[]
   getEditorName: (editorId?: string) => string
+  getAssistantName: (assistantId?: string) => string
   onRefreshUsers: () => void
 }
 
@@ -44,7 +47,9 @@ export default function UserListTab({
   role,
   rolesList,
   editors,
+  assistants,
   getEditorName,
+  getAssistantName,
   onRefreshUsers
 }: UserListTabProps) {
   const [searchTerm, setSearchTerm] = useState('')
@@ -55,6 +60,7 @@ export default function UserListTab({
   const [viewingUser, setViewingUser] = useState<User | null>(null)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [assigningMangaka, setAssigningMangaka] = useState<User | null>(null)
+  const [assigningAssistantMangaka, setAssigningAssistantMangaka] = useState<User | null>(null)
 
   // Filtered Users
   const filteredUsers = useMemo(() => {
@@ -150,7 +156,12 @@ export default function UserListTab({
                 <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Email</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Role</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Created Date</TableHead>
-                {role === 'Admin' && <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Responsible Editor</TableHead>}
+                {role === 'Admin' && (
+                  <>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Responsible Editor</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Assigned Assistant</TableHead>
+                  </>
+                )}
                 <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Status</TableHead>
                 <TableHead className="w-32 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Actions</TableHead>
               </TableRow>
@@ -158,7 +169,7 @@ export default function UserListTab({
             <TableBody className="divide-y divide-border">
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={role === 'Admin' ? 9 : 8} className="p-12 text-center text-muted-foreground space-y-2">
+                  <TableCell colSpan={role === 'Admin' ? 10 : 8} className="p-12 text-center text-muted-foreground space-y-2">
                     <Users className="w-8 h-8 mx-auto text-muted-foreground/30" />
                     <p className="text-xs">No accounts found matching the filters.</p>
                   </TableCell>
@@ -213,21 +224,39 @@ export default function UserListTab({
                       </TableCell>
 
                       {role === 'Admin' && (
-                        <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {user.role === 'Mangaka' ? (
-                            <div className="flex items-center gap-1.5">
-                              <span>{getEditorName(user.editorId)}</span>
-                              <button
-                                onClick={() => setAssigningMangaka(user)}
-                                className="text-[10px] text-primary hover:underline font-bold"
-                              >
-                                (Change)
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground/30">—</span>
-                          )}
-                        </TableCell>
+                        <>
+                          <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            {user.role === 'Mangaka' ? (
+                              <div className="flex items-center gap-1.5">
+                                <span>{getEditorName(user.editorId)}</span>
+                                <button
+                                  onClick={() => setAssigningMangaka(user)}
+                                  className="text-[10px] text-primary hover:underline font-bold cursor-pointer"
+                                >
+                                  (Change)
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/30">—</span>
+                            )}
+                          </TableCell>
+
+                          <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            {user.role === 'Mangaka' ? (
+                              <div className="flex items-center gap-1.5">
+                                <span>{getAssistantName(user.assistantId)}</span>
+                                <button
+                                  onClick={() => setAssigningAssistantMangaka(user)}
+                                  className="text-[10px] text-primary hover:underline font-bold cursor-pointer"
+                                >
+                                  (Change)
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/30">—</span>
+                            )}
+                          </TableCell>
+                        </>
                       )}
 
                       <TableCell className="text-center">
@@ -298,6 +327,7 @@ export default function UserListTab({
         onClose={() => setViewingUser(null)}
         user={viewingUser}
         getEditorName={getEditorName}
+        getAssistantName={getAssistantName}
       />
 
       <EditUserModal
@@ -313,6 +343,15 @@ export default function UserListTab({
         mangaka={assigningMangaka}
         editors={editors}
         getEditorName={getEditorName}
+        onSuccess={onRefreshUsers}
+      />
+
+      <AssignAssistantModal
+        isOpen={assigningAssistantMangaka !== null}
+        onClose={() => setAssigningAssistantMangaka(null)}
+        mangaka={assigningAssistantMangaka}
+        assistants={assistants}
+        getAssistantName={getAssistantName}
         onSuccess={onRefreshUsers}
       />
     </div>

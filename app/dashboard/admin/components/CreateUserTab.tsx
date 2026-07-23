@@ -12,15 +12,17 @@ import { type User } from '@/types/user'
 interface CreateUserTabProps {
   rolesList: RoleResponse[]
   editors: User[]
+  assistants: User[]
   onSuccess: () => void
 }
 
-export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateUserTabProps) {
+export default function CreateUserTab({ rolesList, editors, assistants, onSuccess }: CreateUserTabProps) {
   const [formName, setFormName] = useState('')
   const [formUsername, setFormUsername] = useState('')
   const [formEmail, setFormEmail] = useState('')
   const [formRoleId, setFormRoleId] = useState('')
   const [formEditorId, setFormEditorId] = useState('')
+  const [formAssistantId, setFormAssistantId] = useState('')
   const [formPassword, setFormPassword] = useState('')
   const [formConfirmPassword, setFormConfirmPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -85,6 +87,7 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
       const defaultRole = rolesList.find(r => r.roleName.toLowerCase() === 'mangaka') || rolesList[0]
       setFormRoleId(defaultRole?.roleId || '')
       setFormEditorId('')
+      setFormAssistantId('')
       setFormPassword('')
       setFormConfirmPassword('')
 
@@ -172,24 +175,42 @@ export default function CreateUserTab({ rolesList, editors, onSuccess }: CreateU
             </select>
           </div>
 
-          {/* Conditionally Render Editor Assignment Dropdown (if role === Mangaka) */}
+          {/* Conditionally Render Editor & Assistant Assignment Dropdowns (if role === Mangaka) */}
           {isMangakaSelected && (
-            <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-200">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                <LinkIcon className="w-3.5 h-3.5 text-primary" /> Select Responsible Tantou Editor <span className="text-destructive">*</span>
-              </label>
-              <select
-                value={formEditorId}
-                onChange={(e) => setFormEditorId(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer focus:border-primary/50"
-                required
-              >
-                <option value="">-- Select Tantou Editor --</option>
-                {editors.map(ed => (
-                  <option key={ed.id} value={ed.id}>{ed.name} ({ed.username})</option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-200">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <LinkIcon className="w-3.5 h-3.5 text-primary" /> Select Responsible Tantou Editor <span className="text-destructive">*</span>
+                </label>
+                <select
+                  value={formEditorId}
+                  onChange={(e) => setFormEditorId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer focus:border-primary/50"
+                  required
+                >
+                  <option value="">-- Select Tantou Editor --</option>
+                  {editors.map(ed => (
+                    <option key={ed.id} value={ed.id}>{ed.name} ({ed.username})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-200 sm:col-span-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <LinkIcon className="w-3.5 h-3.5 text-primary" /> Select Assigned Assistant <span className="text-xs font-normal text-muted-foreground/70">(Optional)</span>
+                </label>
+                <select
+                  value={formAssistantId}
+                  onChange={(e) => setFormAssistantId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-muted/65 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer focus:border-primary/50"
+                >
+                  <option value="">-- None / Select Assistant --</option>
+                  {assistants.map(ast => (
+                    <option key={ast.id} value={ast.id}>{ast.name} ({ast.username})</option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
         </div>
 
