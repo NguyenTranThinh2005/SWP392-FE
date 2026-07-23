@@ -2783,10 +2783,10 @@ const payload = {
                   <div className="space-y-2">
                    <button
                       onClick={handleCompareSubmissions}
-                      disabled={subCompareLoading}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95 transition-colors"
                     >
-                      {subCompareLoading ? 'Comparing...' : 'Compare with previous submission'}
+                      Compare with previous submission
+                    </button>
                     {subCompareLoading && (
                       <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
                         <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
