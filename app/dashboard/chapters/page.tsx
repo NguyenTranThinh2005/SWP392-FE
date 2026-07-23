@@ -2690,20 +2690,20 @@ const payload = {
                      {zipLoading ? (
                         <>
                           <div className="w-16 h-16 rounded-2xl bg-muted animate-pulse" />
-                          <span className="text-xs">Đang tải bài nộp...</span>
+                          <span className="text-xs">Loading submission...</span>
                         </>
                       ) : zipPages.length > 0 ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={zipPages[0].dataUrl} alt="preview" className="max-h-64 w-auto object-contain border border-border rounded-lg shadow-sm" />
-                          <span className="text-sm font-bold text-foreground">Bài nộp {zipPages.length} trang</span>
-                          <span className="text-xs">Bấm "Mở ảnh lớn" bên dưới để xem & góp ý từng trang</span>
+                          <span className="text-sm font-bold text-foreground">Submission - {zipPages.length} pages</span>
+                          <span className="text-xs">Click "Open full view" below to review page by page</span>
                         </>
                       ) : (
                         <>
                           <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
-                          <span className="text-sm font-bold text-foreground">Bài nộp nhiều trang (nén)</span>
-                          <span className="text-xs">Bấm "Mở ảnh lớn" bên dưới để xem & góp ý từng trang</span>
+                          <span className="text-sm font-bold text-foreground">Compressed multi-page submission</span>
+                          <span className="text-xs">Click "Open full view" below to review page by page</span>
                         </>
                       )}
                     </div>
@@ -2731,7 +2731,7 @@ const payload = {
                     onClick={openPinOverlay}
                     className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
                   >
-                    Mở ảnh lớn để góp ý chi tiết
+                    Open full view to add comments
                   </button>
                 )}
 
@@ -2860,7 +2860,7 @@ const payload = {
                   </div>
                 ) : activeTaskToReview.submittedWorkUrl ? (
                   <a href={activeTaskToReview.submittedWorkUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline bg-muted/40 p-2.5 rounded-xl border border-border">
-                    📎 Open submission file in new tab
+                    📎 Download original file
                   </a>
                 ) : (
                   <div className="text-xs text-muted-foreground italic bg-muted/40 p-2.5 rounded-xl border border-border">
@@ -3216,6 +3216,8 @@ const payload = {
     </div>
   )
 }
+
+
 
 
 
