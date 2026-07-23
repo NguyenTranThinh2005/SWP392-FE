@@ -1171,6 +1171,7 @@ const payload = {
               </div>
             </div>
 
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => {
                 setNewChapterSeriesId(selectedSeriesId)
@@ -1189,13 +1190,17 @@ const payload = {
             >
               <Plus className="w-4 h-4" /> Create Chapter
             </button>
-            <button
-              type="button"
-              onClick={openEditChapter}
-              className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm hover:bg-secondary/80 transition-all cursor-pointer"
-            >
-              <FileEdit className="w-4 h-4" /> Edit Chapter
-            </button>
+            {selectedChapter && (
+              <button
+                type="button"
+                onClick={openEditChapter}
+                title={`Edit Chapter ${selectedChapter.number}`}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-card border border-border text-foreground font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-muted hover:border-primary/40 transition-all cursor-pointer"
+              >
+                <FileEdit className="w-4 h-4" /> Edit Chapter {selectedChapter.number}
+              </button>
+            )}
+            </div>
           </div>
 
           {/* Main Grid: Left Chapters List, Right Detail Workspace */}
@@ -3211,6 +3216,7 @@ const payload = {
     </div>
   )
 }
+
 
 
 
