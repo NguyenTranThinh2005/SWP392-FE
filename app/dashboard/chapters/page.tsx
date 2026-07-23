@@ -1211,7 +1211,7 @@ const payload = {
                 setErrors({})
                 setIsChapterModalOpen(true)
               }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all duration-150 active:scale-95 cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Create Chapter
             </button>
@@ -1744,7 +1744,7 @@ const payload = {
                                       setIsSubmitWorkModalOpen(true)
                                     }}
                                     disabled={(task.submissionCount || 0) >= MAX_SUBMISSIONS}
-                                    className="flex items-center gap-1 px-4.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                    className="flex items-center gap-1 px-4.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                   >
                                     <Send className="w-3.5 h-3.5" />
                                     {(task.submissionCount || 0) >= MAX_SUBMISSIONS ? 'No more attempts' : 'Submit Work'}
@@ -1888,8 +1888,8 @@ const payload = {
       {/* ========================================================================= */}
       {/* Edit Chapter Modal */}
       {isEditChapterOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
                 <FileEdit className="w-5 h-5 text-primary" /> Edit Chapter
@@ -1953,7 +1953,7 @@ const payload = {
               <button
                 type="button"
                 onClick={handleSaveEditChapter}
-                className="px-4 py-2 text-sm font-bold bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all cursor-pointer"
+                className="px-4 py-2 text-sm font-bold bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all duration-150 active:scale-95 cursor-pointer"
               >
                 Save Changes
               </button>
@@ -1963,8 +1963,8 @@ const payload = {
       )}
       {/* A. Create Chapter Modal (Mangaka) */}
       {isChapterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-3xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-3xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <div className="flex items-center gap-4">
                 <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
@@ -2300,8 +2300,8 @@ const payload = {
 
       {/* B. Create / Assign Task Modal (Mangaka) */}
       {isTaskModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
                 <Plus className="w-5 h-5 text-primary" /> Assign Drawing Task
@@ -2637,7 +2637,7 @@ const payload = {
                   <button onClick={() => setImagePins(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-red-500 shrink-0 mt-1">✕</button>
                 </div>
               ))}
-              <button onClick={() => setPinOverlayOpen(false)} className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl">Done</button>
+              <button onClick={() => setPinOverlayOpen(false)} className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95">Done</button>
             </div>
           </div>
         </div>
@@ -2675,8 +2675,8 @@ const payload = {
         </div>
       )}
       {isReviewModalOpen && activeTaskToReview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-5xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-5xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
                 <Eye className="w-5 h-5 text-primary" /> Review Assistant Submission
@@ -2754,7 +2754,7 @@ const payload = {
             {activeTaskToReview.submittedWorkUrl && (
                   <button
                     onClick={openPinOverlay}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
+                    className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95"
                   >
                     Open full view to add comments
                   </button>
@@ -2782,7 +2782,7 @@ const payload = {
                   <div className="space-y-2">
                    <button
                       onClick={handleCompareSubmissions}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95 transition-colors"
                     >
                       Compare with previous submission
                     </button>
@@ -2838,15 +2838,15 @@ const payload = {
                                 <div className="grid grid-cols-3 gap-1.5">
                                   <div className="space-y-1">
                                     <p className="text-[9px] uppercase font-bold text-muted-foreground text-center">Old (v1)</p>
-                                    {pg.oldDataUrl ? <img src={pg.oldDataUrl} alt="old" onClick={() => setZoomImage(pg.oldDataUrl)} className="cursor-zoom-in hover:ring-2 hover:ring-primary w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                    {pg.oldDataUrl ? <img src={pg.oldDataUrl} alt="old" onClick={() => setZoomImage(pg.oldDataUrl)} className="cursor-zoom-in hover:ring-2 hover:ring-primary transition-all duration-200 animate-in fade-in w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
                                   </div>
                                   <div className="space-y-1">
                                     <p className="text-[9px] uppercase font-bold text-muted-foreground text-center">New (v2)</p>
-                                    {pg.newDataUrl ? <img src={pg.newDataUrl} alt="new" onClick={() => setZoomImage(pg.newDataUrl)} className="cursor-zoom-in hover:ring-2 hover:ring-primary w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                    {pg.newDataUrl ? <img src={pg.newDataUrl} alt="new" onClick={() => setZoomImage(pg.newDataUrl)} className="cursor-zoom-in hover:ring-2 hover:ring-primary transition-all duration-200 animate-in fade-in w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
                                   </div>
                                   <div className="space-y-1">
                                     <p className="text-[9px] uppercase font-bold text-red-500 text-center">Diff 🔴</p>
-                                    {pg.diffDataUrl ? <img src={pg.diffDataUrl} alt="diff" onClick={() => setZoomImage(pg.diffDataUrl)} className="cursor-zoom-in hover:ring-2 hover:ring-red-500 w-full aspect-[3/4] object-cover border border-red-300 rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                    {pg.diffDataUrl ? <img src={pg.diffDataUrl} alt="diff" onClick={() => setZoomImage(pg.diffDataUrl)} className="cursor-zoom-in hover:ring-2 hover:ring-red-500 transition-all duration-200 animate-in fade-in w-full aspect-[3/4] object-cover border border-red-300 rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
                                   </div>
                                 </div>
                               </div>
@@ -2854,9 +2854,9 @@ const payload = {
                             })}
                             {totalCP > 1 && (
                               <div className="flex items-center justify-center gap-3 pt-1">
-                                <button type="button" disabled={cp === 0} onClick={() => setComparePage(cp - 1)} className="px-3 py-1 text-xs font-bold rounded-lg border border-border disabled:opacity-40 hover:bg-muted">‹ Prev</button>
+                                <button type="button" disabled={cp === 0} onClick={() => setComparePage(cp - 1)} className="px-3 py-1 text-xs font-bold rounded-lg border border-border disabled:opacity-40 hover:bg-muted transition-all duration-150 active:scale-95">‹ Prev</button>
                                 <span className="text-xs text-muted-foreground">Page {cp + 1}/{totalCP}</span>
-                                <button type="button" disabled={cp >= totalCP - 1} onClick={() => setComparePage(cp + 1)} className="px-3 py-1 text-xs font-bold rounded-lg border border-border disabled:opacity-40 hover:bg-muted">Next ›</button>
+                                <button type="button" disabled={cp >= totalCP - 1} onClick={() => setComparePage(cp + 1)} className="px-3 py-1 text-xs font-bold rounded-lg border border-border disabled:opacity-40 hover:bg-muted transition-all duration-150 active:scale-95">Next ›</button>
                               </div>
                             )}
                             <p className="text-[10px] text-muted-foreground text-center">🔴 Red areas = what changed between v1 and v2</p>
@@ -2954,13 +2954,13 @@ const payload = {
                 <div className="flex items-center gap-2.5 justify-end pt-3 pb-1 mt-4 border-t border-border">
                   <button
                     onClick={() => handleRejectTask(activeTaskToReview)}
-                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
+                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-all duration-150 active:scale-95 cursor-pointer text-center shadow-sm hover:shadow-md"
                   >
                     Request Revision
                   </button>
                   <button
                     onClick={() => handleApproveTask(activeTaskToReview)}
-                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-all duration-150 active:scale-95 cursor-pointer text-center shadow-sm hover:shadow-md"
                   >
                     Approve & Complete
                   </button>
@@ -3061,8 +3061,8 @@ const payload = {
 
       {/* E. View Task Details Modal (Read-only for Assistant/General) */}
       {isViewDetailModalOpen && activeTaskToView && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
                 <Eye className="w-5 h-5 text-primary" /> Task Details & Revision Comments
@@ -3247,6 +3247,10 @@ const payload = {
     </div>
   )
 }
+
+
+
+
 
 
 
