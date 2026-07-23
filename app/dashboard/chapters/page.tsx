@@ -338,6 +338,7 @@ const [subCompareError, setSubCompareError] = useState('')
   const MAX_SUBMISSIONS = 3
   const [submitWorkUploading, setSubmitWorkUploading] = useState(false)
   const [creatingChapter, setCreatingChapter] = useState(false)
+  const [creatingTask, setCreatingTask] = useState(false)
   const [submitComment, setSubmitComment] = useState('')
 
   // Trigger Toast Notification helper
@@ -855,6 +856,11 @@ ratePerPage: t.ratePerPage ?? 0,
     const maxEnd = chapterTasks.length > 0
       ? Math.max(...chapterTasks.map((t: any) => t.pageEnd || 0))
       : 0
+    const totalPages = selectedChapter?.totalPages || 0
+    if (totalPages > 0 && maxEnd >= totalPages) {
+      showToast(`All ${totalPages} pages have been assigned. No pages left for a new task.`, 'error')
+      return
+    }
    const nextStart = maxEnd + 1
     const chapterEnd = selectedChapter?.totalPages || nextStart
     setNewTaskPageStart(nextStart)
@@ -900,7 +906,7 @@ const payload = {
         description: newTaskDesc,
         dueDate: newTaskDueDate ? new Date(newTaskDueDate).toISOString() : null
       }
-
+      setCreatingTask(true)
       return fetchAPI('/api/page-tasks', {
         method: 'POST',
         body: JSON.stringify(payload)
@@ -937,7 +943,7 @@ const payload = {
       } else {
         showToast(msg || 'Failed to assign task.', 'error')
       }
-    })
+    }).finally(() => setCreatingTask(false))
   }
 
   // 3. Duyệt Task của Assistant (Approve)
