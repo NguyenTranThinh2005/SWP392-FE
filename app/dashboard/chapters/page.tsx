@@ -337,6 +337,7 @@ const [subCompareError, setSubCompareError] = useState('')
   const [submitFiles, setSubmitFiles] = useState<File[]>([])
   const MAX_SUBMISSIONS = 3
   const [submitWorkUploading, setSubmitWorkUploading] = useState(false)
+  const [creatingChapter, setCreatingChapter] = useState(false)
   const [submitComment, setSubmitComment] = useState('')
 
   // Trigger Toast Notification helper
@@ -727,7 +728,7 @@ ratePerPage: t.ratePerPage ?? 0,
     const pubDateObj = new Date(newChapterPubDate)
     pubDateObj.setDate(pubDateObj.getDate() - 14)
     const deadlineString = pubDateObj.toISOString().split('T')[0]
-
+    setCreatingChapter(true)
     chapterService.createChapter({
       seriesId: newChapterSeriesId,
       number: parseInt(newChapterNo) || 0,
@@ -773,7 +774,7 @@ ratePerPage: t.ratePerPage ?? 0,
       } else {
         showToast(msg || 'Failed to create chapter.', 'error')
       }
-    })
+    }).finally(() => setCreatingChapter(false))
   }
   const openEditTask = (task: Task) => {
     setEditTaskId(task.id)
@@ -2288,10 +2289,11 @@ const payload = {
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-md shadow-primary/10 transition-all cursor-pointer inline-flex items-center gap-1.5"
+                  type="submit"      
+                  disabled={creatingChapter}     
+                  className="px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 disabled:opacity-60 disabled:cursor-not-allowed font-bold text-xs rounded-xl shadow-md shadow-primary/10 transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  <PlusCircle className="w-4 h-4" /> Register Chapter to System
+                  <PlusCircle className="w-4 h-4" /> {creatingChapter ? 'Creating...' : 'Register Chapter to System'}
                 </button>
               </div>
             </form>
