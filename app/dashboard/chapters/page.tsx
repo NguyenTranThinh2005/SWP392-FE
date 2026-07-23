@@ -112,6 +112,7 @@ export default function ChaptersPage() {
   }, [])
 const [subCompareLoading, setSubCompareLoading] = useState(false)
 const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string; pages?: any[] } | null>(null)  
+const [comparePage, setComparePage] = useState(0)
 const [subCompareError, setSubCompareError] = useState('')
 
   const handleCompareSubmissions = async () => {
@@ -122,6 +123,7 @@ const [subCompareError, setSubCompareError] = useState('')
     try {
       const r = await compareAny(prev, cur)
       setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl, pages: r.pages })
+      setComparePage(0)
     } catch (e: any) {
       setSubCompareError('Comparison error: ' + (e?.message || 'cannot read file'))
     } finally { setSubCompareLoading(false) }
@@ -823,7 +825,6 @@ ratePerPage: t.ratePerPage ?? 0,
     }
   }
   const openTaskModal = () => {
-    // Goi y trang bat dau = trang cuoi lon nhat da giao + 1
     const maxEnd = chapterTasks.length > 0
       ? Math.max(...chapterTasks.map((t: any) => t.pageEnd || 0))
       : 0
@@ -2770,9 +2771,16 @@ const payload = {
                             <p className="text-[10px] text-muted-foreground text-center">🔴 Red highlighted areas show differences from the previous submission</p>
                           </div>
                         )}
-                        {subCompareResult.pages && subCompareResult.pages.length > 0 && (
+                        {subCompareResult.pages && subCompareResult.pages.length > 0 && (() => {
+                          const PER = 2
+                          const totalCP = Math.ceil(subCompareResult.pages.length / PER)
+                          const cp = Math.min(comparePage, totalCP - 1)
+                          const shown = subCompareResult.pages.slice(cp * PER, cp * PER + PER)
+                          return (
                           <div className="space-y-3">
-                            {subCompareResult.pages.map((pg: any, idx: number) => (
+                           {shown.map((pg: any, i: number) => {
+                              const idx = cp * PER + i
+                              return (
                               <div key={idx} className="border border-border rounded-lg p-3 space-y-2 bg-muted/20">
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-bold text-foreground">Page {idx + 1}</span>
@@ -2796,10 +2804,19 @@ const payload = {
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                           )
+                            })}
+                            {totalCP > 1 && (
+                              <div className="flex items-center justify-center gap-3 pt-1">
+                                <button type="button" disabled={cp === 0} onClick={() => setComparePage(cp - 1)} className="px-3 py-1 text-xs font-bold rounded-lg border border-border disabled:opacity-40 hover:bg-muted">‹ Prev</button>
+                                <span className="text-xs text-muted-foreground">Page {cp + 1}/{totalCP}</span>
+                                <button type="button" disabled={cp >= totalCP - 1} onClick={() => setComparePage(cp + 1)} className="px-3 py-1 text-xs font-bold rounded-lg border border-border disabled:opacity-40 hover:bg-muted">Next ›</button>
+                              </div>
+                            )}
                             <p className="text-[10px] text-muted-foreground text-center">🔴 Red areas = what changed between v1 and v2</p>
                           </div>
-                        )}
+                       )
+                        })()}
                       </div>
                     )}
                   </div>
