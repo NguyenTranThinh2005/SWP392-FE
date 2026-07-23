@@ -2651,7 +2651,7 @@ const payload = {
       )}
       {isReviewModalOpen && activeTaskToReview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-5xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
                 <Eye className="w-5 h-5 text-primary" /> Review Assistant Submission
@@ -2926,7 +2926,7 @@ const payload = {
                     </div>
                   )
                 })()}
-                <div className="flex items-center gap-2.5 justify-end pt-2 border-t border-border">
+                <div className="sticky bottom-0 bg-card flex items-center gap-2.5 justify-end pt-3 pb-2 border-t border-border">
                   <button
                     onClick={() => handleRejectTask(activeTaskToReview)}
                     className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
@@ -3216,6 +3216,9 @@ const payload = {
     </div>
   )
 }
+
+
+
 
 
 
