@@ -2,6 +2,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { salaryService, type SalaryRecord } from '@/services/salaryService'
 import { formatVND } from '@/lib/salary'
+import * as XLSX from 'xlsx'
 
 function monthKey(dateStr?: string): string {
   if (!dateStr) return 'unknown'
@@ -17,24 +18,46 @@ function monthLabel(key: string): string {
 export default function SalaryPage() {
   const [records, setRecords] = useState<SalaryRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedMonth, setSelectedMonth] = useState<string>('all')
-
+  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()))
+  const [selectedMonthNum, setSelectedMonthNum] = useState<string>('all')
   useEffect(() => {
     salaryService.getSalaryRecords().then(setRecords).finally(() => setLoading(false))
   }, [])
 
-  const months = useMemo(() => {
-    const set = new Set(records.map(r => monthKey(r.approvedAt)))
-    return Array.from(set).sort((a, b) => b.localeCompare(a))
-  }, [records])
-
   const filtered = useMemo(() => {
-    const list = selectedMonth === 'all' ? records : records.filter(r => monthKey(r.approvedAt) === selectedMonth)
+    const list = records.filter(r => {
+      const key = monthKey(r.approvedAt)
+      if (key === 'unknown') return false
+      const [y, m] = key.split('-')
+      if (y !== selectedYear) return false
+      if (selectedMonthNum !== 'all' && m !== selectedMonthNum) return false
+      return true
+    })
     return [...list].sort((a, b) => new Date(b.approvedAt || 0).getTime() - new Date(a.approvedAt || 0).getTime())
-  }, [records, selectedMonth])
+  }, [records, selectedYear, selectedMonthNum])
 
   const total = filtered.reduce((sum, r) => sum + (r.amount || 0), 0)
-
+  const exportExcel = () => {
+    if (filtered.length === 0) return
+    const rows = filtered.map(r => ({
+      Assistant: r.assistantName || 'Assistant',
+      'Task Type': r.taskType || '',
+      'Page Range': `${r.pageStart}-${r.pageEnd}`,
+      'Pages Count': r.pages,
+      'Rate per Page': r.rateAtApproval,
+      'Total Amount': r.amount,
+      'Approval Date': r.approvedAt ? new Date(r.approvedAt).toLocaleDateString('en-US') : '',
+    }))
+    rows.push({
+      Assistant: 'TOTAL', 'Task Type': '', 'Page Range': '', 'Pages Count': '' as any,
+      'Rate per Page': '' as any, 'Total Amount': total, 'Approval Date': '',
+    })
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Salary')
+    const period = selectedMonthNum === 'all' ? selectedYear : `${selectedYear}-${selectedMonthNum}`
+    XLSX.writeFile(wb, `salary-${period}.xlsx`)
+  }
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -43,17 +66,45 @@ export default function SalaryPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-bold text-muted-foreground">Month:</span>
-        <button onClick={() => setSelectedMonth('all')} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${selectedMonth === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:bg-muted'}`}>All</button>
-        {months.map(m => (
-          <button key={m} onClick={() => setSelectedMonth(m)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${selectedMonth === m ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:bg-muted'}`}>{monthLabel(m)}</button>
-        ))}
+        <span className="text-xs font-bold text-muted-foreground">Period:</span>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(e.target.value)}
+          className="px-3 py-1.5 rounded-xl text-xs font-bold border border-border bg-card cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          {[0, 1, 2].map((offset) => {
+            const y = String(new Date().getFullYear() - 1 + offset)
+            return <option key={y} value={y}>{y}</option>
+          })}
+        </select>
+        <select
+          value={selectedMonthNum}
+          onChange={(e) => setSelectedMonthNum(e.target.value)}
+          className="px-3 py-1.5 rounded-xl text-xs font-bold border border-border bg-card cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="all">All months</option>
+          {Array.from({ length: 12 }, (_, i) => {
+            const mm = String(i + 1).padStart(2, '0')
+            const label = new Date(2000, i).toLocaleDateString('en-US', { month: 'long' })
+            return <option key={mm} value={mm}>{label}</option>
+          })}
+        </select>
       </div>
 
       <div className="bg-card border border-border rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-bold">{selectedMonth === 'all' ? 'Total (all months)' : `Total ${monthLabel(selectedMonth)}`}</span>
-          <span className="text-lg font-extrabold text-green-600">{formatVND(total)}</span>
+         {selectedMonthNum === 'all' ? `Total ${selectedYear}` : `Total ${new Date(2000, Number(selectedMonthNum) - 1).toLocaleDateString('en-US', { month: 'long' })} ${selectedYear}`}
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-extrabold text-green-600">{formatVND(total)}</span>
+            <button
+              type="button"
+              onClick={exportExcel}
+              disabled={filtered.length === 0}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold border border-border bg-card hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 active:scale-95"
+            >
+              Export Excel
+            </button>
+          </div>
         </div>
         {loading ? (
           <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
