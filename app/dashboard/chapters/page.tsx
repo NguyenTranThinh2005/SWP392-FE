@@ -2682,9 +2682,25 @@ const payload = {
                     </div>
                   ) : /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) ? (
                     <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
-                      <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
-                     <span className="text-sm font-bold text-foreground">Bài nộp nhiều trang (nén)</span>
-                      <span className="text-xs">Bấm "Mở ảnh lớn" bên dưới để xem & góp ý từng trang</span>
+                     {zipLoading ? (
+                        <>
+                          <div className="w-16 h-16 rounded-2xl bg-muted animate-pulse" />
+                          <span className="text-xs">Đang tải bài nộp...</span>
+                        </>
+                      ) : zipPages.length > 0 ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={zipPages[0].dataUrl} alt="preview" className="max-h-64 w-auto object-contain border border-border rounded-lg shadow-sm" />
+                          <span className="text-sm font-bold text-foreground">Bài nộp {zipPages.length} trang</span>
+                          <span className="text-xs">Bấm "Mở ảnh lớn" bên dưới để xem & góp ý từng trang</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
+                          <span className="text-sm font-bold text-foreground">Bài nộp nhiều trang (nén)</span>
+                          <span className="text-xs">Bấm "Mở ảnh lớn" bên dưới để xem & góp ý từng trang</span>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <ImageCommentLayer

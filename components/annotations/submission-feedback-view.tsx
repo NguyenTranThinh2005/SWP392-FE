@@ -42,10 +42,13 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
   if (!imageUrl) return null
 
   // Pin cua trang dang xem (pageNo tinh tu 1, currentPage tu 0)
-  const pinsOnPage = pins.filter((p) => (p.pageNo || 1) === pageStart + currentPage)
+  // Danh so LIEN TUC toan bai theo thu tu trang -> khop voi danh sach text ben duoi
+  const pinsWithNo = [...pins]
+    .sort((a, b) => (a.pageNo || 0) - (b.pageNo || 0))
+    .map((p, i) => ({ ...p, displayNo: i + 1 }))
+  const pinsOnPage = pinsWithNo.filter((p) => (p.pageNo || 1) === pageStart + currentPage)
   const currentImg = pages[currentPage]
-  console.log('DEBUG pins:', pins.map(p => p.pageNo), '| currentPage:', currentPage, '| pages:', pages.length, '| pinsOnPage:', pinsOnPage.length)
-
+  
   return (
     <div className="space-y-2">
       <p className="text-[10px] uppercase font-bold text-muted-foreground">Bài nộp của bạn + góp ý trên ảnh</p>
@@ -56,18 +59,18 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
         <div className="relative inline-block max-w-full border border-border rounded-lg overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={currentImg.dataUrl} alt="Bài nộp" className="max-w-full max-h-80 object-contain pointer-events-none" />
-          {pinsOnPage.map((pin, idx) => (
+          {pinsOnPage.map((pin: any, idx) => (
             <div
               key={idx}
               className="absolute -translate-x-1/2 -translate-y-1/2 group"
               style={{ left: `${pin.positionX * 100}%`, top: `${pin.positionY * 100}%` }}
             >
               <div className="w-6 h-6 rounded-full bg-red-500 ring-2 ring-white text-white text-[11px] font-bold flex items-center justify-center shadow-lg cursor-help transition-transform hover:scale-110">
-                {idx + 1}
+              {pin.displayNo}
               </div>
               <div className="absolute left-7 top-1/2 -translate-y-1/2 hidden group-hover:block z-20">
                 <div className="relative bg-neutral-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2 shadow-xl max-w-[240px] whitespace-normal">
-                  <span className="block text-[9px] uppercase tracking-wide text-red-300 font-bold mb-0.5">Góp ý #{idx + 1}</span>
+                  <span className="block text-[9px] uppercase tracking-wide text-red-300 font-bold mb-0.5">Góp ý #{pin.displayNo}</span>
                   {pin.content}
                   <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900" />
                 </div>
