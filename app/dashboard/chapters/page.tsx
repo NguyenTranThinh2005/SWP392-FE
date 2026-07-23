@@ -105,15 +105,40 @@ export default function ChaptersPage() {
         setIsReviewModalOpen(false)
         setIsTaskModalOpen(false)
         setIsViewDetailModalOpen(false)
+        setIsChapterModalOpen(false)
+        setIsSubmitManuscriptOpen(false)
+        setPinOverlayOpen(false)
+        setZoomImage(null)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 const [subCompareLoading, setSubCompareLoading] = useState(false)
+
+  // Giai nen zip ngay khi mo modal review -> hien thumbnail luon
+  useEffect(() => {
+    if (!isReviewModalOpen || !activeTaskToReview) return
+    const url = activeTaskToReview.submittedWorkUrl
+    if (!url) { setZipPages([]); return }
+    let cancelled = false
+    setCurrentPage(0)
+    if (/\.zip(\?|$)/i.test(url)) {
+      setZipLoading(true)
+      extractImagesFromZip(url)
+        .then((imgs) => { if (!cancelled) setZipPages(imgs.length ? imgs : []) })
+        .catch(() => { if (!cancelled) setZipPages([]) })
+        .finally(() => { if (!cancelled) setZipLoading(false) })
+    } else {
+      setZipPages([{ name: "image", dataUrl: url }])
+    }
+    return () => { cancelled = true }
+  }, [isReviewModalOpen, activeTaskToReview])
+
 const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string; pages?: any[] } | null>(null)  
 const [comparePage, setComparePage] = useState(0)
 const [subCompareError, setSubCompareError] = useState('')
+  const [zoomImage, setZoomImage] = useState<string | null>(null)
 
   const handleCompareSubmissions = async () => {
     const cur = activeTaskToReview?.submittedWorkUrl
@@ -2813,15 +2838,15 @@ const payload = {
                                 <div className="grid grid-cols-3 gap-1.5">
                                   <div className="space-y-1">
                                     <p className="text-[9px] uppercase font-bold text-muted-foreground text-center">Old (v1)</p>
-                                    {pg.oldDataUrl ? <img src={pg.oldDataUrl} alt="old" className="w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                    {pg.oldDataUrl ? <img src={pg.oldDataUrl} alt="old" onClick={() => setZoomImage(pg.oldDataUrl)} className="cursor-zoom-in hover:ring-2 hover:ring-primary w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
                                   </div>
                                   <div className="space-y-1">
                                     <p className="text-[9px] uppercase font-bold text-muted-foreground text-center">New (v2)</p>
-                                    {pg.newDataUrl ? <img src={pg.newDataUrl} alt="new" className="w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                    {pg.newDataUrl ? <img src={pg.newDataUrl} alt="new" onClick={() => setZoomImage(pg.newDataUrl)} className="cursor-zoom-in hover:ring-2 hover:ring-primary w-full aspect-[3/4] object-cover border border-border rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
                                   </div>
                                   <div className="space-y-1">
                                     <p className="text-[9px] uppercase font-bold text-red-500 text-center">Diff 🔴</p>
-                                    {pg.diffDataUrl ? <img src={pg.diffDataUrl} alt="diff" className="w-full aspect-[3/4] object-cover border border-red-300 rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
+                                    {pg.diffDataUrl ? <img src={pg.diffDataUrl} alt="diff" onClick={() => setZoomImage(pg.diffDataUrl)} className="cursor-zoom-in hover:ring-2 hover:ring-red-500 w-full aspect-[3/4] object-cover border border-red-300 rounded" /> : <div className="w-full aspect-[3/4] border border-dashed border-border rounded flex items-center justify-center text-[9px] text-muted-foreground">—</div>}
                                   </div>
                                 </div>
                               </div>
@@ -2870,7 +2895,7 @@ const payload = {
               </div>
 
               {/* Right Side: Task Details & Actions */}
-              <div className="space-y-4 flex flex-col justify-between">
+              <div className="space-y-4 flex flex-col lg:sticky lg:top-0 lg:self-start">
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
@@ -2909,7 +2934,7 @@ const payload = {
                   const rate = activeTaskToReview.ratePerPage || 0
                   const total = pages * rate
                   return (
-                    <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 text-xs space-y-1">
+                    <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 mb-2 text-xs space-y-1">
                       <p className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                          Salary Preview
                       </p>
@@ -2926,7 +2951,7 @@ const payload = {
                     </div>
                   )
                 })()}
-                <div className="sticky bottom-0 bg-card flex items-center gap-2.5 justify-end pt-3 pb-2 border-t border-border">
+                <div className="flex items-center gap-2.5 justify-end pt-3 pb-1 mt-4 border-t border-border">
                   <button
                     onClick={() => handleRejectTask(activeTaskToReview)}
                     className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
@@ -3121,7 +3146,7 @@ const payload = {
               </div>
 
               {/* Right Column: Task Details and Rejection Feedback */}
-              <div className="space-y-4 flex flex-col justify-between">
+              <div className="space-y-4 flex flex-col lg:sticky lg:top-0 lg:self-start">
                 <div className="space-y-4">
                   {/* Manga/Chapter Info */}
                   <div className="p-3.5 bg-muted/40 border border-border rounded-xl space-y-1">
@@ -3213,9 +3238,21 @@ const payload = {
         </div>
       )}
 
+      {zoomImage && (
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-6 cursor-zoom-out" onClick={() => setZoomImage(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={zoomImage} alt="zoom" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" />
+        </div>
+      )}
     </div>
   )
 }
+
+
+
+
+
+
 
 
 
