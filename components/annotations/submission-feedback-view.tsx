@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useState } from 'react'
 import { annotationService, type SubmissionAnnotation } from '@/services/annotationService'
 import { extractImagesFromZip } from '@/lib/imageCompare'
@@ -18,7 +18,6 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
 
   // Load pin tu BE
   useEffect(() => {
-    console.log('DEBUG submissionId:', submissionId)
     if (!submissionId) return
     annotationService.getAnnotations(submissionId).then(setPins).catch(() => setPins([]))
   }, [submissionId])

@@ -139,6 +139,7 @@ const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff
 const [comparePage, setComparePage] = useState(0)
 const [subCompareError, setSubCompareError] = useState('')
   const [zoomImage, setZoomImage] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<null | { type: 'approve' | 'reject'; task: any }>(null)
 
   const handleCompareSubmissions = async () => {
     const cur = activeTaskToReview?.submittedWorkUrl
@@ -2953,13 +2954,13 @@ const payload = {
                 })()}
                 <div className="flex items-center gap-2.5 justify-end pt-3 pb-1 mt-4 border-t border-border">
                   <button
-                    onClick={() => handleRejectTask(activeTaskToReview)}
+                    onClick={() => setConfirmAction({ type: 'reject', task: activeTaskToReview })}
                     className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-all duration-150 active:scale-95 cursor-pointer text-center shadow-sm hover:shadow-md"
                   >
                     Request Revision
                   </button>
                   <button
-                    onClick={() => handleApproveTask(activeTaskToReview)}
+                    onClick={() => setConfirmAction({ type: 'approve', task: activeTaskToReview })}
                     className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-all duration-150 active:scale-95 cursor-pointer text-center shadow-sm hover:shadow-md"
                   >
                     Approve & Complete
@@ -3238,6 +3239,26 @@ const payload = {
         </div>
       )}
 
+      {confirmAction && (
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setConfirmAction(null)}>
+          <div className="bg-card border border-border rounded-2xl w-full max-w-sm p-5 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-extrabold text-foreground mb-2">
+              {confirmAction.type === "approve" ? "Approve this submission?" : "Request revision?"}
+            </h3>
+            <p className="text-xs text-muted-foreground mb-5 leading-relaxed">
+              {confirmAction.type === "approve"
+                ? "Salary will be calculated and recorded for the assistant. This action cannot be undone."
+                : "The assistant will be asked to revise and resubmit this work."}
+            </p>
+            <div className="flex gap-2.5 justify-end">
+              <button type="button" onClick={() => setConfirmAction(null)} className="px-4 py-2 rounded-xl border border-border text-xs font-bold hover:bg-muted transition-all duration-150 active:scale-95">Cancel</button>
+              <button type="button" onClick={() => { const a = confirmAction; setConfirmAction(null); if (a.type === "approve") handleApproveTask(a.task); else handleRejectTask(a.task) }} className={`px-4 py-2 rounded-xl text-white text-xs font-bold transition-all duration-150 active:scale-95 ${confirmAction.type === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}`}>
+                {confirmAction.type === "approve" ? "Yes, approve" : "Yes, request revision"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {zoomImage && (
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-6 cursor-zoom-out" onClick={() => setZoomImage(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -3247,6 +3268,7 @@ const payload = {
     </div>
   )
 }
+
 
 
 
