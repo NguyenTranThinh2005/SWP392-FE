@@ -25,6 +25,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
 import { manuscriptService } from '@/services/manuscriptService'
+import { fetchAPI } from '@/services/api'
 import type { ManuscriptItem } from '@/types/manuscript'
 
 export default function ManuscriptsPage() {
@@ -39,6 +40,7 @@ export default function ManuscriptsPage() {
 
   // Review Panel States
   const [feedbackText, setFeedbackText] = useState('')
+  const [resolvedFileName, setResolvedFileName] = useState<string>('')
 
   // Load data from store
   useEffect(() => {
@@ -55,6 +57,44 @@ export default function ManuscriptsPage() {
   const activeManuscript = useMemo(() => {
     return manuscripts.find(m => m.id === activeManuscriptId)
   }, [manuscripts, activeManuscriptId])
+
+  useEffect(() => {
+    if (!activeManuscript?.fileUrl) {
+      setResolvedFileName('')
+      return
+    }
+    let active = true
+    const fileUrl = activeManuscript.fileUrl
+    const rawFileName = fileUrl.split('/').pop()?.split('?')[0] || 'manuscript_file'
+
+    const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, '')
+    let assetId: string | null = null
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameWithoutExt)) {
+      assetId = nameWithoutExt
+    } else if (/^[0-9a-f]{32}$/i.test(nameWithoutExt)) {
+      const s = nameWithoutExt.toLowerCase()
+      assetId = `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`
+    }
+
+    if (assetId) {
+      fetchAPI<{ data: any }>(`/api/files/${assetId}`)
+        .then((res) => {
+          const data = res?.data || res
+          if (active && data?.originalFileName) {
+            setResolvedFileName(data.originalFileName)
+          }
+        })
+        .catch(() => {
+          if (active) setResolvedFileName('')
+        })
+    } else {
+      setResolvedFileName('')
+    }
+
+    return () => {
+      active = false
+    }
+  }, [activeManuscript?.fileUrl])
 
   // Extract unique series from manuscripts list
   const uniqueSeriesList = useMemo(() => {
@@ -183,8 +223,19 @@ export default function ManuscriptsPage() {
 
                 {activeManuscript.fileUrl ? (() => {
                   const fileUrl = activeManuscript.fileUrl;
-                  const fileName = fileUrl.split('/').pop() || 'manuscript_file';
-                  const isImage = /\.(png|jpg|jpeg|gif|webp|svg|bmp)$/i.test(fileName);
+                  const rawFileName = fileUrl.split('/').pop()?.split('?')[0] || 'manuscript_file';
+                  const isImage = /\.(png|jpg|jpeg|gif|webp|svg|bmp)$/i.test(rawFileName);
+
+                  const extMatch = rawFileName.match(/(\.[a-zA-Z0-9]+)$/);
+                  const ext = extMatch ? extMatch[1] : '';
+                  const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, '');
+                  const isHashName =
+                    /^[a-f0-9]{32,}$/i.test(nameWithoutExt.replace(/[-_]/g, '')) ||
+                    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameWithoutExt);
+
+                  const fileName = resolvedFileName || (isHashName && activeManuscript.seriesTitle
+                    ? `${activeManuscript.seriesTitle.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_')}_Ch${activeManuscript.chapterNumber}_${activeManuscript.latestVersion}${ext || '.jpg'}`
+                    : rawFileName);
 
                   return (
                     <div className="space-y-3">
@@ -221,7 +272,7 @@ export default function ManuscriptsPage() {
                         </div>
                         <a
                           href={fileUrl}
-                          download
+                          download={fileName}
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-extrabold rounded-lg transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"

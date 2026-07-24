@@ -78,9 +78,17 @@ export const userService = {
   },
 
   assignAssistantToMangaka: async (mangakaId: string, assistantId: string, assignmentId?: string) => {
+    if (!assignmentId) {
+      // Call assign API when no active assignment exists for this mangaka
+      return fetchAPI<{ data?: any; message: string }>("/api/user-assignments", {
+        method: "POST",
+        body: JSON.stringify({ toUserId: assistantId }),
+      });
+    }
+    // Call reassign API when an active assignment already exists
     return fetchAPI<{ data?: any; message: string }>("/api/reassign", {
       method: "POST",
-      body: JSON.stringify({ assignmentId: assignmentId || "", mangakaId, fromUserId: assistantId }),
+      body: JSON.stringify({ assignmentId, mangakaId, fromUserId: assistantId }),
     });
   },
 

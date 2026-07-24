@@ -96,9 +96,6 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
             <a href="#roles" className="hover:text-primary transition-colors">Roles & Workflow</a>
-            <Link href="/dashboard/forms-demo" className="hover:text-primary transition-colors">
-              Demo Validation Form
-            </Link>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -141,12 +138,6 @@ export default function LandingPage() {
               >
                 Start Collaborating
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href="/dashboard/forms-demo"
-                className="flex items-center justify-center gap-2 w-full sm:w-auto bg-card border border-border text-foreground hover:text-primary hover:border-primary/30 font-semibold px-6 py-3.5 rounded-xl hover:bg-accent/30 shadow-sm transition-all"
-              >
-                Try Demo
               </Link>
             </div>
           </div>
@@ -313,12 +304,6 @@ export default function LandingPage() {
             >
               Login to Workspace
             </Link>
-            <Link
-              href="/dashboard/forms-demo"
-              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold px-8 py-3.5 rounded-xl transition-all w-full sm:w-auto"
-            >
-              Try Demo
-            </Link>
           </div>
         </div>
       </section>
@@ -341,11 +326,7 @@ export default function LandingPage() {
             &copy; {new Date().getFullYear()} MangaFlow. All rights reserved. Designed for professional manga publishing teams.
           </p>
 
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <Link href="/dashboard/forms-demo" className="hover:text-foreground transition-colors">
-              Demo Validation Form
-            </Link>
-          </div>
+
         </div>
       </footer>
     </div>

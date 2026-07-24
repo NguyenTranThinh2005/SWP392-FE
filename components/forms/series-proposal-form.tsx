@@ -581,7 +581,7 @@ export function SeriesProposalForm({
             <FileText className="w-3.5 h-3.5" />
             Manuscript Document (ZIP/RAR) <span className="text-destructive">*</span>
           </label>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-start gap-2">
             <input
               type="file"
               id="sourceZipFile"
@@ -601,23 +601,23 @@ export function SeriesProposalForm({
               Choose ZIP/RAR file
             </label>
             {sourceZipFile ? (
-              <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+              <span className="text-sm font-bold text-foreground truncate max-w-full">
                 {sourceZipFile.name}
               </span>
             ) : sourceZipFileAssetIdValue ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-emerald-600 font-semibold">ZIP/RAR file uploaded</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-bold text-emerald-600">ZIP/RAR file uploaded</span>
                 <button
                   type="button"
                   onClick={handleDownloadSourceZip}
                   disabled={isDownloadingZip}
-                  className="text-[11px] text-primary hover:underline font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-xs text-primary hover:underline font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isDownloadingZip ? '(Downloading...)' : '(Download saved manuscript)'}
                 </button>
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground">No file chosen</span>
+              <span className="text-xs text-muted-foreground font-medium italic">No file chosen</span>
             )}
           </div>
           <input type="hidden" {...register('sourceZipFileAssetId')} />

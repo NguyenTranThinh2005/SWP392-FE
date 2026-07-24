@@ -220,11 +220,10 @@ export default function EditUserModal({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-t-lg transition-colors cursor-pointer border-b-2 -mb-px ${
-                activeTab === tab.id
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-t-lg transition-colors cursor-pointer border-b-2 -mb-px ${activeTab === tab.id
                   ? 'border-primary text-primary bg-primary/5'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              }`}
+                }`}
             >
               {tab.icon}
               {tab.label}
