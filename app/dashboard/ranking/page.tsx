@@ -2,18 +2,20 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRole } from '@/context/RoleContext'
-import { Trophy, FileSpreadsheet, Info, Download, Lock } from 'lucide-react'
+import { Trophy, FileSpreadsheet, Info, Download, Lock, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
 // Import backend APIs and logic helpers
 import { fetchAPI } from '@/services/api'
 import { seriesService } from '@/services/seriesService'
+import { tokenService } from '@/services/tokenService'
 
 // Import custom sub-components
 import PeriodTabs from './components/PeriodTabs'
 import PendingVotesCard from './components/PendingVotesCard'
 import RankingTable from './components/RankingTable'
+import BoardVoteModal from './components/BoardVoteModal'
 
 export interface VoteRecord {
   id: string
@@ -39,7 +41,12 @@ export interface RankingRow {
   voteCount: number
   readerCount: number
   score: number
-  status: 'TOP 3' | 'BOTTOM 20%' | '—'
+  status: 'TOP 3' | 'BOTTOM 20%' | 'INACTIVE' | 'Rejected' | '—'
+  rankingSnapshotId?: string
+  boardDecisionId?: string
+  continueVotes?: number
+  discontinueVotes?: number
+  isDiscontinued?: boolean
 }
 
 // Helper to generate dynamic quarters range (e.g. 2024-Q1 to 2027-Q4)
@@ -57,6 +64,30 @@ const generateDefaultPeriods = (): string[] => {
   return list
 }
 
+// Helper to convert period strings like "2026-Q1" or "2026-01" to "dd/MM/yyyy" required by backend
+const formatPeriodToDdMmYyyy = (period: string): string => {
+  if (!period) return "01/01/2026"
+  const trimmed = period.trim()
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+    return trimmed
+  }
+  const qMatch = trimmed.match(/^(\d{4})-Q([1-4])$/i)
+  if (qMatch) {
+    const year = qMatch[1]
+    const q = parseInt(qMatch[2], 10)
+    const month = (q - 1) * 3 + 1
+    const monthStr = month < 10 ? `0${month}` : `${month}`
+    return `01/${monthStr}/${year}`
+  }
+  const dateMatch = trimmed.match(/^(\d{4})-(\d{2})(?:-\d{2})?$/)
+  if (dateMatch) {
+    const year = dateMatch[1]
+    const month = dateMatch[2]
+    return `01/${month}/${year}`
+  }
+  return trimmed
+}
+
 export default function RankingPage() {
   const { role } = useRole()
   const [mounted, setMounted] = useState(false)
@@ -69,7 +100,7 @@ export default function RankingPage() {
   const [allSeries, setAllSeries] = useState<any[]>([])
   const [votedSeries, setVotedSeries] = useState<Record<string, 'Discontinue' | 'Continue'>>({})
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true)
-  
+
   const [periods, setPeriods] = useState<string[]>(() => {
     const defaults = generateDefaultPeriods()
     if (typeof window !== 'undefined') {
@@ -95,7 +126,7 @@ export default function RankingPage() {
       const updated = [...prev, newPeriod].sort((a, b) => b.localeCompare(a))
       try {
         localStorage.setItem('custom_ranking_periods', JSON.stringify(updated))
-      } catch (e) {}
+      } catch (e) { }
       return updated
     })
   }
@@ -107,7 +138,8 @@ export default function RankingPage() {
 
   // Determine if the current selected period is already confirmed & locked
   const isPeriodLocked = useMemo(() => {
-    return allVoteRecords.some(r => r.confirmed && r.period === selectedPeriod)
+    const formattedSelected = formatPeriodToDdMmYyyy(selectedPeriod)
+    return allVoteRecords.some(r => r.confirmed && (r.period === selectedPeriod || formatPeriodToDdMmYyyy(r.period) === formattedSelected))
   }, [allVoteRecords, selectedPeriod])
 
   // Fetch all active series for ranking (Explicitly filter eligible statuses)
@@ -193,15 +225,16 @@ export default function RankingPage() {
       }
 
       // Calculate rankings for the selected period
-      const confirmedForPeriod = flatRecords.filter(r => r.confirmed && r.period === selectedPeriod)
+      const formattedSelected = formatPeriodToDdMmYyyy(selectedPeriod)
+      const confirmedForPeriod = flatRecords.filter(r => r.confirmed && (r.period === selectedPeriod || formatPeriodToDdMmYyyy(r.period) === formattedSelected))
       const sorted = [...confirmedForPeriod].sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score
         return b.voteCount - a.voteCount
       })
       const total = sorted.length
-      const calculatedRankings = sorted.map((v, index) => {
+      let calculatedRankings: RankingRow[] = sorted.map((v, index) => {
         const rank = index + 1
-        let status: 'TOP 3' | 'BOTTOM 20%' | '—' = '—'
+        let status: 'TOP 3' | 'BOTTOM 20%' | 'INACTIVE' | '—' = '—'
 
         if (rank <= 3) {
           status = 'TOP 3'
@@ -222,6 +255,100 @@ export default function RankingPage() {
           status
         }
       })
+
+      // Fetch official period ranking snapshots from backend to get rankingSnapshotId and official list
+      try {
+        const periodRes = await fetchAPI<{ data: any[] }>(`/api/ranking/periods?period=${encodeURIComponent(formattedSelected)}`)
+        const backendSnapshots = (periodRes as any).data || periodRes || []
+        if (Array.isArray(backendSnapshots) && backendSnapshots.length > 0) {
+          const officialRankings: RankingRow[] = backendSnapshots.map((s: any) => ({
+            rank: s.rankNo,
+            seriesId: s.seriesId,
+            seriesTitle: s.seriesTitle,
+            genre: s.genre || '',
+            voteCount: s.voteCount,
+            readerCount: s.readerCount,
+            score: s.score,
+            status: s.rankNo <= 3 ? 'TOP 3' : (s.isBottom20Percent ? 'BOTTOM 20%' : '—'),
+            rankingSnapshotId: s.rankingSnapshotId || s.id
+          }))
+          if (officialRankings.length > 0) {
+            calculatedRankings = officialRankings
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to fetch official period snapshots:", e)
+      }
+
+      // Fetch board decisions & votes count for bottom series to calculate INACTIVE status and vote totals
+      const currentUser = tokenService.getUserInfo()
+      const currentUserId = currentUser?.id || currentUser?.userId || currentUser?.sub
+      const updatedVotedSeries: Record<string, 'Discontinue' | 'Continue'> = {}
+
+      try {
+        calculatedRankings = await Promise.all(
+          calculatedRankings.map(async (row) => {
+            if (row.score < 20 || row.status === 'BOTTOM 20%') {
+              try {
+                const resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${row.seriesId}/board-decisions`)
+                const decisions = (resDecisions as any).data || resDecisions || []
+                if (Array.isArray(decisions) && decisions.length > 0) {
+                  const decision = decisions[0]
+                  const decisionId = decision.boardDecisionId || decision.id
+                  let cVotes = 0
+                  let dVotes = 0
+
+                  try {
+                    const resVotes = await fetchAPI<{ data: any[] }>(`/api/board-decisions/${decisionId}/votes`)
+                    const votes = (resVotes as any).data || resVotes || []
+                    if (Array.isArray(votes)) {
+                      votes.forEach((v: any) => {
+                        const isContinue = v.voteValue === true || v.voteType === 'Approved'
+                        const isDiscontinue = v.voteValue === false || v.voteType === 'Rejected'
+                        if (isContinue) cVotes++
+                        else if (isDiscontinue) dVotes++
+
+                        const voterId = v.voterId || v.createdBy || v.userId || v.voter?.id
+                        if (currentUserId && voterId && String(voterId).toLowerCase() === String(currentUserId).toLowerCase()) {
+                          updatedVotedSeries[row.seriesId] = isDiscontinue ? 'Discontinue' : 'Continue'
+                        }
+                      })
+                    }
+                  } catch {}
+
+                  const totalVotes = cVotes + dVotes
+                  const isDiscontinued = decision.result === 'Rejected' || 
+                                         decision.status === 'Rejected' ||
+                                         decision.status === 'Discontinued' ||
+                                         decision.status === 'Inactive' ||
+                                         (dVotes > 0 && (totalVotes >= 3 && dVotes >= cVotes || dVotes >= 2))
+
+                  // Toast notification if series receives 3 board votes and is rejected
+                  if (totalVotes >= 3 && isDiscontinued) {
+                    toast.error(`"${row.seriesTitle}" has reached ${totalVotes} board votes and is now marked as REJECTED / INACTIVE.`, {
+                      id: `rejected-toast-${row.seriesId}`
+                    })
+                  }
+
+                  return {
+                    ...row,
+                    status: isDiscontinued ? ('Rejected' as const) : row.status,
+                    boardDecisionId: decisionId,
+                    continueVotes: cVotes,
+                    discontinueVotes: dVotes,
+                    isDiscontinued
+                  }
+                }
+              } catch {}
+            }
+            return row
+          })
+        )
+      } catch (e) {
+        console.warn("Failed to enrich rankings with board decisions:", e)
+      }
+
+      setVotedSeries(prev => ({ ...prev, ...updatedVotedSeries }))
       setRankings(calculatedRankings)
     } catch (err) {
       console.error("Failed to refresh ranking/votes data from backend:", err)
@@ -301,7 +428,7 @@ export default function RankingPage() {
 
           const payload = {
             seriesId: matchedSeries.id,
-            period: period.toString(),
+            period: formatPeriodToDdMmYyyy(period.toString()),
             readerCount,
             voteCount
           }
@@ -361,13 +488,40 @@ export default function RankingPage() {
     }
   }
 
+  // Auto-ensure open board decisions for bottom tier series when confirming rankings
+  const ensureOpenBoardDecisions = async (rows: RankingRow[]) => {
+    const bottomSeries = rows.filter(r => r.score < 20 || r.status === 'BOTTOM 20%')
+    if (bottomSeries.length === 0) return
+
+    const nextWeek = new Date()
+    nextWeek.setDate(nextWeek.getDate() + 7)
+
+    for (const row of bottomSeries) {
+      try {
+        const resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${row.seriesId}/board-decisions`)
+        const decisions = (resDecisions as any).data || resDecisions || []
+        const hasOpen = Array.isArray(decisions) && decisions.some((d: any) => d.status?.toLowerCase() === 'open')
+
+        if (!hasOpen && row.rankingSnapshotId) {
+          await fetchAPI(`/api/ranking/snapshots/${row.rankingSnapshotId}/elimination-decision`, {
+            method: 'POST',
+            body: JSON.stringify({ votingDeadline: nextWeek.toISOString() })
+          })
+        }
+      } catch (err) {
+        console.warn(`Auto-open board decision check skipped for ${row.seriesTitle}:`, err)
+      }
+    }
+  }
+
   // Handle vote confirmation
   const handleConfirmVote = (id: string, title: string) => {
     fetchAPI(`/api/vote-records/${id}/confirm`, {
       method: 'PUT'
-    }).then(() => {
+    }).then(async () => {
       toast.success(`Confirmed vote record for "${title}". Rankings recalculated!`)
-      refreshData()
+      await refreshData()
+      ensureOpenBoardDecisions(rankings)
     }).catch(() => {
       toast.error('Failed to confirm vote record.')
     })
@@ -385,7 +539,8 @@ export default function RankingPage() {
         pendingVotes.map(v => fetchAPI(`/api/vote-records/${v.id}/confirm`, { method: 'PUT' }))
       )
       toast.success(`All vote records confirmed! Rankings for "${selectedPeriod}" have been locked.`)
-      refreshData()
+      await refreshData()
+      ensureOpenBoardDecisions(rankings)
     } catch (err) {
       console.error("Failed to confirm all votes:", err)
       toast.error("Failed to confirm all vote records.")
@@ -419,6 +574,34 @@ export default function RankingPage() {
     })
   }
 
+  // Modal States for Editorial Board Voting
+  const [isVoteModalOpen, setIsVoteModalOpen] = useState(false)
+  const [selectedVoteRow, setSelectedVoteRow] = useState<RankingRow | null>(null)
+
+  const handleOpenVoteModal = (row: RankingRow) => {
+    setSelectedVoteRow(row)
+    setIsVoteModalOpen(true)
+  }
+
+  const handleCastVoteModal = async (
+    seriesId: string,
+    decision: 'Continue' | 'Discontinue',
+    comment: string
+  ) => {
+    const voteType = decision === 'Discontinue' ? 'Rejected' : 'Approved'
+    try {
+      await seriesService.voteSeries(seriesId, voteType, comment, selectedVoteRow?.rankingSnapshotId)
+      toast.success(`Successfully cast vote to "${decision}" for "${selectedVoteRow?.seriesTitle}".`)
+      setVotedSeries(prev => ({
+        ...prev,
+        [seriesId]: decision
+      }))
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to submit vote.')
+      throw err
+    }
+  }
+
   if (!mounted) return null
 
   return (
@@ -448,7 +631,8 @@ export default function RankingPage() {
 
             {isLoadingData ? (
               <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-muted/65 border border-border text-muted-foreground font-semibold text-xs px-4 py-2.5 rounded-lg opacity-70">
-                Checking Lock Status...
+                <RefreshCw className="w-4 h-4 animate-spin text-primary" />
+                Syncing Votes...
               </div>
             ) : isPeriodLocked ? (
               <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm font-semibold">
@@ -507,8 +691,26 @@ export default function RankingPage() {
         votedSeries={votedSeries}
         onDiscontinue={handleDiscontinueSeries}
         onVote={handleVoteDiscontinue}
+        onOpenVoteModal={handleOpenVoteModal}
         selectedPeriod={selectedPeriod}
       />
+
+      {/* Editorial Board Vote Modal */}
+      {selectedVoteRow && (
+        <BoardVoteModal
+          isOpen={isVoteModalOpen}
+          onClose={() => {
+            setIsVoteModalOpen(false)
+            setSelectedVoteRow(null)
+          }}
+          seriesId={selectedVoteRow.seriesId}
+          seriesTitle={selectedVoteRow.seriesTitle}
+          score={selectedVoteRow.score}
+          rank={selectedVoteRow.rank}
+          period={selectedPeriod}
+          onCastVote={handleCastVoteModal}
+        />
+      )}
     </div>
   )
 }

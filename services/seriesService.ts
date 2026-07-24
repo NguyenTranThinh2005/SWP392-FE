@@ -621,25 +621,122 @@ export const seriesService = {
     return { success: true };
   },
 
-  voteSeries: async (seriesId: string, vote: 'Approved' | 'Rejected' = 'Approved') => {
-    try {
-      const resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
-      const decisions = resDecisions.data || resDecisions || [];
-      const openDecision = decisions.find((d: any) => d.status?.toLowerCase() === 'open') || decisions[0];
+  voteSeries: async (seriesId: string, vote: 'Approved' | 'Rejected' = 'Approved', comment?: string, rankingSnapshotId?: string, period?: string) => {
+    console.log("🔍 [DEBUG STEP 1] Fetching board decisions for seriesId:", seriesId);
+    let resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
+    let decisions = resDecisions.data || resDecisions || [];
+    let openDecision = Array.isArray(decisions) ? decisions.find((d: any) => d.status?.toLowerCase() === 'open') : null;
 
-      if (openDecision) {
-        return fetchAPI<any>(`/api/board-decisions/${openDecision.boardDecisionId || openDecision.id}/votes`, {
-          method: 'POST',
-          body: JSON.stringify({
-            voteValue: vote === 'Approved',
-            comment: `Voted ${vote} from Editorial Board.`
-          })
-        });
+    console.log("🔍 [DEBUG STEP 2] Existing open decision found?", openDecision ? openDecision.boardDecisionId || openDecision.id : "NO");
+
+    if (!openDecision) {
+      let snapshotId = rankingSnapshotId;
+      console.log("🔍 [DEBUG STEP 3] Provided rankingSnapshotId:", snapshotId);
+
+      if (!snapshotId && period) {
+        console.log("🔍 [DEBUG STEP 3.1] Snapshot ID missing, querying period snapshots for period:", period);
+        try {
+          const qMatch = period.match(/^(\d{4})\s*-\s*Q([1-4])$/i);
+          let formattedPeriod = period;
+          if (qMatch) {
+            const year = qMatch[1];
+            const q = parseInt(qMatch[2], 10);
+            const month = (q - 1) * 3 + 1;
+            const monthStr = month < 10 ? `0${month}` : `${month}`;
+            formattedPeriod = `01/${monthStr}/${year}`;
+          }
+          const periodRes = await fetchAPI<{ data: any[] }>(`/api/ranking/periods?period=${encodeURIComponent(formattedPeriod)}`);
+          const snapshots = (periodRes as any).data || periodRes || [];
+          console.log("🔍 [DEBUG STEP 3.2] Period snapshots count returned from backend:", snapshots.length);
+          if (Array.isArray(snapshots) && snapshots.length > 0) {
+            const match = snapshots.find((s: any) => s.seriesId?.toLowerCase() === seriesId?.toLowerCase());
+            if (match) {
+              snapshotId = match.rankingSnapshotId || match.id;
+              console.log("🔍 [DEBUG STEP 3.3] Found snapshotId in period snapshots:", snapshotId);
+            }
+          }
+        } catch (e) {
+          console.warn("❌ [DEBUG STEP 3.4] Failed to fetch period snapshots:", e);
+        }
       }
-    } catch (error) {
-      console.warn("Failed to submit board vote to backend:", error);
+
+      if (!snapshotId) {
+        console.log("🔍 [DEBUG STEP 3.5] Snapshot ID still missing, trying series ranking history fallback...");
+        try {
+          const resHistory = await fetchAPI<{ data: any[] }>(`/api/ranking/series/${seriesId}`);
+          const history = (resHistory as any).data || resHistory || [];
+          console.log("🔍 [DEBUG STEP 3.6] Series ranking history count:", history.length);
+          if (Array.isArray(history) && history.length > 0) {
+            const match = history.find((h: any) => h.seriesId?.toLowerCase() === seriesId?.toLowerCase()) || history[0];
+            snapshotId = match.rankingSnapshotId || match.id;
+            console.log("🔍 [DEBUG STEP 3.7] Resolved snapshotId from history:", snapshotId);
+          }
+        } catch (err) {
+          console.warn("❌ [DEBUG STEP 3.8] Failed to fetch ranking snapshot history:", err);
+        }
+      }
+
+      if (!snapshotId) {
+        throw new Error("Chưa tìm thấy bản ghi xếp hạng (Ranking Snapshot) cho kỳ này. Vui lòng đảm bảo bạn đã bấm 'Confirm All' để khóa dữ liệu.");
+      }
+
+      // Create open elimination board decision using the ranking snapshot
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      console.log("🔍 [DEBUG STEP 4] Creating elimination decision for snapshotId:", snapshotId);
+
+      try {
+        const eliminationRes = await fetchAPI(`/api/ranking/snapshots/${snapshotId}/elimination-decision`, {
+          method: 'POST',
+          body: JSON.stringify({ votingDeadline: nextWeek.toISOString() })
+        });
+        console.log("✅ [DEBUG STEP 4.1] Elimination decision created:", eliminationRes);
+
+        resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
+        decisions = resDecisions.data || resDecisions || [];
+        openDecision = Array.isArray(decisions) ? decisions.find((d: any) => d.status?.toLowerCase() === 'open') : null;
+        console.log("🔍 [DEBUG STEP 4.2] Refetched open decision:", openDecision ? openDecision.boardDecisionId || openDecision.id : "STILL NULL");
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        console.error("❌ [DEBUG STEP 4 ERROR] Failed to create elimination decision:", msg);
+        if (msg.toLowerCase().includes("bottom 20 percent")) {
+          throw new Error("Backend quy định chỉ các bộ truyện thuộc nhóm Bottom 20% (kỳ xếp hạng cần ít nhất 5 bộ truyện) mới được phép mở phiên biểu quyết loại.");
+        }
+        throw new Error(`Không thể tạo phiên biểu quyết: ${msg}`);
+      }
     }
-    return { success: true, message: "Vote cast successfully." };
+
+    if (!openDecision) {
+      throw new Error("Không tìm thấy phiên biểu quyết mở sau khi khởi tạo.");
+    }
+
+    let finalComment = (comment || `Voted ${vote} from Editorial Board.`).trim();
+    if (vote === 'Rejected' && finalComment.length < 50) {
+      finalComment = finalComment.padEnd(50, ' - rejected based on ranking performance guidelines.');
+    }
+
+    const decisionId = openDecision.boardDecisionId || openDecision.id;
+    console.log("🔍 [DEBUG STEP 5] Submitting vote to board decision ID:", decisionId);
+
+    try {
+      const voteRes = await fetchAPI<any>(`/api/board-decisions/${decisionId}/votes`, {
+        method: 'POST',
+        body: JSON.stringify({
+          voteValue: vote === 'Approved',
+          comment: finalComment
+        })
+      });
+
+      console.log("✅ [DEBUG STEP 5.1] Vote submitted successfully:", voteRes);
+      return voteRes;
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      console.error("❌ [DEBUG STEP 5 ERROR] Vote submission failed:", msg);
+      if (msg.toLowerCase().includes("conflict of interest")) {
+        throw new Error("Phiên biểu quyết đã được mở thành công! Tuy nhiên, theo quy định (BR-14: Xung đột lợi ích), người vừa khởi tạo phiên biểu quyết không thể tự bỏ phiếu cho phiên do chính mình tạo ra. Phiên biểu quyết sẽ dành cho các thành viên khác trong Ban Biên Tập bỏ phiếu.");
+      }
+      throw err;
+    }
   },
 
   getBoardDecisions: async (seriesId: string): Promise<any[]> => {

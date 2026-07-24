@@ -21,6 +21,7 @@ interface RankingTableProps {
   votedSeries: Record<string, 'Discontinue' | 'Continue'>
   onDiscontinue: (id: string, title: string) => void
   onVote: (id: string, vote: 'Approved' | 'Rejected', title: string) => void
+  onOpenVoteModal: (row: RankingRow) => void
   selectedPeriod: string
 }
 
@@ -31,6 +32,7 @@ export default function RankingTable({
   votedSeries,
   onDiscontinue,
   onVote,
+  onOpenVoteModal,
   selectedPeriod,
 }: RankingTableProps) {
   return (
@@ -68,12 +70,11 @@ export default function RankingTable({
                 else scoreClass = 'text-rose-500 font-bold'
 
                 return (
-                  <TableRow key={row.seriesId} className={`border-b border-border transition-colors ${
-                    row.rank === 1 ? 'bg-amber-50 dark:bg-amber-500/5 hover:bg-amber-100/60' :
-                    row.rank === 2 ? 'bg-slate-50 dark:bg-slate-500/5 hover:bg-slate-100/60' :
-                    row.rank === 3 ? 'bg-orange-50 dark:bg-orange-500/5 hover:bg-orange-100/60' :
-                    'hover:bg-muted/15'
-                  }`}>
+                  <TableRow key={row.seriesId} className={`border-b border-border transition-colors ${row.rank === 1 ? 'bg-amber-50 dark:bg-amber-500/5 hover:bg-amber-100/60' :
+                      row.rank === 2 ? 'bg-slate-50 dark:bg-slate-500/5 hover:bg-slate-100/60' :
+                        row.rank === 3 ? 'bg-orange-50 dark:bg-orange-500/5 hover:bg-orange-100/60' :
+                          'hover:bg-muted/15'
+                    }`}>
                     {/* Rank Cell */}
                     <TableCell className="text-center font-bold">
                       {row.rank === 1 ? (
@@ -125,6 +126,14 @@ export default function RankingTable({
                         <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20 font-bold text-[10px] px-2.5 py-0.5 rounded-full">
                           TOP 3
                         </Badge>
+                      ) : row.status === 'INACTIVE' || row.status === 'Rejected' || row.isDiscontinued || votedSeries[row.seriesId] === 'Discontinue' ? (
+                        <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-xs">
+                          INACTIVE
+                        </Badge>
+                      ) : row.status === 'BOTTOM 20%' || row.score < 20 ? (
+                        <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold text-[10px] px-2.5 py-0.5 rounded-full">
+                          BOTTOM 20%
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground/30 text-xs">—</span>
                       )}
@@ -133,36 +142,46 @@ export default function RankingTable({
                     {/* Board Decisions column */}
                     {isAuthorized && (
                       <TableCell className="text-center">
-                        {row.score < 20 ? (
-                          <div className="flex items-center justify-center gap-1.5">
+                        {row.score < 20 || row.status === 'BOTTOM 20%' || row.status === 'INACTIVE' ? (
+                          <div className="flex flex-col items-center justify-center gap-1">
                             {role === 'EditorInChief' ? (
                               <Button
                                 onClick={() => onDiscontinue(row.seriesId, row.seriesTitle)}
-                                className="bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                                className="bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] px-2.5 py-1 rounded cursor-pointer transition-colors"
                               >
                                 Discontinue
                               </Button>
                             ) : (
                               <>
                                 {votedSeries[row.seriesId] ? (
-                                  <span className="text-[10px] text-muted-foreground font-semibold italic">
-                                    Voted: {votedSeries[row.seriesId]}
-                                  </span>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className={`text-[10px] px-2.5 py-1 rounded-md font-extrabold flex items-center gap-1.5 justify-center border shadow-xs ${
+                                      votedSeries[row.seriesId] === 'Discontinue'
+                                        ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30'
+                                        : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                                    }`}>
+                                      {votedSeries[row.seriesId] === 'Discontinue' ? '❌ Voted: Discontinue' : '✅ Voted: Continue'}
+                                    </span>
+                                    {row.discontinueVotes !== undefined && (
+                                      <span className="text-[9px] text-muted-foreground font-semibold">
+                                        Board: {row.discontinueVotes} Discontinue / {row.continueVotes || 0} Continue
+                                      </span>
+                                    )}
+                                  </div>
                                 ) : (
-                                  <>
+                                  <div className="flex flex-col items-center gap-1">
                                     <Button
-                                      onClick={() => onVote(row.seriesId, 'Rejected', row.seriesTitle)}
-                                      className="bg-red-600 hover:bg-red-700 text-white font-bold text-[9px] px-2 py-1 rounded cursor-pointer transition-colors mr-1"
+                                      onClick={() => onOpenVoteModal(row)}
+                                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] px-3 py-1.5 rounded-lg cursor-pointer transition-all shadow-sm flex items-center gap-1.5"
                                     >
-                                      Vote Discontinue
+                                      Vote Decision
                                     </Button>
-                                    <Button
-                                      onClick={() => onVote(row.seriesId, 'Approved', row.seriesTitle)}
-                                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[9px] px-2 py-1 rounded cursor-pointer transition-colors"
-                                    >
-                                      Vote Continue
-                                    </Button>
-                                  </>
+                                    {((row.discontinueVotes ?? 0) > 0 || (row.continueVotes ?? 0) > 0) && (
+                                      <span className="text-[9px] text-muted-foreground font-semibold">
+                                        {row.discontinueVotes || 0} Discontinue / {row.continueVotes || 0} Continue
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </>
                             )}
