@@ -28,8 +28,6 @@ import { userService } from '@/services/userService'
 import { type RoleResponse } from '@/services/systemService'
 import ViewUserModal from './ViewUserModal'
 import EditUserModal from './EditUserModal'
-import AssignEditorModal from './AssignEditorModal'
-import AssignAssistantModal from './AssignAssistantModal'
 
 interface UserListTabProps {
   usersList: User[]
@@ -59,8 +57,6 @@ export default function UserListTab({
   // Modal States
   const [viewingUser, setViewingUser] = useState<User | null>(null)
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [assigningMangaka, setAssigningMangaka] = useState<User | null>(null)
-  const [assigningAssistantMangaka, setAssigningAssistantMangaka] = useState<User | null>(null)
 
   // Filtered Users
   const filteredUsers = useMemo(() => {
@@ -150,20 +146,20 @@ export default function UserListTab({
           <Table>
             <TableHeader className="bg-muted/30 border-b border-border">
               <TableRow>
-                <TableHead className="w-16 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Avatar</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">User / ID</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Username</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Email</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Role</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Created Date</TableHead>
+                <TableHead className="w-12 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Avatar</TableHead>
+                <TableHead className="w-44 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">User / ID</TableHead>
+                <TableHead className="w-28 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Username</TableHead>
+                <TableHead className="w-40 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Email</TableHead>
+                <TableHead className="w-24 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Role</TableHead>
+                <TableHead className="w-24 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Created</TableHead>
                 {role === 'Admin' && (
                   <>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Responsible Editor</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Assigned Assistant</TableHead>
+                    <TableHead className="w-28 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Resp. Editor</TableHead>
+                    <TableHead className="w-28 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Asst.</TableHead>
                   </>
                 )}
-                <TableHead className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Status</TableHead>
-                <TableHead className="w-32 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Actions</TableHead>
+                <TableHead className="w-20 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Status</TableHead>
+                <TableHead className="w-28 shrink-0 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-border">
@@ -185,29 +181,28 @@ export default function UserListTab({
 
                   return (
                     <TableRow key={user.id} className="border-b border-border hover:bg-muted/15 transition-colors">
-                      <TableCell className="flex justify-center py-2.5">
-                        {user.avatarUrl ? (
-                          <img
-                            src={user.avatarUrl}
-                            alt={user.name}
-                            className="w-8 h-8 rounded-full object-cover border border-border"
-                          />
-                        ) : (
-                          <div className="bg-primary/10 text-primary w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border border-border">
-                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                          </div>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="font-bold text-foreground py-2.5">
-                        <div className="flex flex-col">
-                          <span>{user.name}</span>
-                          <span className="text-[10px] text-muted-foreground font-mono">{user.id}</span>
+                      <TableCell className="py-2.5">
+                        <div className="flex justify-center">
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt={user.name}
+                              className="w-8 h-8 rounded-full object-cover border border-border shrink-0" />
+                          ) : (
+                            <div className="bg-primary/10 text-primary w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border border-border">
+                              {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
 
-                      <TableCell className="text-xs font-mono text-slate-600 dark:text-slate-400">{user.username}</TableCell>
-                      <TableCell className="text-xs text-slate-600 dark:text-slate-400">{user.email}</TableCell>
+                      <TableCell className="font-bold text-foreground py-2.5 max-w-[160px]">
+                        <div className="flex flex-col min-w-0">
+                          <span className="truncate">{user.name}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono truncate">{user.id}</span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-xs font-mono text-slate-600 dark:text-slate-400 max-w-[100px] truncate">{user.username}</TableCell>
+                      <TableCell className="text-xs text-slate-600 dark:text-slate-400 max-w-[150px] truncate">{user.email}</TableCell>
 
                       <TableCell>
                         <Badge className={`${roleBadgeClass} font-bold text-[10px] px-2.5 py-0.5 rounded-full border`}>
@@ -225,36 +220,16 @@ export default function UserListTab({
 
                       {role === 'Admin' && (
                         <>
-                          <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                            {user.role === 'Mangaka' ? (
-                              <div className="flex items-center gap-1.5">
-                                <span>{getEditorName(user.editorId)}</span>
-                                <button
-                                  onClick={() => setAssigningMangaka(user)}
-                                  className="text-[10px] text-primary hover:underline font-bold cursor-pointer"
-                                >
-                                  (Change)
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground/30">—</span>
-                            )}
+                          <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[110px] truncate">
+                            {user.role === 'Mangaka'
+                              ? (user.assignedEditorName || getEditorName(user.editorId) || <span className="text-muted-foreground/40">Unassigned</span>)
+                              : <span className="text-muted-foreground/30">—</span>}
                           </TableCell>
 
-                          <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                            {user.role === 'Mangaka' ? (
-                              <div className="flex items-center gap-1.5">
-                                <span>{getAssistantName(user.assistantId)}</span>
-                                <button
-                                  onClick={() => setAssigningAssistantMangaka(user)}
-                                  className="text-[10px] text-primary hover:underline font-bold cursor-pointer"
-                                >
-                                  (Change)
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground/30">—</span>
-                            )}
+                          <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[110px] truncate">
+                            {user.role === 'Mangaka'
+                              ? (user.assignedAssistantName || getAssistantName(user.assistantId) || <span className="text-muted-foreground/40">Unassigned</span>)
+                              : <span className="text-muted-foreground/30">—</span>}
                           </TableCell>
                         </>
                       )}
@@ -271,29 +246,29 @@ export default function UserListTab({
                         )}
                       </TableCell>
 
-                      <TableCell className="text-center">
+                      <TableCell className="text-center shrink-0">
                         {user.role === 'Admin' ? (
                           <span className="text-[10px] text-muted-foreground italic">Admin</span>
                         ) : (
-                          <div className="flex items-center justify-center gap-1.5">
+                          <div className="flex items-center justify-center gap-1">
                             <Button
                               onClick={() => setViewingUser(user)}
                               variant="outline"
                               size="icon"
-                              className="w-8 h-8 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                              className="w-7 h-7 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
                               title="View Details"
                             >
-                              <Info className="w-3.5 h-3.5" />
+                              <Info className="w-3 h-3" />
                             </Button>
 
                             <Button
                               onClick={() => setEditingUser(user)}
                               variant="outline"
                               size="icon"
-                              className="w-8 h-8 rounded-xl border border-border hover:bg-primary/10 hover:text-primary cursor-pointer"
+                              className="w-7 h-7 rounded-lg border border-border hover:bg-primary/10 hover:text-primary cursor-pointer"
                               title="Edit Account"
                             >
-                              <Edit3 className="w-3.5 h-3.5" />
+                              <Edit3 className="w-3 h-3" />
                             </Button>
 
                             {user.status === 'Active' ? (
@@ -301,10 +276,10 @@ export default function UserListTab({
                                 onClick={() => handleToggleStatus(user.id, user.status || 'Active')}
                                 variant="outline"
                                 size="icon"
-                                className="w-8 h-8 rounded-xl border border-rose-500/20 hover:bg-rose-500/10 text-rose-500/80 hover:text-rose-600 cursor-pointer"
+                                className="w-7 h-7 rounded-lg border border-rose-500/20 hover:bg-rose-500/10 text-rose-500/80 hover:text-rose-600 cursor-pointer"
                                 title="Lock Account"
                               >
-                                <UserX className="w-3.5 h-3.5" />
+                                <UserX className="w-3 h-3" />
                               </Button>
                             ) : (
                               <span className="text-[10px] text-rose-600/85 font-semibold px-1">Locked</span>
@@ -334,23 +309,9 @@ export default function UserListTab({
         isOpen={editingUser !== null}
         onClose={() => setEditingUser(null)}
         user={editingUser}
-        onSuccess={onRefreshUsers}
-      />
-
-      <AssignEditorModal
-        isOpen={assigningMangaka !== null}
-        onClose={() => setAssigningMangaka(null)}
-        mangaka={assigningMangaka}
         editors={editors}
-        getEditorName={getEditorName}
-        onSuccess={onRefreshUsers}
-      />
-
-      <AssignAssistantModal
-        isOpen={assigningAssistantMangaka !== null}
-        onClose={() => setAssigningAssistantMangaka(null)}
-        mangaka={assigningAssistantMangaka}
         assistants={assistants}
+        getEditorName={getEditorName}
         getAssistantName={getAssistantName}
         onSuccess={onRefreshUsers}
       />

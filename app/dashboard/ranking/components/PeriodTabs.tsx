@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,20 +26,9 @@ export default function PeriodTabs({
   onAddPeriod,
   isAuthorized = true,
 }: PeriodTabsProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
   const [selectedQ, setSelectedQ] = useState<string>('Q3')
-
-  const handleScroll = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = 200
-      scrollContainerRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth',
-      })
-    }
-  }
 
   const handleAddQuarter = (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,56 +48,69 @@ export default function PeriodTabs({
     setIsAddDialogOpen(false)
   }
 
+  const PAGE_SIZE = 3
+  const totalPages = Math.ceil(periods.length / PAGE_SIZE)
+
+  // Keep current page in sync with selected period
+  const activeIndex = periods.indexOf(selectedPeriod)
+  const defaultPage = activeIndex >= 0 ? Math.floor(activeIndex / PAGE_SIZE) : 0
+  const [page, setPage] = useState(defaultPage)
+
+  const visiblePeriods = periods.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+
+  const handleSelectPeriod = (p: string) => {
+    onSelectPeriod(p)
+    // jump to the page containing the newly selected period
+    const idx = periods.indexOf(p)
+    if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE))
+  }
+
   return (
-    <div className="flex items-center gap-2 w-full max-w-full">
-      {/* Scroll Left Button */}
+    <div className="flex items-center gap-2">
+      {/* Prev page */}
       <Button
         type="button"
         variant="outline"
         size="icon"
-        onClick={() => handleScroll('left')}
-        className="h-9 w-9 shrink-0 rounded-lg border-border hover:bg-accent text-foreground cursor-pointer transition-all shadow-sm"
-        title="Scroll Left"
+        onClick={() => setPage(p => Math.max(0, p - 1))}
+        disabled={page === 0}
+        className="h-9 w-9 shrink-0 rounded-lg border-border hover:bg-accent text-foreground cursor-pointer transition-all shadow-sm disabled:opacity-40"
+        title="Previous"
       >
         <ChevronLeft className="w-4 h-4" />
       </Button>
 
-      {/* Tabs Carousel Container */}
-      <div className="relative flex-1 overflow-hidden">
-        <div
-          ref={scrollContainerRef}
-          className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 px-0.5"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {periods.map(p => {
-            const isActive = selectedPeriod === p
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => onSelectPeriod(p)}
-                className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 border ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                    : 'bg-card text-muted-foreground border-border hover:text-foreground hover:bg-accent'
-                }`}
-              >
-                <Calendar className="w-3.5 h-3.5 opacity-70" />
-                {p}
-              </button>
-            )
-          })}
-        </div>
+      {/* 3 visible tabs */}
+      <div className="flex items-center gap-2">
+        {visiblePeriods.map(p => {
+          const isActive = selectedPeriod === p
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => handleSelectPeriod(p)}
+              className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 border ${
+                isActive
+                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                  : 'bg-card text-muted-foreground border-border hover:text-foreground hover:bg-accent'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 opacity-70" />
+              {p}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Scroll Right Button */}
+      {/* Next page */}
       <Button
         type="button"
         variant="outline"
         size="icon"
-        onClick={() => handleScroll('right')}
-        className="h-9 w-9 shrink-0 rounded-lg border-border hover:bg-accent text-foreground cursor-pointer transition-all shadow-sm"
-        title="Scroll Right"
+        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+        disabled={page >= totalPages - 1}
+        className="h-9 w-9 shrink-0 rounded-lg border-border hover:bg-accent text-foreground cursor-pointer transition-all shadow-sm disabled:opacity-40"
+        title="Next"
       >
         <ChevronRight className="w-4 h-4" />
       </Button>

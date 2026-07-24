@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Trophy, Medal, AlertTriangle, Users } from 'lucide-react'
+import { Trophy, Medal, Users } from 'lucide-react'
 import { type RankingRow } from '../page'
 
 interface RankingTableProps {
@@ -125,10 +125,6 @@ export default function RankingTable({
                         <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20 font-bold text-[10px] px-2.5 py-0.5 rounded-full">
                           TOP 3
                         </Badge>
-                      ) : row.status === 'BOTTOM 20%' ? (
-                        <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-500 border border-rose-500/20 font-bold text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3 shrink-0" /> BOTTOM 20%
-                        </Badge>
                       ) : (
                         <span className="text-muted-foreground/30 text-xs">—</span>
                       )}
@@ -137,7 +133,7 @@ export default function RankingTable({
                     {/* Board Decisions column */}
                     {isAuthorized && (
                       <TableCell className="text-center">
-                        {row.status === 'BOTTOM 20%' ? (
+                        {row.score < 20 ? (
                           <div className="flex items-center justify-center gap-1.5">
                             {role === 'EditorInChief' ? (
                               <Button
