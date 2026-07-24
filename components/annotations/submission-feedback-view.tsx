@@ -41,10 +41,8 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
   if (!imageUrl) return null
 
   // Pin cua trang dang xem (pageNo tinh tu 1, currentPage tu 0)
-  // Danh so LIEN TUC toan bai theo thu tu trang -> khop voi danh sach text ben duoi
-  const pinsWithNo = [...pins]
-    .sort((a, b) => (a.pageNo || 0) - (b.pageNo || 0))
-    .map((p, i) => ({ ...p, displayNo: i + 1 }))
+  // BE tra ve thu tu nguoc (moi nhat truoc) -> dao lai cho khop thu tu ghim
+  const pinsWithNo = [...pins].reverse().map((p, i) => ({ ...p, displayNo: i + 1 }))
   const pinsOnPage = pinsWithNo.filter((p) => (p.pageNo || 1) === pageStart + currentPage)
   const currentImg = pages[currentPage]
   
@@ -104,13 +102,11 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
       {/* Danh sach text tat ca pin */}
       {pins.length > 0 && (
         <div className="space-y-1">
-          {[...pins]
-            .sort((a, b) => (a.pageNo || 0) - (b.pageNo || 0))
-            .map((pin, idx) => (
-              <p key={idx} className="text-[11px] text-red-600 dark:text-red-400">
-                <span className="font-bold">{idx + 1}.</span> (Trang {(pin.pageNo || pageStart) - pageStart + 1}) {pin.content}
-              </p>
-            ))}
+          {pinsWithNo.map((pin: any, idx) => (
+            <p key={idx} className="text-[11px] text-red-600 dark:text-red-400">
+              <span className="font-bold">{pin.displayNo}.</span> (Trang {(pin.pageNo || pageStart) - pageStart + 1}) {pin.content}
+            </p>
+          ))}
         </div>
       )}
 
