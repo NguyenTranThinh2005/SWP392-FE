@@ -2,7 +2,7 @@
 import { notificationStore, type AppNotification } from '@/store/notificationStore'
 import { useRole } from '@/context/RoleContext'
 import { startConnection, type RealtimeNotification } from '@/services/signalrService'
-
+import { notificationService } from '@/services/notificationService'
 export const useNotifications = () => {
   const { role } = useRole()
   const [notifications, setNotifications] = useState<AppNotification[]>([])
@@ -18,6 +18,21 @@ export const useNotifications = () => {
   }, [role])
 
   // Ket noi SignalR nhan notification realtime tu BE
+  // Load thong bao cu tu Backend khi mo app
+  useEffect(() => {
+    notificationService.getMyNotifications().then((list) => {
+      const mapped = list.map((n) => ({
+        id: n.userNotificationId,
+        title: 'Notification',
+        message: n.message,
+        role: 'All' as const,
+        type: 'info' as const,
+        read: n.isRead,
+        createdAt: n.createdAt,
+      }))
+      notificationStore.setAll(mapped)
+    })
+  }, [])
   useEffect(() => {
     startConnection((data: RealtimeNotification) => {
       // chuyen type BE (string) -> type cua store

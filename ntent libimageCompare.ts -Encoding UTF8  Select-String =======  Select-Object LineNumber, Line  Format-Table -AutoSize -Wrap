@@ -1,0 +1,7 @@
+ app/dashboard/chapters/page.tsx                    | Unmerged
+ app/dashboard/chapters/page.tsx                    | 131 [32m+++++++++++[m[31m----------[m
+ .../annotations/submission-feedback-view.tsx       | Unmerged
+ .../annotations/submission-feedback-view.tsx       |  19 [32m+[m[31m--[m
+ lib/imageCompare.ts                                | Unmerged
+ lib/imageCompare.ts                                |   6 [32m+[m[31m-[m
+ 3 files changed, 89 insertions(+), 67 deletions(-)
