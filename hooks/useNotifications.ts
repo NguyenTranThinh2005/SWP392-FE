@@ -60,7 +60,8 @@ export const useNotifications = () => {
       return notificationStore.addNotification(title, message, targetRole, type)
     },
     markRead: (id: string) => {
-      notificationStore.markRead(id)
+      notificationStore.markRead(id)          // đổi ngay trên giao diện
+      notificationService.markAsRead(id)      // lưu vào Backend
     },
     markAllRead: () => {
       notificationStore.markAllRead(role)
