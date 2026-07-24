@@ -99,9 +99,47 @@ export default function ChaptersPage() {
   const [activeTaskToReview, setActiveTaskToReview] = useState<Task | null>(null)
   const [isViewDetailModalOpen, setIsViewDetailModalOpen] = useState(false)
   const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsReviewModalOpen(false)
+        setIsTaskModalOpen(false)
+        setIsViewDetailModalOpen(false)
+        setIsChapterModalOpen(false)
+        setIsSubmitManuscriptOpen(false)
+        setPinOverlayOpen(false)
+        setZoomImage(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 const [subCompareLoading, setSubCompareLoading] = useState(false)
+
+  // Giai nen zip ngay khi mo modal review -> hien thumbnail luon
+  useEffect(() => {
+    if (!isReviewModalOpen || !activeTaskToReview) return
+    const url = activeTaskToReview.submittedWorkUrl
+    if (!url) { setZipPages([]); return }
+    let cancelled = false
+    setCurrentPage(0)
+    if (/\.zip(\?|$)/i.test(url)) {
+      setZipLoading(true)
+      extractImagesFromZip(url)
+        .then((imgs) => { if (!cancelled) setZipPages(imgs.length ? imgs : []) })
+        .catch(() => { if (!cancelled) setZipPages([]) })
+        .finally(() => { if (!cancelled) setZipLoading(false) })
+    } else {
+      setZipPages([{ name: "image", dataUrl: url }])
+    }
+    return () => { cancelled = true }
+  }, [isReviewModalOpen, activeTaskToReview])
+
 const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string; pages?: any[] } | null>(null)  
+const [comparePage, setComparePage] = useState(0)
 const [subCompareError, setSubCompareError] = useState('')
+  const [zoomImage, setZoomImage] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<null | { type: 'approve' | 'reject'; task: any }>(null)
 
   const handleCompareSubmissions = async () => {
     const cur = activeTaskToReview?.submittedWorkUrl
@@ -111,6 +149,7 @@ const [subCompareError, setSubCompareError] = useState('')
     try {
       const r = await compareAny(prev, cur)
       setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl, pages: r.pages })
+      setComparePage(0)
     } catch (e: any) {
       setSubCompareError('Comparison error: ' + (e?.message || 'cannot read file'))
     } finally { setSubCompareLoading(false) }
@@ -298,6 +337,8 @@ const [subCompareError, setSubCompareError] = useState('')
   const [submitFiles, setSubmitFiles] = useState<File[]>([])
   const MAX_SUBMISSIONS = 3
   const [submitWorkUploading, setSubmitWorkUploading] = useState(false)
+  const [creatingChapter, setCreatingChapter] = useState(false)
+  const [creatingTask, setCreatingTask] = useState(false)
   const [submitComment, setSubmitComment] = useState('')
 
   // Trigger Toast Notification helper
@@ -691,7 +732,7 @@ ratePerPage: t.ratePerPage ?? 0,
     const pubDateObj = new Date(newChapterPubDate)
     pubDateObj.setDate(pubDateObj.getDate() - 14)
     const deadlineString = pubDateObj.toISOString().split('T')[0]
-
+    setCreatingChapter(true)
     chapterService.createChapter({
       seriesId: newChapterSeriesId,
       number: parseInt(newChapterNo) || 0,
@@ -737,7 +778,7 @@ ratePerPage: t.ratePerPage ?? 0,
       } else {
         showToast(msg || 'Failed to create chapter.', 'error')
       }
-    })
+    }).finally(() => setCreatingChapter(false))
   }
   const openEditTask = (task: Task) => {
     setEditTaskId(task.id)
@@ -814,6 +855,21 @@ ratePerPage: t.ratePerPage ?? 0,
       setSubmitManuscriptUploading(false)
     }
   }
+  const openTaskModal = () => {
+    const maxEnd = chapterTasks.length > 0
+      ? Math.max(...chapterTasks.map((t: any) => t.pageEnd || 0))
+      : 0
+    const totalPages = selectedChapter?.totalPages || 0
+    if (totalPages > 0 && maxEnd >= totalPages) {
+      showToast(`All ${totalPages} pages have been assigned. No pages left for a new task.`, 'error')
+      return
+    }
+   const nextStart = maxEnd + 1
+    const chapterEnd = selectedChapter?.totalPages || nextStart
+    setNewTaskPageStart(nextStart)
+    setNewTaskPageEnd(chapterEnd >= nextStart ? chapterEnd : nextStart)
+    setIsTaskModalOpen(true)
+  }
   // 2. Tạo Task & Giao việc cho Assistant
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault()
@@ -830,7 +886,19 @@ ratePerPage: t.ratePerPage ?? 0,
       showToast('Please select an assistant to assign the task!', 'error')
       return
     }
-
+    // Chong trung trang: khoang moi khong duoc de len task da giao
+    const overlap = chapterTasks.find((t: any) =>
+      newTaskPageStart <= (t.pageEnd || 0) && newTaskPageEnd >= (t.pageStart || 0)
+    )
+    if (overlap) {
+      showToast(`Pages ${overlap.pageStart}–${overlap.pageEnd} are already assigned. Please start from a free page.`, 'error')
+      return
+    }
+    // Khong vuot tong so trang
+    if (selectedChapter && newTaskPageEnd > (selectedChapter.totalPages || 0)) {
+      showToast(`This chapter has only ${selectedChapter.totalPages} pages.`, 'error')
+      return
+    }
 const payload = {
         chapterId: selectedChapterId,
         assistantId: newTaskAssistantId,
@@ -841,7 +909,7 @@ const payload = {
         description: newTaskDesc,
         dueDate: newTaskDueDate ? new Date(newTaskDueDate).toISOString() : null
       }
-
+      setCreatingTask(true)
       return fetchAPI('/api/page-tasks', {
         method: 'POST',
         body: JSON.stringify(payload)
@@ -878,7 +946,7 @@ const payload = {
       } else {
         showToast(msg || 'Failed to assign task.', 'error')
       }
-    })
+    }).finally(() => setCreatingTask(false))
   }
 
   // 3. Duyệt Task của Assistant (Approve)
@@ -1117,6 +1185,7 @@ const payload = {
               </div>
             </div>
 
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => {
                 setNewChapterSeriesId(selectedSeriesId)
@@ -1131,17 +1200,21 @@ const payload = {
                 setErrors({})
                 setIsChapterModalOpen(true)
               }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all duration-150 active:scale-95 cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Create Chapter
             </button>
-            <button
-              type="button"
-              onClick={openEditChapter}
-              className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm hover:bg-secondary/80 transition-all cursor-pointer"
-            >
-              <FileEdit className="w-4 h-4" /> Edit Chapter
-            </button>
+            {selectedChapter && (
+              <button
+                type="button"
+                onClick={openEditChapter}
+                title={`Edit Chapter ${selectedChapter.number}`}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-card border border-border text-foreground font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-muted hover:border-primary/40 transition-all cursor-pointer"
+              >
+                <FileEdit className="w-4 h-4" /> Edit Chapter {selectedChapter.number}
+              </button>
+            )}
+            </div>
           </div>
 
           {/* Main Grid: Left Chapters List, Right Detail Workspace */}
@@ -1308,7 +1381,7 @@ const payload = {
                         <ClipboardList className="w-4 h-4 text-primary" /> Tasks Assigned to Assistants
                       </h3>
                       <button
-                        onClick={() => setIsTaskModalOpen(true)}
+                        onClick={openTaskModal}
                         className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add Task
@@ -1333,7 +1406,7 @@ const payload = {
                             <div className="space-y-1.5 min-w-0">
                               <div className="flex items-center gap-2.5 flex-wrap">
                                 <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                                  {task.type} (Pages {task.pages})
+                                  {task.type} · Trang {task.pageStart}–{task.pageEnd}
                                 </span>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTaskStatusClass(task.status)}`}>
                                   {task.status}
@@ -1567,7 +1640,7 @@ const payload = {
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 className="font-bold text-sm text-foreground">
-                                  {task.type} (Page {task.pages})
+                                  {task.type} · Trang {task.pageStart}–{task.pageEnd}
                                 </h3>
                               </div>
                               <p className="text-xs text-muted-foreground font-semibold mt-1">
@@ -1644,7 +1717,7 @@ const payload = {
                                       setIsSubmitWorkModalOpen(true)
                                     }}
                                     disabled={(task.submissionCount || 0) >= MAX_SUBMISSIONS}
-                                    className="flex items-center gap-1 px-4.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                    className="flex items-center gap-1 px-4.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                   >
                                     <Send className="w-3.5 h-3.5" />
                                     {(task.submissionCount || 0) >= MAX_SUBMISSIONS ? 'No more attempts' : 'Submit Work'}
@@ -1678,7 +1751,7 @@ const payload = {
                       <div key={task.id} className="bg-card border border-border/60 rounded-2xl p-4.5 space-y-3.5 hover:border-primary/10 transition-colors">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h4 className="font-bold text-xs text-foreground">{task.type} (Page {task.pages})</h4>
+                            <h4 className="font-bold text-xs text-foreground">{task.type} · Trang {task.pageStart}–{task.pageEnd}</h4>
                             <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">{getChapterInfo(task.chapterId)}</p>
                           </div>
                           {getTaskStatusBadge(task.status)}
@@ -1788,8 +1861,8 @@ const payload = {
       {/* ========================================================================= */}
       {/* Edit Chapter Modal */}
       {isEditChapterOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
                 <FileEdit className="w-5 h-5 text-primary" /> Edit Chapter
@@ -1853,7 +1926,7 @@ const payload = {
               <button
                 type="button"
                 onClick={handleSaveEditChapter}
-                className="px-4 py-2 text-sm font-bold bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all cursor-pointer"
+                className="px-4 py-2 text-sm font-bold bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all duration-150 active:scale-95 cursor-pointer"
               >
                 Save Changes
               </button>
@@ -1863,8 +1936,8 @@ const payload = {
       )}
       {/* A. Create Chapter Modal (Mangaka) */}
       {isChapterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-3xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-3xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <div className="flex items-center gap-4">
                 <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
@@ -2187,10 +2260,11 @@ const payload = {
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs rounded-xl shadow-md shadow-primary/10 transition-all cursor-pointer inline-flex items-center gap-1.5"
+                  type="submit"      
+                  disabled={creatingChapter}     
+                  className="px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 disabled:opacity-60 disabled:cursor-not-allowed font-bold text-xs rounded-xl shadow-md shadow-primary/10 transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  <PlusCircle className="w-4 h-4" /> Register Chapter to System
+                  <PlusCircle className="w-4 h-4" /> {creatingChapter ? 'Creating...' : 'Register Chapter to System'}
                 </button>
               </div>
             </form>
@@ -2200,8 +2274,8 @@ const payload = {
 
       {/* B. Create / Assign Task Modal (Mangaka) */}
       {isTaskModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
                 <Plus className="w-5 h-5 text-primary" /> Assign Drawing Task
@@ -2259,6 +2333,11 @@ const payload = {
               </div>
 
               {/* Pages Range: Start & End */}
+              {chapterTasks.length > 0 && (
+                <p className="text-xs font-semibold text-primary mb-1">
+                  Đã giao đến trang {Math.max(...chapterTasks.map((t: any) => t.pageEnd || 0))}/{selectedChapter?.totalPages || '?'}. Nên bắt đầu từ trang {Math.max(...chapterTasks.map((t: any) => t.pageEnd || 0)) + 1}.
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted-foreground">Start Page</label>
@@ -2327,6 +2406,12 @@ const payload = {
                   onChange={(e) => setNewTaskRate(e.target.value === '' ? 0 : Number(e.target.value))}
                   className="w-full px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
                 />
+                {newTaskPageEnd >= newTaskPageStart && newTaskPageStart > 0 && (
+                  <p className="text-xs font-bold text-primary flex items-center gap-1">
+                     Sẽ giao: Trang {newTaskPageStart}–{newTaskPageEnd}
+                    <span className="font-normal text-muted-foreground">({newTaskPageEnd - newTaskPageStart + 1} trang)</span>
+                  </p>
+                )}
                 {newTaskRate > 0 && newTaskPageEnd >= newTaskPageStart && (
                   <p className="text-xs text-emerald-600 font-bold flex items-center gap-1">
                     Estimated salary: {formatVND((newTaskPageEnd - newTaskPageStart + 1) * newTaskRate)}
@@ -2488,8 +2573,17 @@ const payload = {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={zipPages[currentPage].dataUrl} alt="submission" className="max-h-[80vh] max-w-full object-contain pointer-events-none" />
                   {imagePins.map((pin, idx) => pin.page === currentPage && (
-                    <div key={idx} className="absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
-                      {idx + 1}
+                    <div key={idx} className="group/pin absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white transition-transform hover:scale-110 hover:z-30 cursor-help" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
+                  {idx + 1}
+                    {pin.note && pin.note.trim() && (
+                      <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden group-hover/pin:block z-40">
+                        <div className="relative bg-neutral-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2 shadow-xl max-w-[240px] whitespace-normal text-left font-normal">
+                          <span className="block text-[9px] uppercase tracking-wide text-red-300 font-bold mb-0.5">Góp ý #{idx + 1}</span>
+                          {pin.note}
+                          <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900" />
+                        </div>
+                      </div>
+                    )}
                     </div>
                   ))}
                 </div>
@@ -2517,7 +2611,7 @@ const payload = {
                   <button onClick={() => setImagePins(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-red-500 shrink-0 mt-1">✕</button>
                 </div>
               ))}
-              <button onClick={() => setPinOverlayOpen(false)} className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl">Done</button>
+              <button onClick={() => setPinOverlayOpen(false)} className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95">Done</button>
             </div>
           </div>
         </div>
@@ -2555,8 +2649,8 @@ const payload = {
         </div>
       )}
       {isReviewModalOpen && activeTaskToReview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-5xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
                 <Eye className="w-5 h-5 text-primary" /> Review Assistant Submission
@@ -2592,9 +2686,25 @@ const payload = {
                     </div>
                   ) : /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) ? (
                     <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
-                      <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
-                      <span className="text-sm font-bold text-foreground">Multi-page compressed file</span>
-                      <span className="text-xs">Click here to view & comment page-by-page</span>
+                     {zipLoading ? (
+                        <>
+                          <div className="w-16 h-16 rounded-2xl bg-muted animate-pulse" />
+                          <span className="text-xs">Loading submission...</span>
+                        </>
+                      ) : zipPages.length > 0 ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={zipPages[0].dataUrl} alt="preview" className="max-h-64 w-auto object-contain border border-border rounded-lg shadow-sm" />
+                          <span className="text-sm font-bold text-foreground">Submission - {zipPages.length} pages</span>
+                          <span className="text-xs">Click "Open full view" below to review page by page</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
+                          <span className="text-sm font-bold text-foreground">Compressed multi-page submission</span>
+                          <span className="text-xs">Click "Open full view" below to review page by page</span>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <ImageCommentLayer
@@ -2604,10 +2714,10 @@ const payload = {
                       onAddAnnotation={handleAddTaskAnnotation}
                     />
                   )}
-                  {imagePins.map((pin, idx) => (
+                  {activeTaskToReview.submittedWorkUrl && !/\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) && imagePins.map((pin, idx) => (
                     <div
                       key={idx}
-                      className="absolute w-6 h-6 -ml-3 -mt-3 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                      className="absolute w-6 h-6 -ml-3 -mt-3 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white"
                       style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
                     >
                       {idx + 1}
@@ -2618,9 +2728,9 @@ const payload = {
             {activeTaskToReview.submittedWorkUrl && (
                   <button
                     onClick={openPinOverlay}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
+                    className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95"
                   >
-                    Open lightbox for detailed feedback
+                    Open full view to add comments
                   </button>
                 )}
 
@@ -2646,9 +2756,10 @@ const payload = {
                   <div className="space-y-2">
                    <button
                       onClick={handleCompareSubmissions}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors"
+                      disabled={subCompareLoading}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95 transition-colors"
                     >
-                      Compare with previous submission
+                      {subCompareLoading ? 'Comparing...' : 'Compare with previous submission'}
                     </button>
                     {subCompareLoading && (
                       <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
@@ -2677,7 +2788,7 @@ const payload = {
                         </div>
                        {subCompareResult.diff && (
                           <div className="space-y-1">
-                            <img src={subCompareResult.diff} alt="Vùng thay đổi" className="w-full border border-border rounded-lg" />
+                            <img src={subCompareResult.diff} alt="Changes" className="w-full border border-border rounded-lg" />
                             <p className="text-[10px] text-muted-foreground text-center">🔴 Red highlighted areas show differences from the previous submission</p>
                           </div>
                         )}
@@ -2721,7 +2832,7 @@ const payload = {
                   </div>
                 ) : activeTaskToReview.submittedWorkUrl ? (
                   <a href={activeTaskToReview.submittedWorkUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline bg-muted/40 p-2.5 rounded-xl border border-border">
-                    📎 Open submission file in new tab
+                    📎 Download original file
                   </a>
                 ) : (
                   <div className="text-xs text-muted-foreground italic bg-muted/40 p-2.5 rounded-xl border border-border">
@@ -2731,14 +2842,14 @@ const payload = {
               </div>
 
               {/* Right Side: Task Details & Actions */}
-              <div className="space-y-4 flex flex-col justify-between">
+              <div className="space-y-4 flex flex-col lg:sticky lg:top-0 lg:self-start">
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
                       Manga: {getMangaTitleForTask(activeTaskToReview)}
                     </span>
                     <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded inline-block">
-                      {activeTaskToReview.type} (Page {activeTaskToReview.pages})
+                    {activeTaskToReview.type} · Trang {activeTaskToReview.pageStart}–{activeTaskToReview.pageEnd}
                     </span>
                   </div>
 
@@ -2770,7 +2881,7 @@ const payload = {
                   const rate = activeTaskToReview.ratePerPage || 0
                   const total = pages * rate
                   return (
-                    <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 text-xs space-y-1">
+                    <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 mb-2 text-xs space-y-1">
                       <p className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                          Salary preview when approving
                       </p>
@@ -2787,10 +2898,10 @@ const payload = {
                     </div>
                   )
                 })()}
-                <div className="flex items-center gap-2.5 justify-end pt-2 border-t border-border">
+                <div className="flex items-center gap-2.5 justify-end pt-3 pb-1 mt-4 border-t border-border">
                   <button
-                    onClick={() => handleRejectTask(activeTaskToReview)}
-                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-sm"
+                    onClick={() => setConfirmAction({ type: 'reject', task: activeTaskToReview })}
+                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-all duration-150 active:scale-95 cursor-pointer text-center shadow-sm hover:shadow-md"
                   >
                     Request Revision
                   </button>
@@ -2897,8 +3008,8 @@ const payload = {
 
       {/* E. View Task Details Modal (Read-only for Assistant/General) */}
       {isViewDetailModalOpen && activeTaskToView && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 fade-in duration-300 ease-out overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
                 <Eye className="w-5 h-5 text-primary" /> Task Details & Revision Comments
@@ -2982,13 +3093,13 @@ const payload = {
               </div>
 
               {/* Right Column: Task Details and Rejection Feedback */}
-              <div className="space-y-4 flex flex-col justify-between">
+              <div className="space-y-4 flex flex-col lg:sticky lg:top-0 lg:self-start">
                 <div className="space-y-4">
                   {/* Manga/Chapter Info */}
                   <div className="p-3.5 bg-muted/40 border border-border rounded-xl space-y-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Chapter Info</p>
                     <p className="font-bold text-foreground text-sm">{getChapterInfo(activeTaskToView.chapterId)}</p>
-                    <p className="text-xs text-muted-foreground font-semibold">Task: {activeTaskToView.type} (Page {activeTaskToView.pages})</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Task: {activeTaskToView.type} · Trang {activeTaskToView.pageStart}–{activeTaskToView.pageEnd}</p>
                   </div>
 
                   {/* Task details */}
@@ -3074,6 +3185,52 @@ const payload = {
         </div>
       )}
 
+      {confirmAction && (
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setConfirmAction(null)}>
+          <div className="bg-card border border-border rounded-2xl w-full max-w-sm p-5 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-extrabold text-foreground mb-2">
+              {confirmAction.type === "approve" ? "Approve this submission?" : "Request revision?"}
+            </h3>
+            <p className="text-xs text-muted-foreground mb-5 leading-relaxed">
+              {confirmAction.type === "approve"
+                ? "Salary will be calculated and recorded for the assistant. This action cannot be undone."
+                : "The assistant will be asked to revise and resubmit this work."}
+            </p>
+            <div className="flex gap-2.5 justify-end">
+              <button type="button" onClick={() => setConfirmAction(null)} className="px-4 py-2 rounded-xl border border-border text-xs font-bold hover:bg-muted transition-all duration-150 active:scale-95">Cancel</button>
+              <button type="button" onClick={() => { const a = confirmAction; setConfirmAction(null); if (a.type === "approve") handleApproveTask(a.task); else handleRejectTask(a.task) }} className={`px-4 py-2 rounded-xl text-white text-xs font-bold transition-all duration-150 active:scale-95 ${confirmAction.type === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}`}>
+                {confirmAction.type === "approve" ? "Yes, approve" : "Yes, request revision"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {zoomImage && (
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-6 cursor-zoom-out" onClick={() => setZoomImage(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={zoomImage} alt="zoom" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" />
+        </div>
+      )}
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

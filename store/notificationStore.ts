@@ -48,6 +48,11 @@ if (typeof window !== 'undefined') {
 }
 
 export const notificationStore = {
+  // Nap ca danh sach tu Backend (ghi de danh sach hien tai)
+  setAll(list: AppNotification[]) {
+    currentNotifications = list
+    saveNotifications(list)
+  },
   getNotifications(): AppNotification[] {
     if (typeof window !== 'undefined' && currentNotifications.length === 0) {
       currentNotifications = loadNotifications()

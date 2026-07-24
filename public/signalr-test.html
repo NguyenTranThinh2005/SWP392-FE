@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SignalR Notification Tester</title>
+
+  <!-- SignalR JavaScript client, phù hợp với backend ASP.NET Core .NET 8 -->
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+
+  <style>
+    :root {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 32px auto;
+    }
+
+    h1, h2, p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: clamp(1.7rem, 4vw, 2.5rem);
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 20px;
+    }
+
+    .card {
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px;
+      background: #111827;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      margin: 14px 0 7px;
+      font-weight: 650;
+    }
+
+    input,
+    textarea,
+    button {
+      font: inherit;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid #475569;
+      border-radius: 9px;
+      padding: 11px 12px;
+      color: #f8fafc;
+      background: #0f172a;
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+    }
+
+    textarea {
+      min-height: 145px;
+      resize: vertical;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.9rem;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 9px;
+      padding: 10px 15px;
+      font-weight: 700;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .primary {
+      color: #082f49;
+      background: #38bdf8;
+    }
+
+    .danger {
+      color: #fff;
+      background: #dc2626;
+    }
+
+    .secondary {
+      color: #e2e8f0;
+      background: #334155;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #64748b;
+      box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.13);
+    }
+
+    .status-dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.13);
+    }
+
+    .status-dot.connecting,
+    .status-dot.reconnecting {
+      background: #f59e0b;
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.13);
+    }
+
+    .status-dot.error {
+      background: #ef4444;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.13);
+    }
+
+    .info-table {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 8px 12px;
+      font-size: 0.93rem;
+    }
+
+    .info-table .key {
+      color: #94a3b8;
+    }
+
+    .info-table .value {
+      overflow-wrap: anywhere;
+    }
+
+    .hint,
+    .warning {
+      border-radius: 9px;
+      padding: 12px;
+      margin-top: 14px;
+      line-height: 1.5;
+    }
+
+    .hint {
+      border: 1px solid #1d4ed8;
+      background: rgba(30, 64, 175, 0.18);
+    }
+
+    .warning {
+      border: 1px solid #b45309;
+      background: rgba(180, 83, 9, 0.16);
+    }
+
+    .notifications,
+    .logs {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 440px;
+      overflow: auto;
+    }
+
+    .notification {
+      border-left: 4px solid #38bdf8;
+      border-radius: 8px;
+      padding: 13px;
+      background: #0f172a;
+    }
+
+    .notification h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+
+    .notification p {
+      margin: 0 0 8px;
+      color: #cbd5e1;
+    }
+
+    .notification time {
+      color: #94a3b8;
+      font-size: 0.8rem;
+    }
+
+    details {
+      margin-top: 9px;
+    }
+
+    pre {
+      margin: 8px 0 0;
+      padding: 11px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #020617;
+      color: #bae6fd;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.84rem;
+    }
+
+    .log-entry {
+      border-bottom: 1px solid #263449;
+      padding-bottom: 9px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .log-entry.info { color: #bae6fd; }
+    .log-entry.success { color: #86efac; }
+    .log-entry.warn { color: #fde68a; }
+    .log-entry.error { color: #fca5a5; }
+
+    .empty {
+      color: #64748b;
+      font-style: italic;
+    }
+
+    code {
+      color: #7dd3fc;
+    }
+
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .full-width {
+        grid-column: auto;
+      }
+
+      .info-table {
+        grid-template-columns: 115px minmax(0, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <h1>SignalR Notification Tester</h1>
+    <p class="subtitle">
+      Kết nối bằng JWT của user nhận thông báo và theo dõi event realtime
+      <code>ReceiveNotification</code>.
+    </p>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Cấu hình kết nối</h2>
+
+        <label for="hubUrl">SignalR Hub URL</label>
+        <input
+          id="hubUrl"
+          type="url"
+          value="https://localhost:7000/hubs/notifications"
+          placeholder="https://localhost:7000/hubs/notifications"
+          autocomplete="off"
+        />
+
+        <label for="eventName">Tên event nhận từ server</label>
+        <input
+          id="eventName"
+          type="text"
+          value="ReceiveNotification"
+          placeholder="ReceiveNotification"
+          autocomplete="off"
+        />
+
+        <label for="jwtToken">JWT access token của user nhận</label>
+        <textarea
+          id="jwtToken"
+          placeholder="Dán JWT tại đây. Có thể dán token thuần hoặc Bearer eyJ..."
+          spellcheck="false"
+        ></textarea>
+
+        <div class="buttons">
+          <button id="connectButton" class="primary" type="button">Connect</button>
+          <button id="disconnectButton" class="danger" type="button" disabled>Disconnect</button>
+          <button id="inspectButton" class="secondary" type="button">Kiểm tra JWT</button>
+        </div>
+
+        <div class="warning">
+          Hãy dùng JWT của chính user được backend chọn làm người nhận. JWT của user khác
+          vẫn có thể kết nối, nhưng sẽ không nằm trong group <code>user-{receiverUserId}</code>.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Trạng thái</h2>
+
+        <div class="status-row">
+          <span id="statusDot" class="status-dot"></span>
+          <strong id="statusText">Chưa kết nối</strong>
+        </div>
+
+        <div class="info-table">
+          <div class="key">Connection ID</div>
+          <div id="connectionId" class="value">—</div>
+
+          <div class="key">User ID claim</div>
+          <div id="jwtUserId" class="value">—</div>
+
+          <div class="key">Role claim</div>
+          <div id="jwtRole" class="value">—</div>
+
+          <div class="key">Tên / Email</div>
+          <div id="jwtIdentity" class="value">—</div>
+
+          <div class="key">Hết hạn</div>
+          <div id="jwtExpiry" class="value">—</div>
+        </div>
+
+        <div class="hint">
+          <strong>Thứ tự test:</strong><br />
+          1. Login user nhận và dán JWT vào đây.<br />
+          2. Bấm <strong>Connect</strong>.<br />
+          3. Dùng Postman/tab khác gọi API tạo notification.<br />
+          4. Xem payload xuất hiện bên dưới.
+        </div>
+
+        <div class="warning">
+          Nếu dùng HTTPS localhost, mở URL API trực tiếp trong trình duyệt và chấp nhận
+          development certificate trước. Live Server cũng phải được backend cho phép CORS.
+        </div>
+      </div>
+
+      <div class="card full-width">
+        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
+          <h2 style="margin-bottom:0;">Thông báo nhận được</h2>
+          <button id="clearNotificationsButton" class="secondary" type="button">Xóa thông báo</button>
+        </div>
+
+        <div id="notifications" class="notifications" style="margin-top:16px;">
+          <div class="empty">Chưa nhận được thông báo nào.</div>
+        </div>
+      </div>
+
+      <div class="card full-width">
+        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
+          <h2 style="margin-bottom:0;">Connection log</h2>
+          <button id="clearLogsButton" class="secondary" type="button">Xóa log</button>
+        </div>
+
+        <div id="logs" class="logs" style="margin-top:16px;">
+          <div class="empty">Chưa có log.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const elements = {
+      hubUrl: document.getElementById("hubUrl"),
+      eventName: document.getElementById("eventName"),
+      jwtToken: document.getElementById("jwtToken"),
+      connectButton: document.getElementById("connectButton"),
+      disconnectButton: document.getElementById("disconnectButton"),
+      inspectButton: document.getElementById("inspectButton"),
+      clearNotificationsButton: document.getElementById("clearNotificationsButton"),
+      clearLogsButton: document.getElementById("clearLogsButton"),
+      statusDot: document.getElementById("statusDot"),
+      statusText: document.getElementById("statusText"),
+      connectionId: document.getElementById("connectionId"),
+      jwtUserId: document.getElementById("jwtUserId"),
+      jwtRole: document.getElementById("jwtRole"),
+      jwtIdentity: document.getElementById("jwtIdentity"),
+      jwtExpiry: document.getElementById("jwtExpiry"),
+      notifications: document.getElementById("notifications"),
+      logs: document.getElementById("logs")
+    };
+
+    const USER_ID_CLAIMS = [
+      "sub",
+      "nameid",
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+    ];
+
+    const ROLE_CLAIMS = [
+      "role",
+      "roles",
+      "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+    ];
+
+    let connection = null;
+    let registeredEventName = null;
+    let notificationCount = 0;
+
+    restoreSettings();
+    inspectJwt(false);
+
+    elements.connectButton.addEventListener("click", connect);
+    elements.disconnectButton.addEventListener("click", disconnect);
+    elements.inspectButton.addEventListener("click", () => inspectJwt(true));
+    elements.clearNotificationsButton.addEventListener("click", clearNotifications);
+    elements.clearLogsButton.addEventListener("click", clearLogs);
+    elements.jwtToken.addEventListener("input", () => inspectJwt(false));
+
+    window.addEventListener("beforeunload", () => {
+      if (connection && connection.state !== signalR.HubConnectionState.Disconnected) {
+        connection.stop().catch(() => {});
+      }
+    });
+
+    function getCleanToken() {
+      return elements.jwtToken.value
+        .trim()
+        .replace(/^Bearer\s+/i, "")
+        .trim();
+    }
+
+    function setStatus(text, stateClass = "") {
+      elements.statusText.textContent = text;
+      elements.statusDot.className = "status-dot";
+      if (stateClass) {
+        elements.statusDot.classList.add(stateClass);
+      }
+    }
+
+    function setConnectedControls(isConnected) {
+      elements.connectButton.disabled = isConnected;
+      elements.disconnectButton.disabled = !isConnected;
+      elements.hubUrl.disabled = isConnected;
+      elements.eventName.disabled = isConnected;
+    }
+
+    function addLog(message, level = "info", data = undefined) {
+      const empty = elements.logs.querySelector(".empty");
+      if (empty) {
+        empty.remove();
+      }
+
+      const entry = document.createElement("div");
+      entry.className = `log-entry ${level}`;
+
+      const timestamp = new Date().toLocaleTimeString("vi-VN");
+      let content = `[${timestamp}] ${message}`;
+
+      if (data !== undefined) {
+        content += `\n${safeStringify(data)}`;
+      }
+
+      entry.textContent = content;
+      elements.logs.prepend(entry);
+    }
+
+    function renderNotification(eventName, args) {
+      const empty = elements.notifications.querySelector(".empty");
+      if (empty) {
+        empty.remove();
+      }
+
+      notificationCount += 1;
+
+      const payload = args.length === 1 ? args[0] : args;
+      const firstPayload = args[0] && typeof args[0] === "object" ? args[0] : {};
+
+      const card = document.createElement("article");
+      card.className = "notification";
+
+      const heading = document.createElement("h3");
+      heading.textContent =
+        firstPayload.title ||
+        firstPayload.type ||
+        `${eventName} #${notificationCount}`;
+
+      const message = document.createElement("p");
+      message.textContent =
+        firstPayload.message ||
+        firstPayload.content ||
+        "Đã nhận SignalR event. Mở Raw payload để xem dữ liệu.";
+
+      const time = document.createElement("time");
+      time.textContent =
+        firstPayload.createdAt
+          ? `Server time: ${firstPayload.createdAt}`
+          : `Client time: ${new Date().toLocaleString("vi-VN")}`;
+
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = "Raw payload";
+
+      const pre = document.createElement("pre");
+      pre.textContent = safeStringify(payload);
+
+      details.append(summary, pre);
+      card.append(heading, message, time, details);
+      elements.notifications.prepend(card);
+    }
+
+    async function connect() {
+      if (typeof signalR === "undefined") {
+        setStatus("Không tải được SignalR client", "error");
+        addLog(
+          "Không tải được thư viện @microsoft/signalr từ CDN. Kiểm tra kết nối Internet.",
+          "error"
+        );
+        return;
+      }
+
+      const hubUrl = elements.hubUrl.value.trim();
+      const eventName = elements.eventName.value.trim();
+      const token = getCleanToken();
+
+      if (!hubUrl) {
+        addLog("Hub URL không được để trống.", "error");
+        elements.hubUrl.focus();
+        return;
+      }
+
+      if (!eventName) {
+        addLog("Tên event không được để trống.", "error");
+        elements.eventName.focus();
+        return;
+      }
+
+      if (!token) {
+        addLog("JWT access token không được để trống.", "error");
+        elements.jwtToken.focus();
+        return;
+      }
+
+      inspectJwt(false);
+      saveSettings();
+
+      if (connection) {
+        try {
+          await connection.stop();
+        } catch (_) {
+          // Không chặn việc tạo connection mới.
+        }
+      }
+
+      setStatus("Đang kết nối...", "connecting");
+      setConnectedControls(true);
+      elements.connectionId.textContent = "—";
+      addLog(`Đang kết nối tới ${hubUrl}`, "info");
+      addLog(`Đang lắng nghe event "${eventName}"`, "info");
+
+      connection = new signalR.HubConnectionBuilder()
+        .withUrl(hubUrl, {
+          accessTokenFactory: () => getCleanToken()
+        })
+        .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
+
+      registeredEventName = eventName;
+
+      connection.on(registeredEventName, (...args) => {
+        addLog(`Nhận event "${registeredEventName}"`, "success", args);
+        renderNotification(registeredEventName, args);
+      });
+
+      connection.onreconnecting((error) => {
+        setStatus("Mất kết nối, đang reconnect...", "reconnecting");
+        elements.connectionId.textContent = "—";
+        addLog(
+          `SignalR đang reconnect${error ? `: ${error.message}` : ""}`,
+          "warn"
+        );
+      });
+
+      connection.onreconnected((connectionId) => {
+        setStatus("Đã kết nối lại", "connected");
+        elements.connectionId.textContent = connectionId || "Không được cung cấp";
+        addLog(`Reconnect thành công. Connection ID: ${connectionId || "N/A"}`, "success");
+      });
+
+      connection.onclose((error) => {
+        setStatus(error ? "Kết nối đã đóng do lỗi" : "Đã ngắt kết nối", error ? "error" : "");
+        elements.connectionId.textContent = "—";
+        setConnectedControls(false);
+
+        if (error) {
+          addLog(`Connection đóng do lỗi: ${error.message}`, "error");
+        } else {
+          addLog("Connection đã đóng.", "info");
+        }
+      });
+
+      try {
+        await connection.start();
+
+        setStatus("Đã kết nối", "connected");
+        elements.connectionId.textContent = connection.connectionId || "Không được cung cấp";
+        setConnectedControls(true);
+
+        addLog(
+          `Kết nối thành công. Connection ID: ${connection.connectionId || "N/A"}`,
+          "success"
+        );
+      } catch (error) {
+        setStatus("Kết nối thất bại", "error");
+        elements.connectionId.textContent = "—";
+        setConnectedControls(false);
+
+        addLog(`Không thể kết nối: ${getErrorMessage(error)}`, "error");
+        addLog(
+          "Kiểm tra Hub URL, JWT, CORS, HTTPS certificate và cấu hình OnMessageReceived của JWT Bearer.",
+          "warn"
+        );
+
+        connection = null;
+        registeredEventName = null;
+      }
+    }
+
+    async function disconnect() {
+      if (!connection) {
+        return;
+      }
+
+      elements.disconnectButton.disabled = true;
+      addLog("Đang ngắt kết nối...", "info");
+
+      try {
+        await connection.stop();
+      } catch (error) {
+        addLog(`Lỗi khi ngắt kết nối: ${getErrorMessage(error)}`, "error");
+      } finally {
+        connection = null;
+        registeredEventName = null;
+        setConnectedControls(false);
+        setStatus("Đã ngắt kết nối");
+        elements.connectionId.textContent = "—";
+      }
+    }
+
+    function inspectJwt(showLog) {
+      const token = getCleanToken();
+
+      if (!token) {
+        resetJwtInfo();
+        return;
+      }
+
+      try {
+        const claims = decodeJwtPayload(token);
+
+        const userId = firstClaimValue(claims, USER_ID_CLAIMS);
+        const role = firstClaimValue(claims, ROLE_CLAIMS);
+        const identity =
+          claims.name ||
+          claims.unique_name ||
+          claims.email ||
+          claims.preferred_username ||
+          "Không tìm thấy claim";
+
+        elements.jwtUserId.textContent = displayClaimValue(userId);
+        elements.jwtRole.textContent = displayClaimValue(role);
+        elements.jwtIdentity.textContent = displayClaimValue(identity);
+
+        if (claims.exp) {
+          const expiryDate = new Date(Number(claims.exp) * 1000);
+          const expired = expiryDate.getTime() <= Date.now();
+
+          elements.jwtExpiry.textContent =
+            `${expiryDate.toLocaleString("vi-VN")} ${expired ? "(ĐÃ HẾT HẠN)" : ""}`;
+        } else {
+          elements.jwtExpiry.textContent = "Không có exp claim";
+        }
+
+        if (showLog) {
+          addLog("Đã giải mã JWT payload ở phía client. Chữ ký JWT chưa được xác minh.", "info", claims);
+        }
+      } catch (error) {
+        resetJwtInfo("JWT không hợp lệ");
+        if (showLog) {
+          addLog(`Không thể giải mã JWT: ${getErrorMessage(error)}`, "error");
+        }
+      }
+    }
+
+    function decodeJwtPayload(token) {
+      const parts = token.split(".");
+
+      if (parts.length !== 3) {
+        throw new Error("JWT phải có đúng 3 phần, ngăn cách bằng dấu chấm.");
+      }
+
+      const normalized = parts[1]
+        .replace(/-/g, "+")
+        .replace(/_/g, "/")
+        .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
+
+      const json = decodeURIComponent(
+        atob(normalized)
+          .split("")
+          .map((character) => `%${character.charCodeAt(0).toString(16).padStart(2, "0")}`)
+          .join("")
+      );
+
+      return JSON.parse(json);
+    }
+
+    function firstClaimValue(claims, claimNames) {
+      for (const claimName of claimNames) {
+        if (claims[claimName] !== undefined && claims[claimName] !== null) {
+          return claims[claimName];
+        }
+      }
+
+      return null;
+    }
+
+    function displayClaimValue(value) {
+      if (value === null || value === undefined || value === "") {
+        return "Không tìm thấy claim";
+      }
+
+      return Array.isArray(value) ? value.join(", ") : String(value);
+    }
+
+    function resetJwtInfo(message = "—") {
+      elements.jwtUserId.textContent = message;
+      elements.jwtRole.textContent = message;
+      elements.jwtIdentity.textContent = message;
+      elements.jwtExpiry.textContent = message;
+    }
+
+    function clearNotifications() {
+      notificationCount = 0;
+      elements.notifications.innerHTML =
+        '<div class="empty">Chưa nhận được thông báo nào.</div>';
+    }
+
+    function clearLogs() {
+      elements.logs.innerHTML = '<div class="empty">Chưa có log.</div>';
+    }
+
+    function saveSettings() {
+      localStorage.setItem("signalrTesterHubUrl", elements.hubUrl.value.trim());
+      localStorage.setItem("signalrTesterEventName", elements.eventName.value.trim());
+      // Không lưu JWT vào localStorage để hạn chế rò rỉ token.
+    }
+
+    function restoreSettings() {
+      const savedHubUrl = localStorage.getItem("signalrTesterHubUrl");
+      const savedEventName = localStorage.getItem("signalrTesterEventName");
+
+      if (savedHubUrl) {
+        elements.hubUrl.value = savedHubUrl;
+      }
+
+      if (savedEventName) {
+        elements.eventName.value = savedEventName;
+      }
+    }
+
+    function safeStringify(value) {
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch (_) {
+        return String(value);
+      }
+    }
+
+    function getErrorMessage(error) {
+      if (error instanceof Error) {
+        return error.message;
+      }
+
+      return String(error);
+    }
+  </script>
+</body>
+</html>

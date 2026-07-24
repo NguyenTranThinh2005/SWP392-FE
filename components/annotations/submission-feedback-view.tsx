@@ -18,7 +18,6 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
 
   // Load pin tu BE
   useEffect(() => {
-    console.log('DEBUG submissionId:', submissionId)
     if (!submissionId) return
     annotationService.getAnnotations(submissionId).then(setPins).catch(() => setPins([]))
   }, [submissionId])
@@ -42,10 +41,11 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
   if (!imageUrl) return null
 
   // Pin cua trang dang xem (pageNo tinh tu 1, currentPage tu 0)
-  const pinsOnPage = pins.filter((p) => (p.pageNo || 1) === pageStart + currentPage)
+  // BE tra ve thu tu nguoc (moi nhat truoc) -> dao lai cho khop thu tu ghim
+  const pinsWithNo = [...pins].reverse().map((p, i) => ({ ...p, displayNo: i + 1 }))
+  const pinsOnPage = pinsWithNo.filter((p) => (p.pageNo || 1) === pageStart + currentPage)
   const currentImg = pages[currentPage]
-  console.log('DEBUG pins:', pins.map(p => p.pageNo), '| currentPage:', currentPage, '| pages:', pages.length, '| pinsOnPage:', pinsOnPage.length)
-
+  
   return (
     <div className="space-y-2">
       <p className="text-[10px] uppercase font-bold text-muted-foreground">Your submission + comments on image</p>
@@ -62,11 +62,15 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
               className="absolute -translate-x-1/2 -translate-y-1/2 group"
               style={{ left: `${pin.positionX * 100}%`, top: `${pin.positionY * 100}%` }}
             >
-              <div className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow cursor-help">
-                {idx + 1}
+              <div className="w-6 h-6 rounded-full bg-red-500 ring-2 ring-white text-white text-[11px] font-bold flex items-center justify-center shadow-lg cursor-help transition-transform hover:scale-110">
+              {pin.displayNo}
               </div>
-              <div className="absolute left-6 top-0 hidden group-hover:block bg-black/85 text-white text-[10px] rounded px-2 py-1 whitespace-nowrap z-10 max-w-[200px]">
-                {pin.content}
+              <div className="absolute left-7 top-1/2 -translate-y-1/2 hidden group-hover:block z-20">
+                <div className="relative bg-neutral-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2 shadow-xl max-w-[240px] whitespace-normal">
+                  <span className="block text-[9px] uppercase tracking-wide text-red-300 font-bold mb-0.5">Góp ý #{pin.displayNo}</span>
+                  {pin.content}
+                  <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900" />
+                </div>
               </div>
             </div>
           ))}
@@ -98,13 +102,11 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
       {/* Danh sach text tat ca pin */}
       {pins.length > 0 && (
         <div className="space-y-1">
-          {[...pins]
-            .sort((a, b) => (a.pageNo || 0) - (b.pageNo || 0))
-            .map((pin, idx) => (
-              <p key={idx} className="text-[11px] text-red-600 dark:text-red-400">
-                <span className="font-bold">{idx + 1}.</span> (Page {(pin.pageNo || pageStart) - pageStart + 1}) {pin.content}
-              </p>
-            ))}
+          {pinsWithNo.map((pin, idx) => (
+            <p key={idx} className="text-[11px] text-red-600 dark:text-red-400">
+              <span className="font-bold">{pin.displayNo}.</span> (Page {(pin.pageNo || pageStart) - pageStart + 1}) {pin.content}
+            </p>
+          ))}
         </div>
       )}
 
