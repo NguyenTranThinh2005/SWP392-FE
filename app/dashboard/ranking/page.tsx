@@ -288,18 +288,21 @@ export default function RankingPage() {
       try {
         calculatedRankings = await Promise.all(
           calculatedRankings.map(async (row) => {
-            if (row.score < 20 || row.status === 'BOTTOM 20%') {
-              try {
-                const resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${row.seriesId}/board-decisions`)
-                const decisions = (resDecisions as any).data || resDecisions || []
-                if (Array.isArray(decisions) && decisions.length > 0) {
-                  const decision = decisions[0]
-                  const decisionId = decision.boardDecisionId || decision.id
-                  let cVotes = 0
-                  let dVotes = 0
+            try {
+              const resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${row.seriesId}/board-decisions`)
+              const decisions = (resDecisions as any).data || resDecisions || []
+              if (Array.isArray(decisions) && decisions.length > 0) {
+                let cVotes = 0
+                let dVotes = 0
+                let isDiscontinued = decisions.some((d: any) =>
+                  d.status === 'Cancelled' || d.status === 'Discontinued' || d.status === 'Rejected' || d.result === 'Rejected'
+                )
+                const decisionId = decisions[0].boardDecisionId || decisions[0].id
 
+                for (const decision of decisions) {
+                  const dId = decision.boardDecisionId || decision.id
                   try {
-                    const resVotes = await fetchAPI<{ data: any[] }>(`/api/board-decisions/${decisionId}/votes`)
+                    const resVotes = await fetchAPI<{ data: any[] }>(`/api/board-decisions/${dId}/votes`)
                     const votes = (resVotes as any).data || resVotes || []
                     if (Array.isArray(votes)) {
                       votes.forEach((v: any) => {
@@ -315,34 +318,32 @@ export default function RankingPage() {
                       })
                     }
                   } catch { }
+                }
 
-                  const totalVotes = cVotes + dVotes
-                  const isDiscontinued = decision.result === 'Rejected' ||
-                    decision.status === 'Rejected' ||
-                    decision.status === 'Discontinued' ||
-                    decision.status === 'Inactive' ||
-                    decision.status === 'Cancelled' ||
-                    dVotes >= 3 ||
-                    (dVotes > 0 && (totalVotes >= 3 && dVotes >= cVotes || dVotes >= 2))
+                if (dVotes >= 3) {
+                  isDiscontinued = true
+                }
 
-                  // Toast notification if series receives 3 discontinue board votes and is cancelled
-                  if (isDiscontinued || dVotes >= 3) {
-                    toast.error(`"${row.seriesTitle}" has received ${dVotes} discontinue vote(s) and is now marked as CANCELLED.`, {
-                      id: `rejected-toast-${row.seriesId}`
-                    })
-                  }
-
+                if (isDiscontinued) {
                   return {
                     ...row,
-                    status: isDiscontinued ? ('Cancelled' as const) : row.status,
+                    status: 'Cancelled' as const,
                     boardDecisionId: decisionId,
                     continueVotes: cVotes,
                     discontinueVotes: dVotes,
-                    isDiscontinued
+                    isDiscontinued: true
                   }
                 }
-              } catch { }
-            }
+
+                return {
+                  ...row,
+                  boardDecisionId: decisionId,
+                  continueVotes: cVotes,
+                  discontinueVotes: dVotes,
+                  isDiscontinued: false
+                }
+              }
+            } catch { }
             return row
           })
         )

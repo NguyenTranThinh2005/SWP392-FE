@@ -714,10 +714,8 @@ export const seriesService = {
       throw new Error("Không tìm thấy phiên biểu quyết mở sau khi khởi tạo.");
     }
 
-    let finalComment = (comment || `Voted ${vote} from Editorial Board.`).trim();
-    if (vote === 'Rejected' && finalComment.length < 50) {
-      finalComment = finalComment.padEnd(50, ' - rejected based on ranking performance guidelines.');
-    }
+    // ponytail: send empty comment if not provided by user
+    const finalComment = comment ? comment.trim() : '';
 
     const decisionId = openDecision.boardDecisionId || openDecision.id;
     console.log("🔍 [DEBUG STEP 5] Submitting vote to board decision ID:", decisionId);
