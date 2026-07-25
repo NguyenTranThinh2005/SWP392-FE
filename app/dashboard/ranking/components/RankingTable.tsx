@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Trophy, Medal, Users } from 'lucide-react'
 import { type RankingRow } from '../page'
@@ -47,7 +46,6 @@ export default function RankingTable({
               <TableHead className="text-right font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Votes</TableHead>
               <TableHead className="text-right font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Readers</TableHead>
               <TableHead className="text-right font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Score</TableHead>
-              <TableHead className="w-48 text-center font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Status</TableHead>
               {isAuthorized && (
                 <TableHead className="w-64 text-center font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Board Decisions</TableHead>
               )}
@@ -56,7 +54,7 @@ export default function RankingTable({
           <TableBody className="divide-y divide-border">
             {rankings.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isAuthorized ? 8 : 7} className="p-12 text-center text-muted-foreground space-y-2">
+                <TableCell colSpan={isAuthorized ? 7 : 6} className="p-12 text-center text-muted-foreground space-y-2">
                   <Users className="w-8 h-8 mx-auto text-muted-foreground/30" />
                   <p className="text-xs">No ranking data confirmed for period {selectedPeriod}.</p>
                 </TableCell>
@@ -71,9 +69,9 @@ export default function RankingTable({
 
                 return (
                   <TableRow key={row.seriesId} className={`border-b border-border transition-colors ${row.rank === 1 ? 'bg-amber-50 dark:bg-amber-500/5 hover:bg-amber-100/60' :
-                      row.rank === 2 ? 'bg-slate-50 dark:bg-slate-500/5 hover:bg-slate-100/60' :
-                        row.rank === 3 ? 'bg-orange-50 dark:bg-orange-500/5 hover:bg-orange-100/60' :
-                          'hover:bg-muted/15'
+                    row.rank === 2 ? 'bg-slate-50 dark:bg-slate-500/5 hover:bg-slate-100/60' :
+                      row.rank === 3 ? 'bg-orange-50 dark:bg-orange-500/5 hover:bg-orange-100/60' :
+                        'hover:bg-muted/15'
                     }`}>
                     {/* Rank Cell */}
                     <TableCell className="text-center font-bold">
@@ -120,29 +118,14 @@ export default function RankingTable({
                       {row.score.toFixed(2)}%
                     </TableCell>
 
-                    {/* Status badge */}
-                    <TableCell className="text-center">
-                      {row.status === 'TOP 3' ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20 font-bold text-[10px] px-2.5 py-0.5 rounded-full">
-                          TOP 3
-                        </Badge>
-                      ) : row.status === 'INACTIVE' || row.status === 'Rejected' || row.isDiscontinued || votedSeries[row.seriesId] === 'Discontinue' ? (
-                        <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-xs">
-                          INACTIVE
-                        </Badge>
-                      ) : row.status === 'BOTTOM 20%' || row.score < 20 ? (
-                        <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold text-[10px] px-2.5 py-0.5 rounded-full">
-                          BOTTOM 20%
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground/30 text-xs">—</span>
-                      )}
-                    </TableCell>
-
                     {/* Board Decisions column */}
                     {isAuthorized && (
                       <TableCell className="text-center">
-                        {row.score < 20 || row.status === 'BOTTOM 20%' || row.status === 'INACTIVE' ? (
+                        {row.isDiscontinued || row.status === 'Cancelled' || row.status === 'Rejected' ? (
+                          <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-black text-[10px] px-2.5 py-1 rounded-md">
+                            CANCELLED
+                          </span>
+                        ) : row.score < 20 || row.status === 'BOTTOM 20%' || row.status === 'INACTIVE' ? (
                           <div className="flex flex-col items-center justify-center gap-1">
                             {role === 'EditorInChief' ? (
                               <Button
@@ -152,38 +135,12 @@ export default function RankingTable({
                                 Discontinue
                               </Button>
                             ) : (
-                              <>
-                                {votedSeries[row.seriesId] ? (
-                                  <div className="flex flex-col items-center gap-1">
-                                    <span className={`text-[10px] px-2.5 py-1 rounded-md font-extrabold flex items-center gap-1.5 justify-center border shadow-xs ${
-                                      votedSeries[row.seriesId] === 'Discontinue'
-                                        ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30'
-                                        : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-                                    }`}>
-                                      {votedSeries[row.seriesId] === 'Discontinue' ? '❌ Voted: Discontinue' : '✅ Voted: Continue'}
-                                    </span>
-                                    {row.discontinueVotes !== undefined && (
-                                      <span className="text-[9px] text-muted-foreground font-semibold">
-                                        Board: {row.discontinueVotes} Discontinue / {row.continueVotes || 0} Continue
-                                      </span>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="flex flex-col items-center gap-1">
-                                    <Button
-                                      onClick={() => onOpenVoteModal(row)}
-                                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] px-3 py-1.5 rounded-lg cursor-pointer transition-all shadow-sm flex items-center gap-1.5"
-                                    >
-                                      Vote Decision
-                                    </Button>
-                                    {((row.discontinueVotes ?? 0) > 0 || (row.continueVotes ?? 0) > 0) && (
-                                      <span className="text-[9px] text-muted-foreground font-semibold">
-                                        {row.discontinueVotes || 0} Discontinue / {row.continueVotes || 0} Continue
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </>
+                              <Button
+                                onClick={() => onOpenVoteModal(row)}
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] px-3 py-1.5 rounded-lg cursor-pointer transition-all shadow-sm flex items-center gap-1.5"
+                              >
+                                Vote Decision
+                              </Button>
                             )}
                           </div>
                         ) : (

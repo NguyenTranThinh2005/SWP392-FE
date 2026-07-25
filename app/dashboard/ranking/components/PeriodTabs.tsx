@@ -146,7 +146,7 @@ export default function PeriodTabs({
                   onChange={(e) => setSelectedYear(e.target.value)}
                   className="w-full px-3 py-2 bg-muted/65 border border-border rounded-lg text-sm font-semibold text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
                 >
-                  {Array.from({ length: 6 }, (_, i) => 2024 + i).map(year => (
+                  {Array.from({ length: 17 }, (_, i) => 2024 + i).map(year => (
                     <option key={year} value={year}>{year}</option>
                   ))}
                 </select>

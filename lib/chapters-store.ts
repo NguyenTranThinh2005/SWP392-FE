@@ -42,6 +42,7 @@ export interface Task {
   submitDescription?: string // Lá»i nháº¯n hoáº·c mÃ´ táº£ chá»‰nh sá»­a tá»« Assistant khi ná»™p bÃ i
   submissionId?: string // to support backend approve/reject calls
   submittedFileAssetId?: string
+  prevSubmittedFileAssetId?: string
   submissionCount?: number
   referenceFiles?: { fileAssetId: string; publicUrl: string; originalFileName: string; mimeType?: string }[]
 }

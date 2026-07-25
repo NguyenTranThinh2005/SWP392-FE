@@ -14,7 +14,8 @@ import { toast } from 'sonner'
 import { manuscriptService } from '@/services/manuscriptService'
 import { chapterService } from '@/services/chapterService'
 import { fetchAPI } from '@/services/api'
-import type { ManuscriptItem } from '@/types/manuscript'
+import type { ManuscriptItem, Annotation } from '@/types/manuscript'
+import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
 
 interface EditorManuscriptsTabProps {
   manuscripts: ManuscriptItem[]
@@ -30,6 +31,7 @@ export default function EditorManuscriptsTab({
   const [activeManuscriptId, setActiveManuscriptId] = useState<string | null>(null)
   const [feedbackText, setFeedbackText] = useState('')
   const [resolvedFileName, setResolvedFileName] = useState<string>('')
+  const [annotations, setAnnotations] = useState<Annotation[]>([])
 
   const activeManuscript = useMemo(() => {
     return manuscripts.find((m) => m.id === activeManuscriptId)
@@ -72,6 +74,35 @@ export default function EditorManuscriptsTab({
       active = false
     }
   }, [activeManuscript?.fileUrl])
+
+  useEffect(() => {
+    if (activeManuscript) {
+      setAnnotations(manuscriptService.getAnnotations(activeManuscript.id, activeManuscript.latestVersion))
+      manuscriptService.syncAnnotationsFromBackend(activeManuscript.id).then((anns) => {
+        setAnnotations(anns)
+      })
+    } else {
+      setAnnotations([])
+    }
+  }, [activeManuscript?.id, activeManuscript?.latestVersion])
+
+  const handleAddAnnotation = async (pageNo: number, x: number, y: number, text: string) => {
+    if (!activeManuscript) return
+    try {
+      const newAnn = await manuscriptService.addAnnotation(
+        activeManuscript.id,
+        activeManuscript.latestVersion,
+        pageNo,
+        x,
+        y,
+        text
+      )
+      setAnnotations((prev) => [...prev, newAnn])
+      toast.success('Annotation saved!')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save annotation.')
+    }
+  }
 
   const handleOpenReview = (id: string) => {
     setActiveManuscriptId(id)
@@ -216,14 +247,13 @@ export default function EditorManuscriptsTab({
                   return (
                     <div className="space-y-3">
                       {isImage ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={fileUrl}
-                            alt="Submitted Manuscript"
-                            className="w-full rounded-lg border border-border/85 object-contain max-h-[700px] mx-auto"
-                          />
-                        </>
+                        <ImageCommentLayer
+                          imageUrl={fileUrl}
+                          pageNo={1}
+                          annotations={annotations}
+                          onAddAnnotation={handleAddAnnotation}
+                          readOnly={false}
+                        />
                       ) : (
                         <div className="flex items-center gap-3 p-4 bg-muted/30 border border-border/80 rounded-lg">
                           <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center flex-shrink-0">
@@ -231,9 +261,6 @@ export default function EditorManuscriptsTab({
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-bold text-foreground truncate">{fileName}</p>
-                            <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                              URL: {fileUrl}
-                            </p>
                           </div>
                         </div>
                       )}
@@ -241,9 +268,6 @@ export default function EditorManuscriptsTab({
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold text-foreground truncate">
                             {fileName}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                            URL: {fileUrl}
                           </p>
                         </div>
                         <a

@@ -625,7 +625,9 @@ export const seriesService = {
     console.log("🔍 [DEBUG STEP 1] Fetching board decisions for seriesId:", seriesId);
     let resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
     let decisions = resDecisions.data || resDecisions || [];
-    let openDecision = Array.isArray(decisions) ? decisions.find((d: any) => d.status?.toLowerCase() === 'open') : null;
+    let openDecision = Array.isArray(decisions) 
+      ? decisions.find((d: any) => d.status?.toLowerCase() === 'open' && (d.decisionType === 'RankingElimination' || d.decisionType === 'Elimination'))
+      : null;
 
     console.log("🔍 [DEBUG STEP 2] Existing open decision found?", openDecision ? openDecision.boardDecisionId || openDecision.id : "NO");
 
@@ -694,7 +696,9 @@ export const seriesService = {
 
         resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
         decisions = resDecisions.data || resDecisions || [];
-        openDecision = Array.isArray(decisions) ? decisions.find((d: any) => d.status?.toLowerCase() === 'open') : null;
+        openDecision = Array.isArray(decisions) 
+          ? decisions.find((d: any) => d.status?.toLowerCase() === 'open' && (d.decisionType === 'RankingElimination' || d.decisionType === 'Elimination'))
+          : null;
         console.log("🔍 [DEBUG STEP 4.2] Refetched open decision:", openDecision ? openDecision.boardDecisionId || openDecision.id : "STILL NULL");
       } catch (err: any) {
         const msg = err?.message || String(err);
@@ -742,6 +746,15 @@ export const seriesService = {
   getBoardDecisions: async (seriesId: string): Promise<any[]> => {
     const res = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
     return res.data || res || [];
+  },
+
+  getRankingBoardDecision: async (seriesId: string): Promise<any | null> => {
+    const res = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
+    const list = res.data || res || [];
+    if (!Array.isArray(list)) return null;
+    return list.find(
+      (d: any) => d.decisionType === 'RankingElimination' || d.decisionType === 'Elimination'
+    ) || null;
   },
 
   getBoardVotes: async (boardDecisionId: string): Promise<any[]> => {

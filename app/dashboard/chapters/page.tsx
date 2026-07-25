@@ -123,15 +123,11 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
     if (!url) { setZipPages([]); return }
     let cancelled = false
     setCurrentPage(0)
-    if (/\.zip(\?|$)/i.test(url)) {
-      setZipLoading(true)
-      extractImagesFromZip(url)
-        .then((imgs) => { if (!cancelled) setZipPages(imgs.length ? imgs : []) })
-        .catch(() => { if (!cancelled) setZipPages([]) })
-        .finally(() => { if (!cancelled) setZipLoading(false) })
-    } else {
-      setZipPages([{ name: "image", dataUrl: url }])
-    }
+    setZipLoading(true)
+    extractImagesFromZip(url, activeTaskToReview.submittedFileAssetId)
+      .then((imgs) => { if (!cancelled) setZipPages(imgs) })
+      .catch(() => { if (!cancelled) setZipPages([]) })
+      .finally(() => { if (!cancelled) setZipLoading(false) })
     return () => { cancelled = true }
   }, [isReviewModalOpen, activeTaskToReview])
 
@@ -147,7 +143,12 @@ const [subCompareError, setSubCompareError] = useState('')
     if (!cur || !prev) { setSubCompareError('Needs at least 2 submissions to compare.'); setSubCompareResult(null); return }
     setSubCompareError(''); setSubCompareLoading(true); setSubCompareResult(null)
     try {
-      const r = await compareAny(prev, cur)
+      const r = await compareAny(
+        prev,
+        cur,
+        activeTaskToReview?.prevSubmittedFileAssetId,
+        activeTaskToReview?.submittedFileAssetId
+      )
       setSubCompareResult({ percent: r.diffPercent, diff: r.diffDataUrl, pages: r.pages })
       setComparePage(0)
     } catch (e: any) {
@@ -315,18 +316,14 @@ const [subCompareError, setSubCompareError] = useState('')
     if (!url) return
     setCurrentPage(0)
     setPinOverlayOpen(true)
-    if (/\.zip(\?|$)/i.test(url)) {
-      setZipLoading(true)
-      try {
-        const imgs = await extractImagesFromZip(url)
-        setZipPages(imgs.length ? imgs : [])
-      } catch {
-        setZipPages([])
-      } finally {
-        setZipLoading(false)
-      }
-    } else {
-      setZipPages([{ name: 'image', dataUrl: url }])
+    setZipLoading(true)
+    try {
+      const imgs = await extractImagesFromZip(url, activeTaskToReview?.submittedFileAssetId)
+      setZipPages(imgs)
+    } catch {
+      setZipPages([])
+    } finally {
+      setZipLoading(false)
     }
   }
   // --- State for Assistant Role ---
@@ -489,6 +486,7 @@ ratePerPage: t.ratePerPage ?? 0,
             submittedWorkUrl: getSubmissionFileUrl(latestSub),
             prevSubmittedWorkUrl: getSubmissionFileUrl(prevSub),
             submittedFileAssetId: latestSub?.submittedFileAssetId || latestSub?.SubmittedFileAssetId || undefined,
+            prevSubmittedFileAssetId: prevSub?.submittedFileAssetId || prevSub?.SubmittedFileAssetId || undefined,
             submitDescription: latestSub?.note || undefined,
             submissionId: latestSub?.submissionId || latestSub?.id || undefined,
             feedback: latestSub?.feedback || undefined,
@@ -1316,6 +1314,26 @@ const payload = {
                       </span>
                     </div>
 
+                    {/* Revision Request Warning Banner */}
+                    {(selectedChapter.status?.toUpperCase().includes('REVISION') || selectedChapter.status?.toUpperCase().includes('REJECT')) && (
+                      <div className="flex items-center justify-between p-4 bg-amber-500/15 border-2 border-amber-500/40 text-amber-900 dark:text-amber-300 rounded-xl text-xs shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <div>
+                            <strong className="text-sm font-extrabold text-amber-800 dark:text-amber-200 block">Revision Requested by Editor</strong>
+                            <span>The editor requested changes for this chapter manuscript. Please inspect the feedback comments and upload your revised zip file.</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsSubmitManuscriptOpen(true)}
+                          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold transition-all shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer ml-3"
+                        >
+                          <Upload className="w-4 h-4" /> Resubmit Manuscript
+                        </button>
+                      </div>
+                    )}
+
                     {selectedChapter.referenceFiles && selectedChapter.referenceFiles.length > 0 && (
                       <div className="space-y-1">
                         <p className="text-xs font-bold text-muted-foreground">📎 Reference Documents</p>
@@ -1347,27 +1365,34 @@ const payload = {
                     <div className="flex flex-wrap items-center justify-between pt-2 gap-3">
                       <span className="text-xs text-muted-foreground font-semibold">Manage Chapter Status:</span>
                       <div className="flex items-center gap-2">
-
-                       {progressPercent >= 100 && selectedChapter.status !== 'Submitted' && selectedChapter.status !== 'Ready for Editor' && selectedChapter.status !== 'Published' && (
+                        {(selectedChapter.status?.toUpperCase().includes('REVISION') || selectedChapter.status?.toUpperCase().includes('REJECT')) ? (
                           <button
                             type="button"
                             onClick={() => setIsSubmitManuscriptOpen(true)}
-                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                           >
-                            Submit Manuscript
+                            <Upload className="w-4 h-4" /> Resubmit Manuscript (Upload Revision)
                           </button>
-                        )}
-                        {false && selectedChapter?.status === 'Published' && (
+                        ) : selectedChapter.status === 'Submitted' || selectedChapter.status === 'Ready for Editor' ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Manuscript Submitted
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setIsSubmitManuscriptOpen(true)}
+                              className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-xs font-bold transition-colors cursor-pointer border border-border flex items-center gap-1"
+                            >
+                              <Upload className="w-3.5 h-3.5" /> Resubmit / Update File
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => {
-                              chapterService.updateChapter(selectedChapterId, { status: 'Published' }).then(() => {
-                                refreshData()
-                                showToast('Chapter successfully Published!')
-                              })
-                            }}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            type="button"
+                            onClick={() => setIsSubmitManuscriptOpen(true)}
+                            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                           >
-                            Mark as Published
+                            <Send className="w-3.5 h-3.5" /> Submit Manuscript
                           </button>
                         )}
                       </div>
@@ -2684,28 +2709,25 @@ const payload = {
                       <ImageIcon className="w-12 h-12" />
                       <span className="text-xs">No submissions yet</span>
                     </div>
-                  ) : /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) ? (
-                    <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
-                     {zipLoading ? (
-                        <>
-                          <div className="w-16 h-16 rounded-2xl bg-muted animate-pulse" />
-                          <span className="text-xs">Loading submission...</span>
-                        </>
-                      ) : zipPages.length > 0 ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={zipPages[0].dataUrl} alt="preview" className="max-h-64 w-auto object-contain border border-border rounded-lg shadow-sm" />
-                          <span className="text-sm font-bold text-foreground">Submission - {zipPages.length} pages</span>
-                          <span className="text-xs">Click "Open full view" below to review page by page</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-3xl">ZIP</div>
-                          <span className="text-sm font-bold text-foreground">Compressed multi-page submission</span>
-                          <span className="text-xs">Click "Open full view" below to review page by page</span>
-                        </>
-                      )}
+                  ) : zipLoading ? (
+                    <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none py-8">
+                      <div className="w-16 h-16 rounded-2xl bg-muted animate-pulse" />
+                      <span className="text-xs font-semibold">Extracting submission pages...</span>
                     </div>
+                  ) : zipPages.length > 1 ? (
+                    <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={zipPages[0].dataUrl} alt="preview" className="max-h-64 w-auto object-contain border border-border rounded-lg shadow-sm" />
+                      <span className="text-sm font-bold text-foreground">Multi-page Submission ({zipPages.length} pages)</span>
+                      <span className="text-xs text-indigo-600 font-semibold">Click "Open full view to add comments" below to review page by page</span>
+                    </div>
+                  ) : zipPages.length === 1 ? (
+                    <ImageCommentLayer
+                      imageUrl={zipPages[0].dataUrl}
+                      pageNo={getTaskPageNo(activeTaskToReview)}
+                      annotations={taskAnnotations}
+                      onAddAnnotation={handleAddTaskAnnotation}
+                    />
                   ) : (
                     <ImageCommentLayer
                       imageUrl={activeTaskToReview.submittedWorkUrl}
@@ -2714,15 +2736,6 @@ const payload = {
                       onAddAnnotation={handleAddTaskAnnotation}
                     />
                   )}
-                  {activeTaskToReview.submittedWorkUrl && !/\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl) && imagePins.map((pin, idx) => (
-                    <div
-                      key={idx}
-                      className="absolute w-6 h-6 -ml-3 -mt-3 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white"
-                      style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-                    >
-                      {idx + 1}
-                    </div>
-                  ))}
                 </div>
 
             {activeTaskToReview.submittedWorkUrl && (

@@ -164,57 +164,6 @@ export default function EditorDashboardTab({
               )}
             </div>
           </div>
-
-          {/* Series Overview */}
-          <div className="bg-card border border-border rounded-xl p-6 space-y-4 shadow-sm">
-            <div className="flex justify-between items-center pb-2 border-b border-border/40">
-              <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-primary" />
-                Manga Overview
-              </h3>
-              <Link
-                href="/dashboard/manga-list"
-                className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5"
-              >
-                View All <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="divide-y divide-border/30">
-              {supervisedSeries.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic py-6 text-center">
-                  No series assigned.
-                </p>
-              ) : (
-                supervisedSeries.slice(0, 5).map((series) => (
-                  <div
-                    key={series.id}
-                    className="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-foreground truncate">
-                        {series.title}
-                      </p>
-                      <p className="text-[9px] text-muted-foreground truncate">
-                        {series.genre?.join(', ') || 'No genre'} ·{' '}
-                        {series.type || 'Weekly'}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <span
-                        className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${series.status === 'Active'
-                          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                          : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                          }`}
-                      >
-                        {series.status}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>

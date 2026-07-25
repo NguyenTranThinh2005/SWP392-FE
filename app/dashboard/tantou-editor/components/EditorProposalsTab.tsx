@@ -479,9 +479,6 @@ export default function EditorProposalsTab({
                               <p className="text-xs font-bold text-foreground truncate">
                                 {zipFileName}
                               </p>
-                              <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                URL: {zipDownloadUrl}
-                              </p>
                             </div>
                             <a
                               href={zipDownloadUrl}

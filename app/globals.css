@@ -213,3 +213,8 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(120, 120, 130, 0.35) transparent;
 }
+
+/* Hide Next.js Dev Overlay / Indicator floating button */
+nextjs-portal {
+  display: none !important;
+}

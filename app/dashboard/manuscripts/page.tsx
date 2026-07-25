@@ -26,7 +26,8 @@ import { Badge } from '@/components/ui/badge'
 
 import { manuscriptService } from '@/services/manuscriptService'
 import { fetchAPI } from '@/services/api'
-import type { ManuscriptItem } from '@/types/manuscript'
+import type { ManuscriptItem, Annotation } from '@/types/manuscript'
+import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
 
 export default function ManuscriptsPage() {
   const { role } = useRole()
@@ -41,6 +42,7 @@ export default function ManuscriptsPage() {
   // Review Panel States
   const [feedbackText, setFeedbackText] = useState('')
   const [resolvedFileName, setResolvedFileName] = useState<string>('')
+  const [annotations, setAnnotations] = useState<Annotation[]>([])
 
   // Load data from store
   useEffect(() => {
@@ -95,6 +97,35 @@ export default function ManuscriptsPage() {
       active = false
     }
   }, [activeManuscript?.fileUrl])
+
+  useEffect(() => {
+    if (activeManuscript) {
+      setAnnotations(manuscriptService.getAnnotations(activeManuscript.id, activeManuscript.latestVersion))
+      manuscriptService.syncAnnotationsFromBackend(activeManuscript.id).then((anns) => {
+        setAnnotations(anns)
+      })
+    } else {
+      setAnnotations([])
+    }
+  }, [activeManuscript?.id, activeManuscript?.latestVersion])
+
+  const handleAddAnnotation = async (pageNo: number, x: number, y: number, text: string) => {
+    if (!activeManuscript) return
+    try {
+      const newAnn = await manuscriptService.addAnnotation(
+        activeManuscript.id,
+        activeManuscript.latestVersion,
+        pageNo,
+        x,
+        y,
+        text
+      )
+      setAnnotations(prev => [...prev, newAnn])
+      toast.success('Annotation saved!')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save annotation.')
+    }
+  }
 
   // Extract unique series from manuscripts list
   const uniqueSeriesList = useMemo(() => {
@@ -240,14 +271,13 @@ export default function ManuscriptsPage() {
                   return (
                     <div className="space-y-3">
                       {isImage ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={fileUrl}
-                            alt="Submitted Manuscript"
-                            className="w-full rounded-lg border border-border/85 object-contain max-h-[700px] mx-auto"
-                          />
-                        </>
+                        <ImageCommentLayer
+                          imageUrl={fileUrl}
+                          pageNo={1}
+                          annotations={annotations}
+                          onAddAnnotation={handleAddAnnotation}
+                          readOnly={!isTantouEditor}
+                        />
                       ) : (
                         <div className="flex items-center gap-3 p-4 bg-muted/30 border border-border/80 rounded-lg">
                           <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center flex-shrink-0">
@@ -255,9 +285,6 @@ export default function ManuscriptsPage() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-bold text-foreground truncate">{fileName}</p>
-                            <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                              URL: {fileUrl}
-                            </p>
                           </div>
                         </div>
                       )}
@@ -265,9 +292,6 @@ export default function ManuscriptsPage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold text-foreground truncate">
                             {fileName}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                            URL: {fileUrl}
                           </p>
                         </div>
                         <a
@@ -341,16 +365,19 @@ export default function ManuscriptsPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {activeManuscript.status === 'REVISION REQUIRED' && (
+                      <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-1.5 text-left">
+                        <div className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                          <span>Revision Required by Editor</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Editor has requested revisions for this version. Please check the numbered annotation pins directly on the manuscript image to the left to review feedback points.
+                        </p>
+                      </div>
+                    )}
                     <div className="p-3 bg-muted border border-border/80 rounded-lg text-[10px] text-muted-foreground text-center font-medium leading-relaxed">
-                      🔒 <strong>View-only mode:</strong> Only the assigned Tantou Editor (Nakamura Takeshi) can approve or request revisions.
-                    </div>
-                    <div className="grid grid-cols-1 gap-2.5 opacity-50">
-                      <Button disabled className="w-full bg-primary text-primary-foreground text-xs font-bold py-2.5 rounded-lg">
-                        Approve (Lock)
-                      </Button>
-                      <Button disabled className="w-full bg-amber-600 text-white text-xs font-bold py-2.5 rounded-lg">
-                        Request Revision
-                      </Button>
+                      🔒 <strong>View-only mode:</strong> Only the assigned Tantou Editor can approve or request revisions.
                     </div>
                   </div>
                 )}

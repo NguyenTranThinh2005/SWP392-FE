@@ -41,7 +41,7 @@ export interface RankingRow {
   voteCount: number
   readerCount: number
   score: number
-  status: 'TOP 3' | 'BOTTOM 20%' | 'INACTIVE' | 'Rejected' | '—'
+  status: 'TOP 3' | 'BOTTOM 20%' | 'INACTIVE' | 'Rejected' | 'Cancelled' | '—'
   rankingSnapshotId?: string
   boardDecisionId?: string
   continueVotes?: number
@@ -314,32 +314,34 @@ export default function RankingPage() {
                         }
                       })
                     }
-                  } catch {}
+                  } catch { }
 
                   const totalVotes = cVotes + dVotes
-                  const isDiscontinued = decision.result === 'Rejected' || 
-                                         decision.status === 'Rejected' ||
-                                         decision.status === 'Discontinued' ||
-                                         decision.status === 'Inactive' ||
-                                         (dVotes > 0 && (totalVotes >= 3 && dVotes >= cVotes || dVotes >= 2))
+                  const isDiscontinued = decision.result === 'Rejected' ||
+                    decision.status === 'Rejected' ||
+                    decision.status === 'Discontinued' ||
+                    decision.status === 'Inactive' ||
+                    decision.status === 'Cancelled' ||
+                    dVotes >= 3 ||
+                    (dVotes > 0 && (totalVotes >= 3 && dVotes >= cVotes || dVotes >= 2))
 
-                  // Toast notification if series receives 3 board votes and is rejected
-                  if (totalVotes >= 3 && isDiscontinued) {
-                    toast.error(`"${row.seriesTitle}" has reached ${totalVotes} board votes and is now marked as REJECTED / INACTIVE.`, {
+                  // Toast notification if series receives 3 discontinue board votes and is cancelled
+                  if (isDiscontinued || dVotes >= 3) {
+                    toast.error(`"${row.seriesTitle}" has received ${dVotes} discontinue vote(s) and is now marked as CANCELLED.`, {
                       id: `rejected-toast-${row.seriesId}`
                     })
                   }
 
                   return {
                     ...row,
-                    status: isDiscontinued ? ('Rejected' as const) : row.status,
+                    status: isDiscontinued ? ('Cancelled' as const) : row.status,
                     boardDecisionId: decisionId,
                     continueVotes: cVotes,
                     discontinueVotes: dVotes,
                     isDiscontinued
                   }
                 }
-              } catch {}
+              } catch { }
             }
             return row
           })
@@ -489,8 +491,31 @@ export default function RankingPage() {
   }
 
   // Auto-ensure open board decisions for bottom tier series when confirming rankings
-  const ensureOpenBoardDecisions = async (rows: RankingRow[]) => {
-    const bottomSeries = rows.filter(r => r.score < 20 || r.status === 'BOTTOM 20%')
+  const ensureOpenBoardDecisions = async (rows?: RankingRow[]) => {
+    const targetPeriod = formatPeriodToDdMmYyyy(selectedPeriod)
+    let currentRows = rows && rows.length > 0 ? rows : rankings
+
+    try {
+      const periodRes = await fetchAPI<{ data: any[] }>(`/api/ranking/periods?period=${encodeURIComponent(targetPeriod)}`)
+      const backendSnapshots = (periodRes as any).data || periodRes || []
+      if (Array.isArray(backendSnapshots) && backendSnapshots.length > 0) {
+        currentRows = backendSnapshots.map((s: any) => ({
+          rank: s.rankNo,
+          seriesId: s.seriesId,
+          seriesTitle: s.seriesTitle,
+          genre: s.genre || '',
+          voteCount: s.voteCount,
+          readerCount: s.readerCount,
+          score: s.score,
+          status: s.rankNo <= 3 ? 'TOP 3' : (s.isBottom20Percent ? 'BOTTOM 20%' : '—'),
+          rankingSnapshotId: s.rankingSnapshotId || s.id
+        }))
+      }
+    } catch (e) {
+      console.warn("Failed to fetch official snapshots during ensureOpenBoardDecisions:", e)
+    }
+
+    const bottomSeries = currentRows.filter(r => r.score < 20 || r.status === 'BOTTOM 20%')
     if (bottomSeries.length === 0) return
 
     const nextWeek = new Date()
@@ -498,15 +523,29 @@ export default function RankingPage() {
 
     for (const row of bottomSeries) {
       try {
+        let snapshotId = row.rankingSnapshotId
+        if (!snapshotId) {
+          try {
+            const resHist = await fetchAPI<{ data: any[] }>(`/api/ranking/series/${row.seriesId}`)
+            const hist = (resHist as any).data || resHist || []
+            if (Array.isArray(hist) && hist.length > 0) {
+              snapshotId = hist[0].rankingSnapshotId || hist[0].id
+            }
+          } catch {}
+        }
+
+        if (!snapshotId) continue
+
         const resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${row.seriesId}/board-decisions`)
         const decisions = (resDecisions as any).data || resDecisions || []
-        const hasOpen = Array.isArray(decisions) && decisions.some((d: any) => d.status?.toLowerCase() === 'open')
+        const hasOpen = Array.isArray(decisions) && decisions.some((d: any) => d.status?.toLowerCase() === 'open' && (d.decisionType === 'RankingElimination' || d.decisionType === 'Elimination'))
 
-        if (!hasOpen && row.rankingSnapshotId) {
-          await fetchAPI(`/api/ranking/snapshots/${row.rankingSnapshotId}/elimination-decision`, {
+        if (!hasOpen) {
+          await fetchAPI(`/api/ranking/snapshots/${snapshotId}/elimination-decision`, {
             method: 'POST',
             body: JSON.stringify({ votingDeadline: nextWeek.toISOString() })
           })
+          console.log(`✅ Created elimination decision for ${row.seriesTitle} (snapshot: ${snapshotId})`)
         }
       } catch (err) {
         console.warn(`Auto-open board decision check skipped for ${row.seriesTitle}:`, err)
@@ -519,9 +558,9 @@ export default function RankingPage() {
     fetchAPI(`/api/vote-records/${id}/confirm`, {
       method: 'PUT'
     }).then(async () => {
-      toast.success(`Confirmed vote record for "${title}". Rankings recalculated!`)
+      toast.success(`Confirmed vote record for "${title}". Rankings recalculated! You are not allowed to vote (conflict of interest).`)
       await refreshData()
-      ensureOpenBoardDecisions(rankings)
+      await ensureOpenBoardDecisions()
     }).catch(() => {
       toast.error('Failed to confirm vote record.')
     })
@@ -538,9 +577,9 @@ export default function RankingPage() {
       await Promise.all(
         pendingVotes.map(v => fetchAPI(`/api/vote-records/${v.id}/confirm`, { method: 'PUT' }))
       )
-      toast.success(`All vote records confirmed! Rankings for "${selectedPeriod}" have been locked.`)
+      toast.success(`All vote records confirmed! Rankings for "${selectedPeriod}" have been locked. You are not allowed to vote (conflict of interest).`)
       await refreshData()
-      ensureOpenBoardDecisions(rankings)
+      await ensureOpenBoardDecisions()
     } catch (err) {
       console.error("Failed to confirm all votes:", err)
       toast.error("Failed to confirm all vote records.")
@@ -596,6 +635,7 @@ export default function RankingPage() {
         ...prev,
         [seriesId]: decision
       }))
+      await refreshData()
     } catch (err: any) {
       toast.error(err?.message || 'Failed to submit vote.')
       throw err

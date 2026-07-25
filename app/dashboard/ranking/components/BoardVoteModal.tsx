@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   X,
   Vote,
@@ -9,10 +9,13 @@ import {
   AlertTriangle,
   MessageSquare,
   ShieldCheck,
-  TrendingDown
+  TrendingDown,
+  Users,
+  RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { seriesService } from '@/services/seriesService'
 
 interface BoardVoteModalProps {
   isOpen: boolean
@@ -39,6 +42,35 @@ export default function BoardVoteModal({
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const [votesList, setVotesList] = useState<any[]>([])
+  const [isLoadingVotes, setIsLoadingVotes] = useState(false)
+
+  // Fetch list of votes specifically for the Ranking Elimination decision of this series
+  useEffect(() => {
+    if (!isOpen || !seriesId) return
+    setIsLoadingVotes(true)
+    ;(async () => {
+      try {
+        const rankingDecision = await seriesService.getRankingBoardDecision(seriesId)
+        if (rankingDecision) {
+          const decisionId = rankingDecision.boardDecisionId || rankingDecision.id
+          if (decisionId) {
+            const votes = await seriesService.getBoardVotes(decisionId)
+            if (Array.isArray(votes)) {
+              setVotesList(votes)
+            }
+          }
+        } else {
+          setVotesList([])
+        }
+      } catch (err) {
+        console.warn("Failed to load ranking board votes in modal:", err)
+      } finally {
+        setIsLoadingVotes(false)
+      }
+    })()
+  }, [isOpen, seriesId])
+
   if (!isOpen) return null
 
   const handleSubmit = async () => {
@@ -55,8 +87,8 @@ export default function BoardVoteModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl max-w-md w-full overflow-hidden shadow-2xl space-y-0 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 overflow-y-auto">
+      <div className="bg-card border border-border rounded-2xl max-w-md w-full overflow-hidden shadow-2xl space-y-0 relative my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border/60 bg-muted/20">
           <div className="flex items-center gap-3">
@@ -81,7 +113,7 @@ export default function BoardVoteModal({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           {/* Series Overview Box */}
           <div className="p-4 bg-muted/40 border border-border/80 rounded-xl space-y-2">
             <div className="flex items-start justify-between gap-3">
@@ -114,11 +146,10 @@ export default function BoardVoteModal({
               <button
                 type="button"
                 onClick={() => setSelectedDecision('Continue')}
-                className={`p-4 border-2 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
-                  selectedDecision === 'Continue'
+                className={`p-4 border-2 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${selectedDecision === 'Continue'
                     ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20'
                     : 'border-border/70 hover:border-emerald-500/50 bg-card'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between w-full">
                   <CheckCircle2 className={`w-5 h-5 ${selectedDecision === 'Continue' ? 'text-emerald-500' : 'text-muted-foreground/40'}`} />
@@ -140,11 +171,10 @@ export default function BoardVoteModal({
               <button
                 type="button"
                 onClick={() => setSelectedDecision('Discontinue')}
-                className={`p-4 border-2 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
-                  selectedDecision === 'Discontinue'
+                className={`p-4 border-2 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${selectedDecision === 'Discontinue'
                     ? 'border-rose-500 bg-rose-500/10 ring-2 ring-rose-500/20'
                     : 'border-border/70 hover:border-rose-500/50 bg-card'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between w-full">
                   <XCircle className={`w-5 h-5 ${selectedDecision === 'Discontinue' ? 'text-rose-500' : 'text-muted-foreground/40'}`} />
@@ -177,6 +207,61 @@ export default function BoardVoteModal({
               rows={3}
               className="w-full p-3 bg-muted/30 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground resize-none"
             />
+          </div>
+
+          {/* Current Board Votes List */}
+          <div className="space-y-2 pt-3 border-t border-border/60">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-primary" /> Current Board Votes ({votesList.length})
+              </label>
+              {isLoadingVotes && <RefreshCw className="w-3 h-3 animate-spin text-muted-foreground" />}
+            </div>
+
+            {votesList.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground italic bg-muted/20 p-2.5 rounded-lg text-center border border-border/40 font-medium">
+                No ranking votes recorded yet for this session.
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {votesList.map((v: any, idx: number) => {
+                  const isContinue = v.voteValue === true || v.voteType === 'Approved'
+                  const voterName = v.voterName || v.voter?.name || v.voter?.fullName || v.voter?.username || `Editorial Board Member ${idx + 1}`
+                  const votedAt = v.createdAt || v.votedAt || v.timestamp
+                  const commentText = v.comment || v.rationale
+
+                  // ponytail: simple vote log item rendering with optional comment
+                  return (
+                    <div
+                      key={v.id || v.boardVoteId || idx}
+                      className="p-2.5 bg-muted/30 border border-border/60 rounded-lg space-y-1 text-xs"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-foreground truncate">{voterName}</p>
+                          {votedAt && (
+                            <p className="text-[10px] text-muted-foreground font-mono">
+                              {new Date(votedAt).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        <Badge className={isContinue
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-black text-[9px] px-2.5 py-0.5 rounded-md shrink-0'
+                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-black text-[9px] px-2.5 py-0.5 rounded-md shrink-0'
+                        }>
+                          {isContinue ? 'CONTINUE' : 'DISCONTINUE'}
+                        </Badge>
+                      </div>
+                      {commentText && (
+                        <p className="text-[11px] text-muted-foreground bg-muted/40 p-1.5 rounded border border-border/30 italic">
+                          "{commentText}"
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Security Notice */}
