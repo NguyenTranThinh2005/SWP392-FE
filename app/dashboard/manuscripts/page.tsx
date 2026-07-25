@@ -28,6 +28,7 @@ import { manuscriptService } from '@/services/manuscriptService'
 import { fetchAPI } from '@/services/api'
 import type { ManuscriptItem, Annotation } from '@/types/manuscript'
 import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
+import { ZipImageViewer } from '@/components/ui/zip-image-viewer'
 
 export default function ManuscriptsPage() {
   const { role } = useRole()
@@ -279,14 +280,7 @@ export default function ManuscriptsPage() {
                           readOnly={!isTantouEditor}
                         />
                       ) : (
-                        <div className="flex items-center gap-3 p-4 bg-muted/30 border border-border/80 rounded-lg">
-                          <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center flex-shrink-0">
-                            <FileArchive className="w-5 h-5" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold text-foreground truncate">{fileName}</p>
-                          </div>
-                        </div>
+                        <ZipImageViewer fileUrl={fileUrl} />
                       )}
                       <div className="p-4 bg-muted/30 border border-border/80 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div className="min-w-0 flex-1">
