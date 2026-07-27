@@ -2,6 +2,7 @@
 
 import { toast as sonnerToast } from 'sonner'
 import { compareAny,extractImagesFromZip  } from '@/lib/imageCompare'
+import { ZipImageViewer } from '@/components/annotations/zip-image-viewer'
 import { getSalaryByAssistant, formatVND } from '@/lib/salary'
 import { useCallback, useEffect, useState } from 'react'
 import { useRole } from '@/context/RoleContext'
@@ -337,6 +338,20 @@ const [subCompareError, setSubCompareError] = useState('')
   const [creatingChapter, setCreatingChapter] = useState(false)
   const [creatingTask, setCreatingTask] = useState(false)
   const [submitComment, setSubmitComment] = useState('')
+  const [submitPreviewUrl, setSubmitPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (submitFiles.length === 0) {
+      setSubmitPreviewUrl(null)
+      return
+    }
+    const targetFile = submitFiles.find(f => f.name.toLowerCase().endsWith('.zip')) || submitFiles[0]
+    if (targetFile) {
+      const url = URL.createObjectURL(targetFile)
+      setSubmitPreviewUrl(url)
+      return () => URL.revokeObjectURL(url)
+    }
+  }, [submitFiles])
 
   // Trigger Toast Notification helper
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -2696,52 +2711,19 @@ const payload = {
               {/* Left Side: Image Preview */}
               <div className="space-y-3">
                 <label className="text-xs font-bold text-muted-foreground">Preview submitted work</label>
-                <div
-                  className="relative border border-border rounded-xl overflow-hidden bg-muted min-h-[400px] max-h-[600px] flex items-center justify-center group shadow-inner cursor-crosshair"
-                  onClick={() => {
-                    if (activeTaskToReview.submittedWorkUrl && /\.zip(\?|$)/i.test(activeTaskToReview.submittedWorkUrl)) {
-                      openPinOverlay()
-                    }
-                  }}
-                >
-                  {!activeTaskToReview.submittedWorkUrl ? (
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground/50">
-                      <ImageIcon className="w-12 h-12" />
-                      <span className="text-xs">No submissions yet</span>
-                    </div>
-                  ) : zipLoading ? (
-                    <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none py-8">
-                      <div className="w-16 h-16 rounded-2xl bg-muted animate-pulse" />
-                      <span className="text-xs font-semibold">Extracting submission pages...</span>
-                    </div>
-                  ) : zipPages.length > 1 ? (
-                    <div className="flex flex-col items-center gap-3 text-muted-foreground pointer-events-none">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={zipPages[0].dataUrl} alt="preview" className="max-h-64 w-auto object-contain border border-border rounded-lg shadow-sm" />
-                      <span className="text-sm font-bold text-foreground">Multi-page Submission ({zipPages.length} pages)</span>
-                      <span className="text-xs text-indigo-600 font-semibold">Click "Open full view to add comments" below to review page by page</span>
-                    </div>
-                  ) : zipPages.length === 1 ? (
-                    <ImageCommentLayer
-                      imageUrl={zipPages[0].dataUrl}
-                      pageNo={getTaskPageNo(activeTaskToReview)}
-                      annotations={taskAnnotations}
-                      onAddAnnotation={handleAddTaskAnnotation}
-                    />
-                  ) : (
-                    <ImageCommentLayer
-                      imageUrl={activeTaskToReview.submittedWorkUrl}
-                      pageNo={getTaskPageNo(activeTaskToReview)}
-                      annotations={taskAnnotations}
-                      onAddAnnotation={handleAddTaskAnnotation}
-                    />
-                  )}
-                </div>
+                {!activeTaskToReview.submittedWorkUrl ? (
+                  <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground/50">
+                    <ImageIcon className="w-12 h-12 mb-2" />
+                    <span className="text-xs">No submissions uploaded yet</span>
+                  </div>
+                ) : (
+                  <ZipImageViewer fileUrl={activeTaskToReview.submittedWorkUrl} />
+                )}
 
-            {activeTaskToReview.submittedWorkUrl && (
+                {activeTaskToReview.submittedWorkUrl && (
                   <button
                     onClick={openPinOverlay}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95"
+                    className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95 cursor-pointer"
                   >
                     Open full view to add comments
                   </button>
@@ -2941,7 +2923,7 @@ const payload = {
             setSubmitComment('')
           }} />
 
-          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6 overflow-hidden">
+          <div className="relative w-full max-w-xl bg-card border border-border rounded-2xl shadow-2xl p-6 overflow-hidden max-h-[90vh] flex flex-col">
             <h3 className="text-base font-extrabold text-foreground flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-indigo-500" /> Submit Work completed
             </h3>
@@ -2949,7 +2931,7 @@ const payload = {
               Submit your work and notes to the author. They will review it to approve or request further revisions.
             </p>
 
-            <form onSubmit={handleSubmitWork} className="space-y-4 mt-4">
+            <form onSubmit={handleSubmitWork} className="space-y-4 mt-4 overflow-y-auto pr-1">
               <div className="space-y-1">
                 <label className="text-[10px] uppercase font-bold text-muted-foreground">Submission Description</label>
                 <textarea
@@ -2962,7 +2944,7 @@ const payload = {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-muted-foreground">Submission Files</label>
+                <label className="text-[10px] uppercase font-bold text-muted-foreground">Submission Files (.zip / images)</label>
                 <input
                   type="file"
                   multiple
@@ -2974,20 +2956,32 @@ const payload = {
                   className="w-full p-2.5 bg-muted/50 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                 />
                 {submitFiles.length > 0 && (
-                  <div className="space-y-1 mt-1">
-                    <p className="text-[10px] text-muted-foreground">Selected {submitFiles.length} file(s):</p>
-                    {submitFiles.map((f, i) => (
-                      <div key={i} className="flex items-center justify-between text-[11px] bg-muted/40 rounded-lg px-2 py-1">
-                        <span className="truncate text-foreground">{f.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => setSubmitFiles(prev => prev.filter((_, idx) => idx !== i))}
-                          className="text-red-500 font-bold ml-2 shrink-0"
-                        >
-                          ✕
-                        </button>
+                  <div className="space-y-2 mt-2">
+                    <p className="text-[10px] font-bold text-muted-foreground">Selected {submitFiles.length} file(s):</p>
+                    <div className="max-h-24 overflow-y-auto space-y-1 pr-1">
+                      {submitFiles.map((f, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px] bg-muted/40 rounded-lg px-2 py-1">
+                          <span className="truncate text-foreground font-mono">{f.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSubmitFiles(prev => prev.filter((_, idx) => idx !== i))}
+                            className="text-red-500 font-bold ml-2 shrink-0 hover:text-red-600"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Live Zip / Image Preview before submission */}
+                    {submitPreviewUrl && (
+                      <div className="pt-2">
+                        <label className="text-[10px] uppercase font-bold text-primary block mb-1">
+                          Live Submission Preview (Unpacked pages)
+                        </label>
+                        <ZipImageViewer fileUrl={submitPreviewUrl} maxHeightClass="max-h-[350px]" />
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>
@@ -3060,48 +3054,8 @@ const payload = {
                     <Layers className="w-12 h-12 mb-2" />
                     <span className="text-xs">No submissions uploaded yet</span>
                   </div>
-                ) : zipLoading ? (
-                  <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground">
-                    <span className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-                    <span className="text-xs">Extracting zip file...</span>
-                  </div>
-                ) : zipPages.length > 0 ? (
-                  <div className="space-y-3">
-                    {zipPages.length > 1 && (
-                      <div className="flex items-center justify-between bg-muted/40 border border-border p-2 rounded-xl">
-                        <button
-                          type="button"
-                          onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                          disabled={currentPage === 0}
-                          className="px-2.5 py-1 bg-card hover:bg-muted border border-border rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          ‹ Prev
-                        </button>
-                        <span className="text-xs font-bold text-foreground">Page {currentPage + 1}/{zipPages.length}: {zipPages[currentPage].name}</span>
-                        <button
-                          type="button"
-                          onClick={() => setCurrentPage(p => Math.min(zipPages.length - 1, p + 1))}
-                          disabled={currentPage === zipPages.length - 1}
-                          className="px-2.5 py-1 bg-card hover:bg-muted border border-border rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          Next ›
-                        </button>
-                      </div>
-                    )}
-                    <div className="overflow-hidden">
-                      <ImageCommentLayer
-                        imageUrl={zipPages[currentPage].dataUrl}
-                        pageNo={getTaskPageNo(activeTaskToView, currentPage)}
-                        annotations={taskAnnotations}
-                        readOnly={true}
-                      />
-                    </div>
-                  </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground">
-                    <AlertTriangle className="w-8 h-8 text-amber-500 mb-2" />
-                    <span className="text-xs text-center px-4">Cannot preview image file. Please click "Download Original File" to inspect directly.</span>
-                  </div>
+                  <ZipImageViewer fileUrl={activeTaskToView.submittedWorkUrl} />
                 )}
               </div>
 
