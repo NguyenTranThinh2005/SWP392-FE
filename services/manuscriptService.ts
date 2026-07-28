@@ -166,7 +166,8 @@ export const manuscriptService = {
             reviewedAt: h.reviewedAt || undefined,
             feedback: h.revisionNotes || h.feedback || undefined,
             revisionNumber: h.revisionCount || undefined,
-            fileUrl: h.fileUrl || h.FileUrl || undefined
+            fileUrl: h.fileUrl || h.FileUrl || undefined,
+            originalFileName: h.originalFileName || h.fileName || h.name || h.originalName || undefined
           }))
 
           if (historyList.length === 0) {
@@ -174,7 +175,8 @@ export const manuscriptService = {
               version: m.versionLabel || `v${m.versionNo || 1}`,
               status: mapBackendManuscriptStatus(m.status),
               submittedAt: m.submittedAt || new Date().toISOString(),
-              fileUrl: m.fileUrl || m.FileUrl || undefined
+              fileUrl: m.fileUrl || m.FileUrl || undefined,
+              originalFileName: m.originalFileName || m.fileName || m.name || m.originalName || undefined
             })
           }
 
@@ -206,6 +208,7 @@ export const manuscriptService = {
             history: historyList,
             pages: ['Page 1', 'Page 2', 'Page 3', 'Page 4'],
             fileUrl: m.fileUrl || m.FileUrl || undefined,
+            originalFileName: m.originalFileName || m.fileName || m.name || m.originalName || undefined,
             coverImagePublicUrl,
             coverColor
           }

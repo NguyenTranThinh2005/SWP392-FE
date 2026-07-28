@@ -47,6 +47,11 @@ export default function EditorManuscriptsTab({
     const fileUrl = activeManuscript.fileUrl
     const rawFileName = fileUrl.split('/').pop()?.split('?')[0] || 'manuscript_file'
 
+    if (activeManuscript.originalFileName) {
+      setResolvedFileName(activeManuscript.originalFileName)
+      return
+    }
+
     const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, '')
     let assetId: string | null = null
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameWithoutExt)) {
@@ -60,8 +65,9 @@ export default function EditorManuscriptsTab({
       fetchAPI<{ data: any }>(`/api/files/${assetId}`)
         .then((res) => {
           const data = res?.data || res
-          if (active && data?.originalFileName) {
-            setResolvedFileName(data.originalFileName)
+          const fn = data?.originalFileName || data?.fileName || data?.name || data?.originalName
+          if (active && fn) {
+            setResolvedFileName(fn)
           }
         })
         .catch(() => {
@@ -74,7 +80,7 @@ export default function EditorManuscriptsTab({
     return () => {
       active = false
     }
-  }, [activeManuscript?.fileUrl])
+  }, [activeManuscript?.fileUrl, activeManuscript?.originalFileName])
 
   useEffect(() => {
     if (activeManuscript) {
@@ -241,9 +247,12 @@ export default function EditorManuscriptsTab({
                     /^[a-f0-9]{32,}$/i.test(nameWithoutExt.replace(/[-_]/g, '')) ||
                     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameWithoutExt);
 
-                  const fileName = resolvedFileName || (isHashName && activeManuscript.seriesTitle
-                    ? `${activeManuscript.seriesTitle.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_')}_Ch${activeManuscript.chapterNumber}_${activeManuscript.latestVersion}${ext || '.jpg'}`
-                    : rawFileName);
+                  const fileName =
+                    resolvedFileName ||
+                    activeManuscript.originalFileName ||
+                    (!isHashName
+                      ? rawFileName
+                      : `${activeManuscript.seriesTitle ? activeManuscript.seriesTitle.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_') : 'manuscript'}_Ch${activeManuscript.chapterNumber}_${activeManuscript.latestVersion}${ext || '.zip'}`);
 
                   return (
                     <div className="space-y-3">
@@ -258,22 +267,6 @@ export default function EditorManuscriptsTab({
                       ) : (
                         <ZipImageViewer fileUrl={fileUrl} />
                       )}
-                      <div className="p-4 bg-muted/30 border border-border/80 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-foreground truncate">
-                            {fileName}
-                          </p>
-                        </div>
-                        <a
-                          href={fileUrl}
-                          download={fileName}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-extrabold rounded-lg transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
-                        >
-                          <Download className="w-4 h-4" /> Download Manuscript
-                        </a>
-                      </div>
                     </div>
                   );
                 })() : (

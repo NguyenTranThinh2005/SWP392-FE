@@ -240,17 +240,6 @@ export default function NewProposalContent() {
 
       {/* Form card */}
       <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-sm">
-        {/* BR info callout */}
-        <div className="mb-6 p-3 bg-primary/5 border border-primary/15 rounded-lg text-xs text-muted-foreground space-y-1">
-          <p className="font-bold text-primary text-[11px] uppercase tracking-wide">Proposal Submission Rules</p>
-          <ul className="list-disc list-inside space-y-0.5">
-            <li>Title: required, max 100 characters</li>
-            <li>Genre: required, at least one genre</li>
-            <li>Synopsis: 200 to 2000 characters</li>
-            <li>Sample (ZIP): required to upload a ZIP file when submitting for review</li>
-            <li>Title cannot duplicate with active works</li>
-          </ul>
-        </div>
 
         <SeriesProposalForm
           onSubmit={handleSubmit}

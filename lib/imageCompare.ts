@@ -60,47 +60,27 @@ function isImageName(name: string): boolean {
   return /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(name)
 }
 
-// Giai nen 1 zip tu URL -> tra ve danh sach { ten, dataUrl } cua cac anh, sort theo ten
-export async function extractImagesFromZip(zipUrl: string, assetId?: string): Promise<{ name: string; dataUrl: string }[]> {
-  if (!zipUrl) return []
+export type ExtractedZipImages = ({ name: string; dataUrl: string })[] & { originalZipName?: string }
 
-  const urlsToTry: string[] = []
-  if (zipUrl) urlsToTry.push(zipUrl)
-  if (assetId) {
-    const backendUrl = `${API_BASE_URL}/api/files/${assetId}`
-    if (!urlsToTry.includes(backendUrl)) urlsToTry.push(backendUrl)
-  }
-
-  let res: Response | null = null
-  for (const url of urlsToTry) {
-    try {
-      const r = await fetch(url)
-      if (r.ok) {
-        res = r
-        break
-      }
-    } catch (e) {
-      console.warn("Fetch failed for candidate URL:", url, e)
-    }
-  }
-
-  if (!res || !res.ok) {
-    console.error("Failed to fetch zip from all candidates:", urlsToTry)
-    if (/\.zip(\?|$)/i.test(zipUrl)) return []
-    return [{ name: 'image', dataUrl: zipUrl }]
-  }
-
-  const blob = await res.blob()
+// Recursive helper to extract images from a ZIP Blob, including nested ZIP archives (e.g. backend wrapping submitted zip inside another zip)
+async function extractImagesFromBlob(
+  blob: Blob,
+  depth = 0
+): Promise<{ images: { name: string; dataUrl: string }[]; originalZipName?: string }> {
+  if (depth > 3) return { images: [] }
 
   try {
     const zip = await JSZip.loadAsync(blob)
-    const entries = Object.values(zip.files)
-      .filter(f => !f.dir && isImageName(f.name))
+    const allFiles = Object.values(zip.files).filter((f) => !f.dir)
+
+    // 1. Check for direct images in this zip archive
+    const imageEntries = allFiles
+      .filter((f) => isImageName(f.name))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }))
 
-    if (entries.length > 0) {
+    if (imageEntries.length > 0) {
       const images: { name: string; dataUrl: string }[] = []
-      for (const entry of entries) {
+      for (const entry of imageEntries) {
         const base64 = await entry.async('base64')
         const ext = entry.name.split('.').pop()?.toLowerCase() || ''
         let mime = 'image/jpeg'
@@ -109,19 +89,117 @@ export async function extractImagesFromZip(zipUrl: string, assetId?: string): Pr
         else if (ext === 'gif') mime = 'image/gif'
         else if (ext === 'svg') mime = 'image/svg+xml'
         else if (ext === 'bmp') mime = 'image/bmp'
-        images.push({ name: entry.name, dataUrl: `data:${mime};base64,${base64}` })
+        const cleanName = entry.name.split('/').pop()?.split('\\').pop() || entry.name
+        images.push({ name: cleanName, dataUrl: `data:${mime};base64,${base64}` })
       }
-      return images
+      return { images }
+    }
+
+    // 2. If no direct images, check for nested .zip archives inside this archive (e.g. outer submission zip containing user's submitted zip)
+    const zipEntries = allFiles
+      .filter((f) => /\.zip$/i.test(f.name) && !f.name.startsWith('._') && !f.name.includes('__MACOSX'))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }))
+
+    if (zipEntries.length > 0) {
+      const nestedImages: { name: string; dataUrl: string }[] = []
+      let detectedZipName: string | undefined = undefined
+
+      for (const zipEntry of zipEntries) {
+        try {
+          const cleanZipName = zipEntry.name.split('/').pop()?.split('\\').pop()
+          if (cleanZipName && !detectedZipName) {
+            detectedZipName = cleanZipName
+          }
+          const nestedBlob = await zipEntry.async('blob')
+          const res = await extractImagesFromBlob(nestedBlob, depth + 1)
+          nestedImages.push(...res.images)
+          if (res.originalZipName && !detectedZipName) {
+            detectedZipName = res.originalZipName
+          }
+        } catch (nestedErr) {
+          console.warn("Failed to extract nested zip entry:", zipEntry.name, nestedErr)
+        }
+      }
+      return { images: nestedImages, originalZipName: detectedZipName }
     }
   } catch (zipErr) {
-    console.warn("JSZip loadAsync failed:", zipErr)
+    console.warn("JSZip loadAsync failed on blob:", zipErr)
+  }
+
+  return { images: [] }
+}
+
+// Giai nen 1 zip tu URL -> tra ve danh sach { ten, dataUrl } cua cac anh, sort theo ten
+export async function extractImagesFromZip(
+  zipUrl: string,
+  assetId?: string
+): Promise<ExtractedZipImages> {
+  if (!zipUrl && !assetId) return [] as any
+
+  const urlsToTry: string[] = []
+  if (zipUrl) urlsToTry.push(zipUrl)
+  if (assetId) {
+    const backendUrl =
+      assetId.startsWith('http') || assetId.startsWith('/') ? assetId : `${API_BASE_URL}/api/files/${assetId}`
+    if (!urlsToTry.includes(backendUrl)) urlsToTry.push(backendUrl)
+  }
+
+  const resolveActualFileBlob = async (targetUrl: string): Promise<Blob | null> => {
+    try {
+      const r = await fetch(targetUrl)
+      if (!r.ok) return null
+
+      const contentType = r.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const json = await r.json()
+        const actualUrl =
+          json?.data?.publicUrl || json?.publicUrl || json?.data?.fileUrl || json?.url || json?.data?.url
+        if (actualUrl) {
+          const fullUrl = actualUrl.startsWith('http')
+            ? actualUrl
+            : `${API_BASE_URL}${actualUrl.startsWith('/') ? '' : '/'}${actualUrl}`
+          const binaryRes = await fetch(fullUrl)
+          if (binaryRes.ok) {
+            return await binaryRes.blob()
+          }
+        }
+        return null
+      }
+
+      return await r.blob()
+    } catch (e) {
+      console.warn("resolveActualFileBlob failed for:", targetUrl, e)
+      return null
+    }
+  }
+
+  let blob: Blob | null = null
+  for (const url of urlsToTry) {
+    blob = await resolveActualFileBlob(url)
+    if (blob) break
+  }
+
+  if (!blob) {
+    console.error("Failed to fetch zip blob from candidate URLs:", urlsToTry)
+    const result: ExtractedZipImages = [{ name: 'image', dataUrl: zipUrl }] as any
+    return result
+  }
+
+  const extracted = await extractImagesFromBlob(blob)
+  if (extracted.images.length > 0) {
+    const result: ExtractedZipImages = extracted.images as any
+    if (extracted.originalZipName) {
+      result.originalZipName = extracted.originalZipName
+    }
+    return result
   }
 
   if (/\.zip(\?|$)/i.test(zipUrl) || blob.type.includes('zip')) {
-    return []
+    return [] as any
   }
 
-  return [{ name: 'image', dataUrl: zipUrl }]
+  const result: ExtractedZipImages = [{ name: 'image', dataUrl: zipUrl }] as any
+  return result
 }
 
 export interface PageCompareResult {

@@ -25,10 +25,12 @@ export interface ZipImageFile {
 export interface ZipImageViewerProps {
   /** Target file URL (can be a .zip archive or a direct image URL) */
   fileUrl?: string | null
+  /** Optional file asset ID from backend */
+  assetId?: string | null
   /** Display layout mode: 'slider' (single page viewer with navigation) or 'grid' (thumbnail list) */
   initialMode?: 'slider' | 'grid'
   /** Optional callback fired when images are extracted from the file */
-  onImagesLoaded?: (images: ZipImageFile[]) => void
+  onImagesLoaded?: (images: ZipImageFile[], originalZipName?: string) => void
   /** Optional callback fired when current page changes in slider mode */
   onPageChange?: (pageIndex: number, page: ZipImageFile) => void
   /** Custom max height class for image container (default: 'max-h-[500px]') */
@@ -46,6 +48,7 @@ export interface ZipImageViewerProps {
  */
 export function ZipImageViewer({
   fileUrl,
+  assetId,
   initialMode = 'slider',
   onImagesLoaded,
   onPageChange,
@@ -60,45 +63,35 @@ export function ZipImageViewer({
   const [error, setError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  // ponytail: extract images when fileUrl changes
+  // ponytail: extract images when fileUrl or assetId changes
   useEffect(() => {
-    if (!fileUrl) {
+    if (!fileUrl && !assetId) {
       setPages([])
       setError(null)
       return
     }
 
-    const isZip = /\.zip(\?|$)/i.test(fileUrl)
     setIsLoading(true)
     setError(null)
 
-    if (isZip) {
-      extractImagesFromZip(fileUrl)
-        .then((extracted) => {
-          if (extracted.length === 0) {
-            setError('No readable images (.jpg, .png, .webp) found inside this ZIP archive.')
-            setPages([])
-          } else {
-            setPages(extracted)
-            setCurrentPageIndex(0)
-            onImagesLoaded?.(extracted)
-          }
-        })
-        .catch((err) => {
-          console.error('[ZipImageViewer] Extraction error:', err)
-          setError('Failed to extract ZIP file. File might be corrupted or unreadable.')
+    extractImagesFromZip(fileUrl || '', assetId || undefined)
+      .then((extracted) => {
+        if (extracted.length === 0) {
+          setError('No readable images (.jpg, .png, .webp) found inside this ZIP archive.')
           setPages([])
-        })
-        .finally(() => setIsLoading(false))
-    } else {
-      // Direct image URL
-      const singleImage = [{ name: 'Page 1', dataUrl: fileUrl }]
-      setPages(singleImage)
-      setCurrentPageIndex(0)
-      setIsLoading(false)
-      onImagesLoaded?.(singleImage)
-    }
-  }, [fileUrl])
+        } else {
+          setPages(extracted)
+          setCurrentPageIndex(0)
+          onImagesLoaded?.(extracted, (extracted as any).originalZipName)
+        }
+      })
+      .catch((err) => {
+        console.error('[ZipImageViewer] Extraction error:', err)
+        setError('Failed to extract ZIP file. File might be corrupted or unreadable.')
+        setPages([])
+      })
+      .finally(() => setIsLoading(false))
+  }, [fileUrl, assetId])
 
   const handleSelectPage = (index: number) => {
     if (index < 0 || index >= pages.length) return
@@ -115,7 +108,7 @@ export function ZipImageViewer({
     )
   }
 
-  const isZip = /\.zip(\?|$)/i.test(fileUrl)
+  const isZip = pages.length > 1 || (pages.length === 1 && pages[0].name !== 'Page 1' && pages[0].name !== 'image' && pages[0].dataUrl !== fileUrl) || /\.zip(\?|$)/i.test(fileUrl)
   const currentPage = pages[currentPageIndex] || null
 
   return (

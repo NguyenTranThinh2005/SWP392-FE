@@ -15,7 +15,6 @@ import {
   Lock,
   ChevronDown,
   FileArchive,
-  Download,
   FileText,
   Filter
 } from 'lucide-react'
@@ -25,7 +24,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
 import { manuscriptService } from '@/services/manuscriptService'
-import { fetchAPI } from '@/services/api'
+
 import type { ManuscriptItem, Annotation } from '@/types/manuscript'
 import { ImageCommentLayer } from '@/components/annotations/image-comment-layer'
 import { ZipImageViewer } from '@/components/ui/zip-image-viewer'
@@ -42,7 +41,6 @@ export default function ManuscriptsPage() {
 
   // Review Panel States
   const [feedbackText, setFeedbackText] = useState('')
-  const [resolvedFileName, setResolvedFileName] = useState<string>('')
   const [annotations, setAnnotations] = useState<Annotation[]>([])
 
   // Load data from store
@@ -60,44 +58,6 @@ export default function ManuscriptsPage() {
   const activeManuscript = useMemo(() => {
     return manuscripts.find(m => m.id === activeManuscriptId)
   }, [manuscripts, activeManuscriptId])
-
-  useEffect(() => {
-    if (!activeManuscript?.fileUrl) {
-      setResolvedFileName('')
-      return
-    }
-    let active = true
-    const fileUrl = activeManuscript.fileUrl
-    const rawFileName = fileUrl.split('/').pop()?.split('?')[0] || 'manuscript_file'
-
-    const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, '')
-    let assetId: string | null = null
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameWithoutExt)) {
-      assetId = nameWithoutExt
-    } else if (/^[0-9a-f]{32}$/i.test(nameWithoutExt)) {
-      const s = nameWithoutExt.toLowerCase()
-      assetId = `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`
-    }
-
-    if (assetId) {
-      fetchAPI<{ data: any }>(`/api/files/${assetId}`)
-        .then((res) => {
-          const data = res?.data || res
-          if (active && data?.originalFileName) {
-            setResolvedFileName(data.originalFileName)
-          }
-        })
-        .catch(() => {
-          if (active) setResolvedFileName('')
-        })
-    } else {
-      setResolvedFileName('')
-    }
-
-    return () => {
-      active = false
-    }
-  }, [activeManuscript?.fileUrl])
 
   useEffect(() => {
     if (activeManuscript) {
@@ -258,17 +218,6 @@ export default function ManuscriptsPage() {
                   const rawFileName = fileUrl.split('/').pop()?.split('?')[0] || 'manuscript_file';
                   const isImage = /\.(png|jpg|jpeg|gif|webp|svg|bmp)$/i.test(rawFileName);
 
-                  const extMatch = rawFileName.match(/(\.[a-zA-Z0-9]+)$/);
-                  const ext = extMatch ? extMatch[1] : '';
-                  const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, '');
-                  const isHashName =
-                    /^[a-f0-9]{32,}$/i.test(nameWithoutExt.replace(/[-_]/g, '')) ||
-                    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameWithoutExt);
-
-                  const fileName = resolvedFileName || (isHashName && activeManuscript.seriesTitle
-                    ? `${activeManuscript.seriesTitle.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_')}_Ch${activeManuscript.chapterNumber}_${activeManuscript.latestVersion}${ext || '.jpg'}`
-                    : rawFileName);
-
                   return (
                     <div className="space-y-3">
                       {isImage ? (
@@ -282,22 +231,6 @@ export default function ManuscriptsPage() {
                       ) : (
                         <ZipImageViewer fileUrl={fileUrl} />
                       )}
-                      <div className="p-4 bg-muted/30 border border-border/80 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-foreground truncate">
-                            {fileName}
-                          </p>
-                        </div>
-                        <a
-                          href={fileUrl}
-                          download={fileName}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-extrabold rounded-lg transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
-                        >
-                          <Download className="w-4 h-4" /> Download Manuscript
-                        </a>
-                      </div>
                     </div>
                   );
                 })() : (

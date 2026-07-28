@@ -117,16 +117,25 @@ export default function ChaptersPage() {
   }, [])
 const [subCompareLoading, setSubCompareLoading] = useState(false)
 
+  const [taskResolvedFileName, setTaskResolvedFileName] = useState('')
+
   // Giai nen zip ngay khi mo modal review -> hien thumbnail luon
   useEffect(() => {
     if (!isReviewModalOpen || !activeTaskToReview) return
     const url = activeTaskToReview.submittedWorkUrl
-    if (!url) { setZipPages([]); return }
+    if (!url) { setZipPages([]); setTaskResolvedFileName(''); return }
     let cancelled = false
     setCurrentPage(0)
     setZipLoading(true)
     extractImagesFromZip(url, activeTaskToReview.submittedFileAssetId)
-      .then((imgs) => { if (!cancelled) setZipPages(imgs) })
+      .then((imgs) => {
+        if (!cancelled) {
+          setZipPages(imgs)
+          if ((imgs as any).originalZipName) {
+            setTaskResolvedFileName((imgs as any).originalZipName)
+          }
+        }
+      })
       .catch(() => { if (!cancelled) setZipPages([]) })
       .finally(() => { if (!cancelled) setZipLoading(false) })
     return () => { cancelled = true }
@@ -375,24 +384,23 @@ const [subCompareError, setSubCompareError] = useState('')
     const url = activeTaskToView.submittedWorkUrl
     setCurrentPage(0)
     if (url) {
-      if (/\.zip(\?|$)/i.test(url)) {
-        setZipLoading(true)
-        setZipPages([])
-        extractImagesFromZip(url)
-          .then((imgs) => {
-            if (cancelled) return
-            setZipPages(imgs.length ? imgs : [])
-          })
-          .catch(() => {
-            if (cancelled) return
-            setZipPages([])
-          })
-          .finally(() => {
-            if (!cancelled) setZipLoading(false)
-          })
-      } else {
-        setZipPages([{ name: 'image', dataUrl: url }])
-      }
+      setZipLoading(true)
+      setZipPages([])
+      extractImagesFromZip(url, activeTaskToView.submittedFileAssetId)
+        .then((imgs) => {
+          if (cancelled) return
+          setZipPages(imgs.length ? imgs : [{ name: 'image', dataUrl: url }])
+          if ((imgs as any).originalZipName) {
+            setTaskResolvedFileName((imgs as any).originalZipName)
+          }
+        })
+        .catch(() => {
+          if (cancelled) return
+          setZipPages([{ name: 'image', dataUrl: url }])
+        })
+        .finally(() => {
+          if (!cancelled) setZipLoading(false)
+        })
     } else {
       setZipPages([])
     }
@@ -2128,22 +2136,7 @@ const payload = {
                   />
                   {errors.publicationDate && <p className="text-xs text-red-500 mt-1">{errors.publicationDate}</p>}
 
-                  {newChapterPubDate && !errors.publicationDate && (
-                    <div className="mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs flex items-center gap-2">
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      <span className="text-amber-700 dark:text-amber-400">
-                        Manuscript deadline to Editor:{' '}
-                        <strong>
-                          {(() => {
-                            const d = new Date(newChapterPubDate)
-                            d.setDate(d.getDate() - 14)
-                            return d.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                          })()}
-                        </strong>{' '}
-                        (14 days before publication date)
-                      </span>
-                    </div>
-                  )}
+
                 </div>
               </div>
 
@@ -2717,7 +2710,7 @@ const payload = {
                     <span className="text-xs">No submissions uploaded yet</span>
                   </div>
                 ) : (
-                  <ZipImageViewer fileUrl={activeTaskToReview.submittedWorkUrl} />
+                  <ZipImageViewer fileUrl={activeTaskToReview.submittedWorkUrl} assetId={activeTaskToReview.submittedFileAssetId} />
                 )}
 
                 {activeTaskToReview.submittedWorkUrl && (
@@ -2810,30 +2803,7 @@ const payload = {
                   </div>
                 )}
 
-                {/* Submitted Files List */}
 
-                {/* Submitted Files List */}
-                {activeTaskToReview.submittedFiles && activeTaskToReview.submittedFiles.length > 0 ? (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground">Submitted Files ({activeTaskToReview.submittedFiles.length})</label>
-                    <div className="space-y-1 max-h-36 overflow-y-auto">
-                      {activeTaskToReview.submittedFiles.map((file, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-2 bg-emerald-500/5 rounded-xl border border-emerald-500/10 text-xs">
-                          <span className="font-medium text-emerald-800 dark:text-emerald-400 truncate max-w-[200px]">🖼️ {file.name}</span>
-                          <span className="text-muted-foreground text-[10px] bg-muted px-1.5 py-0.5 rounded shrink-0">{file.size}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : activeTaskToReview.submittedWorkUrl ? (
-                  <a href={activeTaskToReview.submittedWorkUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline bg-muted/40 p-2.5 rounded-xl border border-border">
-                    📎 Download original file
-                  </a>
-                ) : (
-                  <div className="text-xs text-muted-foreground italic bg-muted/40 p-2.5 rounded-xl border border-border">
-                    No attached files submitted
-                  </div>
-                )}
               </div>
 
               {/* Right Side: Task Details & Actions */}
@@ -3055,7 +3025,7 @@ const payload = {
                     <span className="text-xs">No submissions uploaded yet</span>
                   </div>
                 ) : (
-                  <ZipImageViewer fileUrl={activeTaskToView.submittedWorkUrl} />
+                  <ZipImageViewer fileUrl={activeTaskToView.submittedWorkUrl} assetId={activeTaskToView.submittedFileAssetId} />
                 )}
               </div>
 

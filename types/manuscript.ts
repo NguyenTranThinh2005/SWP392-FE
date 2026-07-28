@@ -6,6 +6,7 @@ export interface ManuscriptVersion {
   revisionNumber?: number // for display, e.g. 1 for v1, 2 for v2
   feedback?: string
   fileUrl?: string
+  originalFileName?: string
 }
 
 export interface ManuscriptItem {
@@ -21,6 +22,7 @@ export interface ManuscriptItem {
   history: ManuscriptVersion[]
   pages: string[] // mock page previews
   fileUrl?: string
+  originalFileName?: string
   coverImagePublicUrl?: string
   coverColor?: string
 }

@@ -25,17 +25,11 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
   // Neu la zip -> giai nen lay anh
   useEffect(() => {
     if (!imageUrl) return
-    const isZip = /\.zip(\?|$)/i.test(imageUrl)
-    if (isZip) {
-      setLoading(true)
-      extractImagesFromZip(imageUrl)
-        .then((imgs) => setPages(imgs))
-        .catch(() => setPages([]))
-        .finally(() => setLoading(false))
-    } else {
-      // anh don -> 1 trang
-      setPages([{ name: 'image', dataUrl: imageUrl }])
-    }
+    setLoading(true)
+    extractImagesFromZip(imageUrl)
+      .then((imgs) => setPages(imgs))
+      .catch(() => setPages([{ name: 'image', dataUrl: imageUrl }]))
+      .finally(() => setLoading(false))
   }, [imageUrl])
 
   if (!imageUrl) return null
