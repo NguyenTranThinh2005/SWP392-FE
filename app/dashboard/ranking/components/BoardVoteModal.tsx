@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { seriesService } from '@/services/seriesService'
+import { tokenService } from '@/services/tokenService'
 
 interface BoardVoteModalProps {
   isOpen: boolean
@@ -25,6 +26,7 @@ interface BoardVoteModalProps {
   score: number
   rank: number
   period: string
+  createdBy?: string
   onCastVote: (seriesId: string, decision: 'Continue' | 'Discontinue', comment: string) => Promise<void>
 }
 
@@ -36,8 +38,17 @@ export default function BoardVoteModal({
   score,
   rank,
   period,
+  createdBy,
   onCastVote
 }: BoardVoteModalProps) {
+  const currentUser = tokenService.getUserInfo()
+  const currentUserId = currentUser?.id || currentUser?.userId || currentUser?.sub
+  const isCreator = Boolean(
+    createdBy &&
+    currentUserId &&
+    String(createdBy).toLowerCase() === String(currentUserId).toLowerCase()
+  )
+
   const [selectedDecision, setSelectedDecision] = useState<'Continue' | 'Discontinue' | null>(null)
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -136,78 +147,93 @@ export default function BoardVoteModal({
             )}
           </div>
 
-          {/* Voting Options */}
-          <div className="space-y-2.5">
-            <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider">
-              Select Your Vote Decision
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {/* Option 1: Continue */}
-              <button
-                type="button"
-                onClick={() => setSelectedDecision('Continue')}
-                className={`p-4 border-2 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${selectedDecision === 'Continue'
-                    ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20'
-                    : 'border-border/70 hover:border-emerald-500/50 bg-card'
-                  }`}
-              >
-                <div className="flex items-center justify-between w-full">
-                  <CheckCircle2 className={`w-5 h-5 ${selectedDecision === 'Continue' ? 'text-emerald-500' : 'text-muted-foreground/40'}`} />
-                  {selectedDecision === 'Continue' && (
-                    <span className="text-[9px] uppercase font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full">
-                      Selected
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs font-black text-foreground">Continue</p>
-                  <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">
-                    Maintain publication
-                  </p>
-                </div>
-              </button>
-
-              {/* Option 2: Discontinue */}
-              <button
-                type="button"
-                onClick={() => setSelectedDecision('Discontinue')}
-                className={`p-4 border-2 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${selectedDecision === 'Discontinue'
-                    ? 'border-rose-500 bg-rose-500/10 ring-2 ring-rose-500/20'
-                    : 'border-border/70 hover:border-rose-500/50 bg-card'
-                  }`}
-              >
-                <div className="flex items-center justify-between w-full">
-                  <XCircle className={`w-5 h-5 ${selectedDecision === 'Discontinue' ? 'text-rose-500' : 'text-muted-foreground/40'}`} />
-                  {selectedDecision === 'Discontinue' && (
-                    <span className="text-[9px] uppercase font-black bg-rose-500 text-white px-2 py-0.5 rounded-full">
-                      Selected
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs font-black text-foreground">Discontinue</p>
-                  <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">
-                    Cancel publication
-                  </p>
-                </div>
-              </button>
+          {/* Creator Conflict of Interest Alert */}
+          {isCreator ? (
+            <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-extrabold text-amber-700 dark:text-amber-300">Creator Voting Restriction (Conflict of Interest)</p>
+                <p className="text-[11px] mt-0.5 opacity-90">
+                  You initiated/created this elimination voting session. Under Editorial Board policy, voting is restricted for session creators to preserve impartiality. You can inspect active board member votes below.
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Voting Options */}
+              <div className="space-y-2.5">
+                <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider">
+                  Select Your Vote Decision
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Option 1: Continue */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDecision('Continue')}
+                    className={`p-4 border-2 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${selectedDecision === 'Continue'
+                        ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20'
+                        : 'border-border/70 hover:border-emerald-500/50 bg-card'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <CheckCircle2 className={`w-5 h-5 ${selectedDecision === 'Continue' ? 'text-emerald-500' : 'text-muted-foreground/40'}`} />
+                      {selectedDecision === 'Continue' && (
+                        <span className="text-[9px] uppercase font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-foreground">Continue</p>
+                      <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">
+                        Maintain publication
+                      </p>
+                    </div>
+                  </button>
 
-          {/* Editorial Rationale / Comment */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-              <span>Editorial Rationale (Optional)</span>
-              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground/60" />
-            </label>
-            <textarea
-              placeholder="Provide context or reasoning for your vote..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              className="w-full p-3 bg-muted/30 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground resize-none"
-            />
-          </div>
+                  {/* Option 2: Discontinue */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDecision('Discontinue')}
+                    className={`p-4 border-2 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${selectedDecision === 'Discontinue'
+                        ? 'border-rose-500 bg-rose-500/10 ring-2 ring-rose-500/20'
+                        : 'border-border/70 hover:border-rose-500/50 bg-card'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <XCircle className={`w-5 h-5 ${selectedDecision === 'Discontinue' ? 'text-rose-500' : 'text-muted-foreground/40'}`} />
+                      {selectedDecision === 'Discontinue' && (
+                        <span className="text-[9px] uppercase font-black bg-rose-500 text-white px-2 py-0.5 rounded-full">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-foreground">Discontinue</p>
+                      <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">
+                        Cancel publication
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Editorial Rationale / Comment */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                  <span>Editorial Rationale (Optional)</span>
+                  <MessageSquare className="w-3.5 h-3.5 text-muted-foreground/60" />
+                </label>
+                <textarea
+                  placeholder="Provide context or reasoning for your vote..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={3}
+                  className="w-full p-3 bg-muted/30 border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground resize-none"
+                />
+              </div>
+            </>
+          )}
 
           {/* Current Board Votes List */}
           <div className="space-y-2 pt-3 border-t border-border/60">
@@ -291,10 +317,10 @@ export default function BoardVoteModal({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={!selectedDecision || isSubmitting}
+            disabled={isCreator || !selectedDecision || isSubmitting}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-black text-xs px-5 py-2 rounded-xl cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            {isSubmitting ? 'Submitting Vote...' : 'Submit Official Vote'}
+            {isSubmitting ? 'Submitting Vote...' : isCreator ? 'Voting Restricted' : 'Submit Official Vote'}
           </Button>
         </div>
       </div>

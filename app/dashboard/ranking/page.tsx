@@ -44,6 +44,7 @@ export interface RankingRow {
   status: 'TOP 3' | 'BOTTOM 20%' | 'INACTIVE' | 'Rejected' | 'Cancelled' | '—'
   rankingSnapshotId?: string
   boardDecisionId?: string
+  createdBy?: string
   continueVotes?: number
   discontinueVotes?: number
   isDiscontinued?: boolean
@@ -298,6 +299,7 @@ export default function RankingPage() {
                   d.status === 'Cancelled' || d.status === 'Discontinued' || d.status === 'Rejected' || d.result === 'Rejected'
                 )
                 const decisionId = decisions[0].boardDecisionId || decisions[0].id
+                const decisionCreatedBy = decisions[0].createdBy || decisions[0].userId || decisions[0].createdById
 
                 for (const decision of decisions) {
                   const dId = decision.boardDecisionId || decision.id
@@ -329,6 +331,7 @@ export default function RankingPage() {
                     ...row,
                     status: 'Cancelled' as const,
                     boardDecisionId: decisionId,
+                    createdBy: decisionCreatedBy,
                     continueVotes: cVotes,
                     discontinueVotes: dVotes,
                     isDiscontinued: true
@@ -338,6 +341,7 @@ export default function RankingPage() {
                 return {
                   ...row,
                   boardDecisionId: decisionId,
+                  createdBy: decisionCreatedBy,
                   continueVotes: cVotes,
                   discontinueVotes: dVotes,
                   isDiscontinued: false
@@ -749,6 +753,7 @@ export default function RankingPage() {
           score={selectedVoteRow.score}
           rank={selectedVoteRow.rank}
           period={selectedPeriod}
+          createdBy={selectedVoteRow.createdBy}
           onCastVote={handleCastVoteModal}
         />
       )}

@@ -10,8 +10,9 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Trophy, Medal, Users } from 'lucide-react'
+import { Trophy, Medal, Users, ShieldAlert } from 'lucide-react'
 import { type RankingRow } from '../page'
+import { tokenService } from '@/services/tokenService'
 
 interface RankingTableProps {
   rankings: RankingRow[]
@@ -34,6 +35,8 @@ export default function RankingTable({
   onOpenVoteModal,
   selectedPeriod,
 }: RankingTableProps) {
+  const currentUser = tokenService.getUserInfo()
+  const currentUserId = currentUser?.id || currentUser?.userId || currentUser?.sub
   return (
     <Card className="border-border rounded-xl overflow-hidden bg-card shadow-sm">
       <div className="overflow-x-auto">
@@ -134,6 +137,15 @@ export default function RankingTable({
                               >
                                 Discontinue
                               </Button>
+                            ) : row.createdBy && currentUserId && String(row.createdBy).toLowerCase() === String(currentUserId).toLowerCase() ? (
+                              <button
+                                onClick={() => onOpenVoteModal(row)}
+                                className="inline-flex items-center gap-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold text-[10px] px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                                title="You created this voting session. Click to view votes (voting is restricted due to conflict of interest)."
+                              >
+                                <ShieldAlert className="w-3 h-3 text-amber-500 shrink-0" />
+                                Created (View Only)
+                              </button>
                             ) : (
                               <Button
                                 onClick={() => onOpenVoteModal(row)}
