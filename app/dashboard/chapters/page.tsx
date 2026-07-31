@@ -2982,19 +2982,7 @@ const payload = {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column: Image Preview with Comments */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-muted-foreground">Submitted Work & Notes</label>
-                  {activeTaskToView.submittedWorkUrl && (
-                    <a
-                      href={activeTaskToView.submittedWorkUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
-                    >
-                      <ArrowRight className="w-3.5 h-3.5" /> Download Original File
-                    </a>
-                  )}
-                </div>
+                <label className="text-xs font-bold text-muted-foreground block mb-2">Submitted Work & Notes</label>
 
                 {!activeTaskToView.submittedWorkUrl ? (
                   <div className="flex flex-col items-center justify-center border border-border rounded-xl bg-muted min-h-[300px] text-muted-foreground/50">
@@ -3002,7 +2990,13 @@ const payload = {
                     <span className="text-xs">No submissions uploaded yet</span>
                   </div>
                 ) : (
-                  <ZipImageViewer fileUrl={activeTaskToView.submittedWorkUrl} assetId={activeTaskToView.submittedFileAssetId} />
+                  <SubmissionFeedbackView
+                    submissionId={activeTaskToView.submissionId}
+                    imageUrl={activeTaskToView.submittedWorkUrl}
+                    assetId={activeTaskToView.submittedFileAssetId}
+                    pageStart={activeTaskToView.pageStart || 1}
+                    maxHeightClass="max-h-[500px]"
+                  />
                 )}
               </div>
 
