@@ -1589,29 +1589,6 @@ const payload = {
 
         return (
           <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Assistant Switcher Bar (For Demo Testing Purpose) */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card border border-border rounded-2xl p-5">
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-primary shrink-0" />
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Select Active Assistant Profile (Testing)</label>
-                  <select
-                    value={selectedAssistantId}
-                    onChange={(e) => setSelectedAssistantId(e.target.value)}
-                    className="bg-transparent text-foreground font-bold text-base pr-6 cursor-pointer focus:outline-none mt-0.5"
-                  >
-                    {assistants.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name} ({a.specialty})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-
-
             {/* Active Profile Info */}
             {activeAssistant && (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-card border border-border rounded-2xl">

@@ -3,14 +3,93 @@ import JSZip from 'jszip'
 import { API_BASE_URL } from '@/lib/constants'
 import { tokenService } from '@/services/tokenService'
 
-// Tải 1 ảnh từ URL hoặc base64 về dạng HTMLImageElement
-function loadImage(url: string): Promise<HTMLImageElement> {
+export async function resolveActualFileBlob(targetUrl: string): Promise<Blob | null> {
+  if (!targetUrl) return null
+  try {
+    let fullUrl = targetUrl.trim()
+    if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://') && !fullUrl.startsWith('data:') && !fullUrl.startsWith('blob:')) {
+      fullUrl = `${API_BASE_URL}${fullUrl.startsWith('/') ? '' : '/'}${fullUrl}`
+    }
+
+    const token = tokenService.getToken()
+    const reqHeaders: Record<string, string> = {}
+    if (token) {
+      reqHeaders['Authorization'] = `Bearer ${token}`
+    }
+
+    let r = await fetch(fullUrl, { headers: reqHeaders })
+    if (!r.ok && r.status === 401) {
+      try {
+        const newToken = await tokenService.getOrTriggerRefresh()
+        if (newToken) {
+          reqHeaders['Authorization'] = `Bearer ${newToken}`
+          r = await fetch(fullUrl, { headers: reqHeaders })
+        }
+      } catch { }
+    }
+
+    if (!r.ok) return null
+
+    const contentType = r.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      const json = await r.json()
+      const actualUrl =
+        json?.data?.publicUrl || json?.publicUrl || json?.data?.fileUrl || json?.url || json?.data?.url
+      if (actualUrl) {
+        const resolvedActualUrl = actualUrl.startsWith('http://') || actualUrl.startsWith('https://')
+          ? actualUrl
+          : `${API_BASE_URL}${actualUrl.startsWith('/') ? '' : '/'}${actualUrl}`
+        const binaryRes = await fetch(resolvedActualUrl, { headers: reqHeaders })
+        if (binaryRes.ok) {
+          return await binaryRes.blob()
+        }
+      }
+      return null
+    }
+
+    return await r.blob()
+  } catch (e) {
+    console.warn("resolveActualFileBlob failed for:", targetUrl, e)
+    return null
+  }
+}
+
+// Tải 1 ảnh từ URL hoặc base64 về dạng HTMLImageElement (hỗ trợ blob/data/remote URL + auth + CORS)
+export async function loadImage(url: string): Promise<HTMLImageElement> {
+  if (!url) throw new Error('Empty image URL')
+
+  if (url.startsWith('data:') || url.startsWith('blob:')) {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = () => reject(new Error('Could not load image: ' + url))
+      img.src = url
+    })
+  }
+
+  const blob = await resolveActualFileBlob(url)
+  if (!blob) {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => resolve(img)
+      img.onerror = () => reject(new Error('Could not load image: ' + url))
+      img.src = url
+    })
+  }
+
+  const objectUrl = URL.createObjectURL(blob)
   return new Promise((resolve, reject) => {
     const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('Could not load image: ' + url))
-    img.src = url
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(img)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('Could not load image from blob: ' + url))
+    }
+    img.src = objectUrl
   })
 }
 
@@ -143,51 +222,6 @@ export async function extractImagesFromZip(
     const backendUrl =
       assetId.startsWith('http') || assetId.startsWith('/') ? assetId : `${API_BASE_URL}/api/files/${assetId}`
     if (!urlsToTry.includes(backendUrl)) urlsToTry.push(backendUrl)
-  }
-
-  const resolveActualFileBlob = async (targetUrl: string): Promise<Blob | null> => {
-    try {
-      const token = tokenService.getToken()
-      const reqHeaders: Record<string, string> = {}
-      if (token) {
-        reqHeaders['Authorization'] = `Bearer ${token}`
-      }
-
-      let r = await fetch(targetUrl, { headers: reqHeaders })
-      if (!r.ok && r.status === 401) {
-        try {
-          const newToken = await tokenService.getOrTriggerRefresh()
-          if (newToken) {
-            reqHeaders['Authorization'] = `Bearer ${newToken}`
-            r = await fetch(targetUrl, { headers: reqHeaders })
-          }
-        } catch { }
-      }
-
-      if (!r.ok) return null
-
-      const contentType = r.headers.get('content-type') || ''
-      if (contentType.includes('application/json')) {
-        const json = await r.json()
-        const actualUrl =
-          json?.data?.publicUrl || json?.publicUrl || json?.data?.fileUrl || json?.url || json?.data?.url
-        if (actualUrl) {
-          const fullUrl = actualUrl.startsWith('http')
-            ? actualUrl
-            : `${API_BASE_URL}${actualUrl.startsWith('/') ? '' : '/'}${actualUrl}`
-          const binaryRes = await fetch(fullUrl, { headers: reqHeaders })
-          if (binaryRes.ok) {
-            return await binaryRes.blob()
-          }
-        }
-        return null
-      }
-
-      return await r.blob()
-    } catch (e) {
-      console.warn("resolveActualFileBlob failed for:", targetUrl, e)
-      return null
-    }
   }
 
   let blob: Blob | null = null
