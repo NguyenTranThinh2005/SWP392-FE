@@ -372,8 +372,8 @@ export default function RankingPage() {
                             return
                           }
 
-                          const isContinue = v.voteValue === true || v.voteType === 'Approved'
-                          const isDiscontinue = v.voteValue === false || v.voteType === 'Rejected'
+                          const isDiscontinue = v.voteValue === true || v.voteType === 'Approved'
+                          const isContinue = v.voteValue === false || v.voteType === 'Rejected'
                           if (isContinue) cVotes++
                           else if (isDiscontinue) dVotes++
 
@@ -716,7 +716,7 @@ export default function RankingPage() {
     decision: 'Continue' | 'Discontinue',
     comment: string
   ) => {
-    const voteType = decision === 'Discontinue' ? 'Rejected' : 'Approved'
+    const voteType = decision === 'Discontinue' ? 'Approved' : 'Rejected'
     try {
       // Pass selectedPeriod so voteSeries can resolve the rankingSnapshotId from the locked period
       await seriesService.voteSeries(seriesId, voteType, comment, selectedVoteRow?.rankingSnapshotId, selectedPeriod)
