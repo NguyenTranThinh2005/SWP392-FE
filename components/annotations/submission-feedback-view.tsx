@@ -34,9 +34,17 @@ export function SubmissionFeedbackView({ submissionId, imageUrl, pageStart = 1 }
 
   if (!imageUrl) return null
 
-  // Pin cua trang dang xem (pageNo tinh tu 1, currentPage tu 0)
-  // BE tra ve thu tu nguoc (moi nhat truoc) -> dao lai cho khop thu tu ghim
-  const pinsWithNo = [...pins].reverse().map((p, i) => ({ ...p, displayNo: i + 1 }))
+  // Sắp xếp pin tăng dần theo trang (pageNo), từ trên xuống dưới (positionY), từ trái sang phải (positionX)
+  // để tạo số thứ tự nhất quán (displayNo 1, 2, 3...) liên tục từ Trang 1 đến các trang tiếp theo
+  const sortedPins = [...pins].sort((a, b) => {
+    const pageA = a.pageNo || 1
+    const pageB = b.pageNo || 1
+    if (pageA !== pageB) return pageA - pageB
+    if (a.positionY !== b.positionY) return (a.positionY || 0) - (b.positionY || 0)
+    return (a.positionX || 0) - (b.positionX || 0)
+  })
+
+  const pinsWithNo = sortedPins.map((p, i) => ({ ...p, displayNo: i + 1 }))
   const pinsOnPage = pinsWithNo.filter((p) => (p.pageNo || 1) === pageStart + currentPage)
   const currentImg = pages[currentPage]
   
