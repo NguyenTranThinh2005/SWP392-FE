@@ -638,23 +638,42 @@ export const seriesService = {
       if (!snapshotId && period) {
         console.log("🔍 [DEBUG STEP 3.1] Snapshot ID missing, querying period snapshots for period:", period);
         try {
-          const qMatch = period.match(/^(\d{4})\s*-\s*Q([1-4])$/i);
-          let formattedPeriod = period;
-          if (qMatch) {
-            const year = qMatch[1];
-            const q = parseInt(qMatch[2], 10);
-            const month = (q - 1) * 3 + 1;
-            const monthStr = month < 10 ? `0${month}` : `${month}`;
-            formattedPeriod = `01/${monthStr}/${year}`;
+          let formattedPeriod = period.trim();
+
+          // Already in dd/MM/yyyy format → use as-is
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(formattedPeriod)) {
+            // already formatted
           }
+          // YYYY-Qn  e.g. "2031-Q1"
+          else {
+            const qMatch = formattedPeriod.match(/^(\d{4})\s*-\s*Q([1-4])$/i);
+            if (qMatch) {
+              const year = qMatch[1];
+              const q = parseInt(qMatch[2], 10);
+              const month = (q - 1) * 3 + 1;
+              const monthStr = month < 10 ? `0${month}` : `${month}`;
+              formattedPeriod = `01/${monthStr}/${year}`;
+            }
+            // YYYY-MM or YYYY-MM-DD
+            else {
+              const dateMatch = formattedPeriod.match(/^(\d{4})-(\d{2})(?:-\d{2})?$/);
+              if (dateMatch) {
+                formattedPeriod = `01/${dateMatch[2]}/${dateMatch[1]}`;
+              }
+            }
+          }
+
+          console.log("🔍 [DEBUG STEP 3.1b] Formatted period for API query:", formattedPeriod);
           const periodRes = await fetchAPI<{ data: any[] }>(`/api/ranking/periods?period=${encodeURIComponent(formattedPeriod)}`);
           const snapshots = (periodRes as any).data || periodRes || [];
-          console.log("🔍 [DEBUG STEP 3.2] Period snapshots count returned from backend:", snapshots.length);
+          console.log("🔍 [DEBUG STEP 3.2] Period snapshots count returned from backend:", Array.isArray(snapshots) ? snapshots.length : snapshots);
           if (Array.isArray(snapshots) && snapshots.length > 0) {
             const match = snapshots.find((s: any) => s.seriesId?.toLowerCase() === seriesId?.toLowerCase());
             if (match) {
               snapshotId = match.rankingSnapshotId || match.id;
               console.log("🔍 [DEBUG STEP 3.3] Found snapshotId in period snapshots:", snapshotId);
+            } else {
+              console.warn("🔍 [DEBUG STEP 3.3b] Snapshots found for period but none matched seriesId:", seriesId, snapshots.map((s: any) => s.seriesId));
             }
           }
         } catch (e) {

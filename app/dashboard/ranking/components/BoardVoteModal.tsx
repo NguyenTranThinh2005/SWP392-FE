@@ -27,6 +27,7 @@ interface BoardVoteModalProps {
   rank: number
   period: string
   createdBy?: string
+  isPeriodLocked?: boolean
   onCastVote: (seriesId: string, decision: 'Continue' | 'Discontinue', comment: string) => Promise<void>
 }
 
@@ -39,15 +40,17 @@ export default function BoardVoteModal({
   rank,
   period,
   createdBy,
+  isPeriodLocked,
   onCastVote
 }: BoardVoteModalProps) {
   const currentUser = tokenService.getUserInfo()
   const currentUserId = currentUser?.id || currentUser?.userId || currentUser?.sub
-  const isCreator = Boolean(
-    createdBy &&
-    currentUserId &&
-    String(createdBy).toLowerCase() === String(currentUserId).toLowerCase()
-  )
+
+  const [modalCreatedBy, setModalCreatedBy] = useState<string | undefined>(createdBy)
+
+  useEffect(() => {
+    setModalCreatedBy(createdBy)
+  }, [createdBy])
 
   const [selectedDecision, setSelectedDecision] = useState<'Continue' | 'Discontinue' | null>(null)
   const [comment, setComment] = useState('')
@@ -56,7 +59,7 @@ export default function BoardVoteModal({
   const [votesList, setVotesList] = useState<any[]>([])
   const [isLoadingVotes, setIsLoadingVotes] = useState(false)
 
-  // Fetch list of votes specifically for the Ranking Elimination decision of this series
+  // Fetch list of votes & decision details specifically for the Ranking Elimination decision of this series
   useEffect(() => {
     if (!isOpen || !seriesId) return
     setIsLoadingVotes(true)
@@ -65,6 +68,10 @@ export default function BoardVoteModal({
         const rankingDecision = await seriesService.getRankingBoardDecision(seriesId)
         if (rankingDecision) {
           const decisionId = rankingDecision.boardDecisionId || rankingDecision.id
+          const creatorId = rankingDecision.createdBy || rankingDecision.userId || rankingDecision.createdById
+          if (creatorId) {
+            setModalCreatedBy(creatorId)
+          }
           if (decisionId) {
             const votes = await seriesService.getBoardVotes(decisionId)
             if (Array.isArray(votes)) {
@@ -81,6 +88,13 @@ export default function BoardVoteModal({
       }
     })()
   }, [isOpen, seriesId])
+
+  const effectiveCreatedBy = createdBy || modalCreatedBy
+  const isCreator = Boolean(
+    effectiveCreatedBy &&
+    currentUserId &&
+    String(effectiveCreatedBy).toLowerCase() === String(currentUserId).toLowerCase()
+  )
 
   if (!isOpen) return null
 
@@ -147,8 +161,18 @@ export default function BoardVoteModal({
             )}
           </div>
 
-          {/* Creator Conflict of Interest Alert */}
-          {isCreator ? (
+          {/* Creator Conflict of Interest Alert or Period Unconfirmed Alert */}
+          {isPeriodLocked === false ? (
+            <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-extrabold text-rose-700 dark:text-rose-300">Confirmation & Lock Required</p>
+                <p className="text-[11px] mt-0.5 opacity-90">
+                  Rankings for period <span className="font-bold">{period}</span> have not been confirmed & locked yet. Please confirm pending votes or lock the period before voting on series discontinuation decisions.
+                </p>
+              </div>
+            </div>
+          ) : isCreator ? (
             <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <div>
@@ -317,10 +341,10 @@ export default function BoardVoteModal({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={isCreator || !selectedDecision || isSubmitting}
+            disabled={isPeriodLocked === false || isCreator || !selectedDecision || isSubmitting}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-black text-xs px-5 py-2 rounded-xl cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            {isSubmitting ? 'Submitting Vote...' : isCreator ? 'Voting Restricted' : 'Submit Official Vote'}
+            {isSubmitting ? 'Submitting Vote...' : isPeriodLocked === false ? 'Lock Required' : isCreator ? 'Voting Restricted' : 'Submit Official Vote'}
           </Button>
         </div>
       </div>

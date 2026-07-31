@@ -23,6 +23,7 @@ interface RankingTableProps {
   onVote: (id: string, vote: 'Approved' | 'Rejected', title: string) => void
   onOpenVoteModal: (row: RankingRow) => void
   selectedPeriod: string
+  isPeriodLocked?: boolean
 }
 
 export default function RankingTable({
@@ -34,6 +35,7 @@ export default function RankingTable({
   onVote,
   onOpenVoteModal,
   selectedPeriod,
+  isPeriodLocked,
 }: RankingTableProps) {
   const currentUser = tokenService.getUserInfo()
   const currentUserId = currentUser?.id || currentUser?.userId || currentUser?.sub
@@ -127,6 +129,10 @@ export default function RankingTable({
                         {row.isDiscontinued || row.status === 'Cancelled' || row.status === 'Rejected' ? (
                           <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-black text-[10px] px-2.5 py-1 rounded-md">
                             CANCELLED
+                          </span>
+                        ) : !isPeriodLocked ? (
+                          <span className="inline-flex items-center gap-1 bg-muted/60 text-muted-foreground border border-border font-semibold text-[10px] px-2.5 py-1 rounded-md" title="Confirm & Lock rankings for this period first before voting on decisions.">
+                            Lock Required
                           </span>
                         ) : row.score < 20 || row.status === 'BOTTOM 20%' || row.status === 'INACTIVE' ? (
                           <div className="flex flex-col items-center justify-center gap-1">

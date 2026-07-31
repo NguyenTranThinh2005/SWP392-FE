@@ -89,6 +89,21 @@ const formatPeriodToDdMmYyyy = (period: string): string => {
   return trimmed
 }
 
+// Helper to convert dd/MM/yyyy back to Quarter format (e.g. "01/10/2030" -> "2030-Q4")
+const formatDdMmYyyyToQuarter = (period: string): string => {
+  if (!period) return ''
+  const trimmed = period.trim()
+  if (/^\d{4}-Q[1-4]$/i.test(trimmed)) return trimmed.toUpperCase()
+  const match = trimmed.match(/^01\/(\d{2})\/(\d{4})$/)
+  if (match) {
+    const month = parseInt(match[1], 10)
+    const year = match[2]
+    const q = Math.ceil(month / 3)
+    return `${year}-Q${q}`
+  }
+  return trimmed
+}
+
 export default function RankingPage() {
   const { role } = useRole()
   const [mounted, setMounted] = useState(false)
@@ -110,7 +125,10 @@ export default function RankingPage() {
         if (saved) {
           const parsed = JSON.parse(saved)
           if (Array.isArray(parsed)) {
-            return Array.from(new Set([...defaults, ...parsed])).sort((a, b) => b.localeCompare(a))
+            const formatted = parsed
+              .map(p => formatDdMmYyyyToQuarter(p))
+              .filter(p => /^\d{4}-Q[1-4]$/i.test(p))
+            return Array.from(new Set([...defaults, ...formatted])).sort((a, b) => b.localeCompare(a))
           }
         }
       } catch (e) {
@@ -217,10 +235,12 @@ export default function RankingPage() {
       setPendingVotes(flatRecords.filter(r => !r.confirmed))
 
       // Auto-extract any unique periods from backend vote records
-      const fetchedPeriods = Array.from(new Set(flatRecords.map(r => r.period))).filter(Boolean) as string[]
+      const fetchedPeriods = Array.from(new Set(flatRecords.map(r => formatDdMmYyyyToQuarter(r.period)))).filter(p => p && /^\d{4}-Q[1-4]$/i.test(p)) as string[]
       if (fetchedPeriods.length > 0) {
         setPeriods(prev => {
           const merged = Array.from(new Set([...prev, ...fetchedPeriods]))
+            .map(p => formatDdMmYyyyToQuarter(p))
+            .filter(p => /^\d{4}-Q[1-4]$/i.test(p))
           return merged.sort((a, b) => b.localeCompare(a))
         })
       }
@@ -262,21 +282,44 @@ export default function RankingPage() {
         const periodRes = await fetchAPI<{ data: any[] }>(`/api/ranking/periods?period=${encodeURIComponent(formattedSelected)}`)
         const backendSnapshots = (periodRes as any).data || periodRes || []
         if (Array.isArray(backendSnapshots) && backendSnapshots.length > 0) {
-          const officialRankings: RankingRow[] = backendSnapshots.map((s: any) => ({
-            rank: s.rankNo,
-            seriesId: s.seriesId,
-            seriesTitle: s.seriesTitle,
-            genre: s.genre || '',
-            voteCount: s.voteCount,
-            readerCount: s.readerCount,
-            score: s.score,
-            status: s.rankNo <= 3 ? 'TOP 3' : (s.isBottom20Percent ? 'BOTTOM 20%' : '—'),
-            rankingSnapshotId: s.rankingSnapshotId || s.id
-          }))
-          if (officialRankings.length > 0) {
-            calculatedRankings = officialRankings
-          }
+          const snapshotMap = new Map(backendSnapshots.map((s: any) => [s.seriesId, s]))
+          calculatedRankings = calculatedRankings.map((row) => {
+            const snap = snapshotMap.get(row.seriesId)
+            if (snap) {
+              return {
+                ...row,
+                rankingSnapshotId: snap.rankingSnapshotId || snap.id
+              }
+            }
+            return row
+          })
         }
+
+        // Always sort by score descending and re-index sequential ranks (1..N) for the selected period
+        calculatedRankings.sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score
+          return b.voteCount - a.voteCount
+        })
+        const totalRows = calculatedRankings.length
+        calculatedRankings = calculatedRankings.map((row, index) => {
+          const rank = index + 1
+          let status = row.status
+          if (rank <= 3) {
+            status = 'TOP 3'
+          } else if (totalRows >= 5) {
+            const bottomCount = Math.ceil((totalRows * 20) / 100)
+            if (rank > totalRows - bottomCount) {
+              status = 'BOTTOM 20%'
+            } else {
+              status = '—'
+            }
+          }
+          return {
+            ...row,
+            rank,
+            status
+          }
+        })
       } catch (e) {
         console.warn("Failed to fetch official period snapshots:", e)
       }
@@ -292,62 +335,99 @@ export default function RankingPage() {
             try {
               const resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${row.seriesId}/board-decisions`)
               const decisions = (resDecisions as any).data || resDecisions || []
+
+              // 🔍 DEBUG: Log all decisions for every series
+              console.log(`[DEBUG-RANKING] Series: "${row.seriesTitle}" (${row.seriesId})`, {
+                totalDecisions: Array.isArray(decisions) ? decisions.length : 'NOT_ARRAY',
+                decisions: Array.isArray(decisions) ? decisions.map((d: any) => ({
+                  id: d.boardDecisionId || d.id,
+                  type: d.decisionType,
+                  status: d.status,
+                  result: d.result,
+                })) : decisions
+              })
+
               if (Array.isArray(decisions) && decisions.length > 0) {
-                let cVotes = 0
-                let dVotes = 0
-                let isDiscontinued = decisions.some((d: any) =>
-                  d.status === 'Cancelled' || d.status === 'Discontinued' || d.status === 'Rejected' || d.result === 'Rejected'
+                // Strictly filter ONLY RankingElimination decisions for Ranking dashboard
+                const eliminationDecisions = decisions.filter((d: any) =>
+                  d.decisionType === 'RankingElimination' || d.decisionType === 'Elimination'
                 )
-                const decisionId = decisions[0].boardDecisionId || decisions[0].id
-                const decisionCreatedBy = decisions[0].createdBy || decisions[0].userId || decisions[0].createdById
 
-                for (const decision of decisions) {
-                  const dId = decision.boardDecisionId || decision.id
-                  try {
-                    const resVotes = await fetchAPI<{ data: any[] }>(`/api/board-decisions/${dId}/votes`)
-                    const votes = (resVotes as any).data || resVotes || []
-                    if (Array.isArray(votes)) {
-                      votes.forEach((v: any) => {
-                        const isContinue = v.voteValue === true || v.voteType === 'Approved'
-                        const isDiscontinue = v.voteValue === false || v.voteType === 'Rejected'
-                        if (isContinue) cVotes++
-                        else if (isDiscontinue) dVotes++
+                console.log(`[DEBUG-RANKING] Series: "${row.seriesTitle}" — eliminationDecisions count: ${eliminationDecisions.length}`, eliminationDecisions.map((d: any) => ({ type: d.decisionType, status: d.status, result: d.result })))
 
-                        const voterId = v.voterId || v.createdBy || v.userId || v.voter?.id
-                        if (currentUserId && voterId && String(voterId).toLowerCase() === String(currentUserId).toLowerCase()) {
-                          updatedVotedSeries[row.seriesId] = isDiscontinue ? 'Discontinue' : 'Continue'
-                        }
-                      })
+                if (eliminationDecisions.length > 0) {
+                  let cVotes = 0
+                  let dVotes = 0
+                  let isDiscontinued = eliminationDecisions.some((d: any) =>
+                    d.status === 'Cancelled' || d.status === 'Discontinued' || d.result === 'Rejected'
+                  )
+
+                  console.log(`[DEBUG-RANKING] Series: "${row.seriesTitle}" — isDiscontinued (status check): ${isDiscontinued}`)
+
+                  const rankingDecision = eliminationDecisions.find((d: any) => d.status?.toLowerCase() === 'open') || eliminationDecisions[0]
+                  const decisionId = rankingDecision.boardDecisionId || rankingDecision.id
+                  const decisionCreatedBy = rankingDecision.createdBy || rankingDecision.userId || rankingDecision.createdById
+
+                  for (const decision of eliminationDecisions) {
+                    const dId = decision.boardDecisionId || decision.id
+                    const dCreatedBy = decision.createdBy || decision.userId || decision.createdById
+                    try {
+                      const resVotes = await fetchAPI<{ data: any[] }>(`/api/board-decisions/${dId}/votes`)
+                      const votes = (resVotes as any).data || resVotes || []
+                      if (Array.isArray(votes)) {
+                        votes.forEach((v: any) => {
+                          const voterId = v.voterId || v.createdBy || v.userId || v.voter?.id
+
+                          // BR-16: Exclude the decision creator's own vote (mirrors backend RecalculateAsync)
+                          if (dCreatedBy && voterId && String(voterId).toLowerCase() === String(dCreatedBy).toLowerCase()) {
+                            console.log(`[DEBUG-RANKING] Skipping creator vote for "${row.seriesTitle}" (voterId=${voterId} === createdBy=${dCreatedBy})`)
+                            return
+                          }
+
+                          const isContinue = v.voteValue === true || v.voteType === 'Approved'
+                          const isDiscontinue = v.voteValue === false || v.voteType === 'Rejected'
+                          if (isContinue) cVotes++
+                          else if (isDiscontinue) dVotes++
+
+                          if (currentUserId && voterId && String(voterId).toLowerCase() === String(currentUserId).toLowerCase()) {
+                            updatedVotedSeries[row.seriesId] = isDiscontinue ? 'Discontinue' : 'Continue'
+                          }
+                        })
+                      }
+                    } catch { }
+                  }
+
+                  if (dVotes >= 3) {
+                    isDiscontinued = true
+                  }
+
+                  console.log(`[DEBUG-RANKING] Series: "${row.seriesTitle}" — FINAL: isDiscontinued=${isDiscontinued}, cVotes=${cVotes}, dVotes=${dVotes}`)
+
+                  if (isDiscontinued) {
+                    return {
+                      ...row,
+                      status: 'Cancelled' as const,
+                      boardDecisionId: decisionId,
+                      createdBy: decisionCreatedBy,
+                      continueVotes: cVotes,
+                      discontinueVotes: dVotes,
+                      isDiscontinued: true
                     }
-                  } catch { }
-                }
+                  }
 
-                if (dVotes >= 3) {
-                  isDiscontinued = true
-                }
-
-                if (isDiscontinued) {
                   return {
                     ...row,
-                    status: 'Cancelled' as const,
                     boardDecisionId: decisionId,
                     createdBy: decisionCreatedBy,
                     continueVotes: cVotes,
                     discontinueVotes: dVotes,
-                    isDiscontinued: true
+                    isDiscontinued: false
                   }
                 }
-
-                return {
-                  ...row,
-                  boardDecisionId: decisionId,
-                  createdBy: decisionCreatedBy,
-                  continueVotes: cVotes,
-                  discontinueVotes: dVotes,
-                  isDiscontinued: false
-                }
               }
-            } catch { }
+            } catch (err) {
+              console.error(`[DEBUG-RANKING] Error for "${row.seriesTitle}":`, err)
+            }
             return row
           })
         )
@@ -441,10 +521,13 @@ export default function RankingPage() {
           }
 
           try {
-            await fetchAPI('/api/vote-records', {
+            await fetchAPI('/api/ranking/vote-records', {
               method: 'POST',
               body: JSON.stringify(payload)
-            })
+            }).catch(() => fetchAPI('/api/vote-records', {
+              method: 'POST',
+              body: JSON.stringify(payload)
+            }))
             importedCount++
           } catch (err) {
             console.error(`Failed to import row for ${seriesTitle}:`, err)
@@ -560,13 +643,16 @@ export default function RankingPage() {
 
   // Handle vote confirmation
   const handleConfirmVote = (id: string, title: string) => {
-    fetchAPI(`/api/vote-records/${id}/confirm`, {
-      method: 'PUT'
-    }).then(async () => {
+    const confirmPromise = fetchAPI(`/api/ranking/vote-records/${id}/confirm`, { method: 'POST' })
+      .catch(() => fetchAPI(`/api/vote-records/${id}/confirm`, { method: 'PUT' }))
+
+    confirmPromise.then(async () => {
       toast.success(`Confirmed vote record for "${title}". Rankings recalculated! You are not allowed to vote (conflict of interest).`)
       await refreshData()
       await ensureOpenBoardDecisions()
-    }).catch(() => {
+      await refreshData()
+    }).catch((err) => {
+      console.error("Failed to confirm vote record:", err)
       toast.error('Failed to confirm vote record.')
     })
   }
@@ -580,11 +666,15 @@ export default function RankingPage() {
 
     try {
       await Promise.all(
-        pendingVotes.map(v => fetchAPI(`/api/vote-records/${v.id}/confirm`, { method: 'PUT' }))
+        pendingVotes.map(v =>
+          fetchAPI(`/api/ranking/vote-records/${v.id}/confirm`, { method: 'POST' })
+            .catch(() => fetchAPI(`/api/vote-records/${v.id}/confirm`, { method: 'PUT' }))
+        )
       )
       toast.success(`All vote records confirmed! Rankings for "${selectedPeriod}" have been locked. You are not allowed to vote (conflict of interest).`)
       await refreshData()
       await ensureOpenBoardDecisions()
+      await refreshData()
     } catch (err) {
       console.error("Failed to confirm all votes:", err)
       toast.error("Failed to confirm all vote records.")
@@ -634,7 +724,8 @@ export default function RankingPage() {
   ) => {
     const voteType = decision === 'Discontinue' ? 'Rejected' : 'Approved'
     try {
-      await seriesService.voteSeries(seriesId, voteType, comment, selectedVoteRow?.rankingSnapshotId)
+      // Pass selectedPeriod so voteSeries can resolve the rankingSnapshotId from the locked period
+      await seriesService.voteSeries(seriesId, voteType, comment, selectedVoteRow?.rankingSnapshotId, selectedPeriod)
       toast.success(`Successfully cast vote to "${decision}" for "${selectedVoteRow?.seriesTitle}".`)
       setVotedSeries(prev => ({
         ...prev,
@@ -738,6 +829,7 @@ export default function RankingPage() {
         onVote={handleVoteDiscontinue}
         onOpenVoteModal={handleOpenVoteModal}
         selectedPeriod={selectedPeriod}
+        isPeriodLocked={isPeriodLocked}
       />
 
       {/* Editorial Board Vote Modal */}
@@ -754,6 +846,7 @@ export default function RankingPage() {
           rank={selectedVoteRow.rank}
           period={selectedPeriod}
           createdBy={selectedVoteRow.createdBy}
+          isPeriodLocked={isPeriodLocked}
           onCastVote={handleCastVoteModal}
         />
       )}
