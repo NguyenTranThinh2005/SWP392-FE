@@ -167,7 +167,7 @@ export default function RankingPage() {
       // Statuses allowed for ranking & Excel download
       const ALLOWED_STATUSES = ['active']
       // Statuses strictly excluded (drafts, pending proposals, under review, cancelled)
-      const EXCLUDED_STATUSES = ['underreview', 'pendingreview', 'rejected', 'draft', 'boardvoting', 'cancelled', 'inactive', 'expired']
+      const EXCLUDED_STATUSES = ['underreview', 'pendingreview', 'rejected', 'draft', 'boardvoting', 'cancelled', 'inactive', 'expired', 'approved', 'approve']
 
       const activeSeriesOnly = list.filter((s) => {
         const rawStatus = (s.status || s.rawStatus || '').toLowerCase().replace(/[\s_]/g, '')
@@ -619,7 +619,7 @@ export default function RankingPage() {
             if (Array.isArray(hist) && hist.length > 0) {
               snapshotId = hist[0].rankingSnapshotId || hist[0].id
             }
-          } catch {}
+          } catch { }
         }
 
         if (!snapshotId) continue
