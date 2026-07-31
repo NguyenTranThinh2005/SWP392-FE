@@ -426,8 +426,7 @@ export default function RankingPage() {
                   isDiscontinued: true
                 }
               }
-            } catch (err) {
-              console.error(`[DEBUG-RANKING] Error for "${row.seriesTitle}":`, err)
+            } catch {
               if (isBackendCancelled) {
                 return {
                   ...row,
@@ -651,7 +650,6 @@ export default function RankingPage() {
             method: 'POST',
             body: JSON.stringify({ votingDeadline: nextWeek.toISOString() })
           })
-          console.log(`✅ Created elimination decision for ${row.seriesTitle} (snapshot: ${snapshotId})`)
         }
       } catch (err) {
         console.warn(`Auto-open board decision check skipped for ${row.seriesTitle}:`, err)

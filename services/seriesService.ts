@@ -481,8 +481,6 @@ export const seriesService = {
       coverImageFileAssetId: coverAssetId || null
     };
 
-    console.log('[DEBUG updateProposal] FULL PAYLOAD:', JSON.stringify(payload, null, 2));
-
     const res = await fetchAPI<{ data: any }>(`/api/series/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
@@ -622,21 +620,16 @@ export const seriesService = {
   },
 
   voteSeries: async (seriesId: string, vote: 'Approved' | 'Rejected' = 'Approved', comment?: string, rankingSnapshotId?: string, period?: string) => {
-    console.log("🔍 [DEBUG STEP 1] Fetching board decisions for seriesId:", seriesId);
     let resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
     let decisions = resDecisions.data || resDecisions || [];
     let openDecision = Array.isArray(decisions) 
       ? decisions.find((d: any) => d.status?.toLowerCase() === 'open' && (d.decisionType === 'RankingElimination' || d.decisionType === 'Elimination'))
       : null;
 
-    console.log("🔍 [DEBUG STEP 2] Existing open decision found?", openDecision ? openDecision.boardDecisionId || openDecision.id : "NO");
-
     if (!openDecision) {
       let snapshotId = rankingSnapshotId;
-      console.log("🔍 [DEBUG STEP 3] Provided rankingSnapshotId:", snapshotId);
 
       if (!snapshotId && period) {
-        console.log("🔍 [DEBUG STEP 3.1] Snapshot ID missing, querying period snapshots for period:", period);
         try {
           let formattedPeriod = period.trim();
 
@@ -663,38 +656,26 @@ export const seriesService = {
             }
           }
 
-          console.log("🔍 [DEBUG STEP 3.1b] Formatted period for API query:", formattedPeriod);
           const periodRes = await fetchAPI<{ data: any[] }>(`/api/ranking/periods?period=${encodeURIComponent(formattedPeriod)}`);
           const snapshots = (periodRes as any).data || periodRes || [];
-          console.log("🔍 [DEBUG STEP 3.2] Period snapshots count returned from backend:", Array.isArray(snapshots) ? snapshots.length : snapshots);
           if (Array.isArray(snapshots) && snapshots.length > 0) {
             const match = snapshots.find((s: any) => s.seriesId?.toLowerCase() === seriesId?.toLowerCase());
             if (match) {
               snapshotId = match.rankingSnapshotId || match.id;
-              console.log("🔍 [DEBUG STEP 3.3] Found snapshotId in period snapshots:", snapshotId);
-            } else {
-              console.warn("🔍 [DEBUG STEP 3.3b] Snapshots found for period but none matched seriesId:", seriesId, snapshots.map((s: any) => s.seriesId));
             }
           }
-        } catch (e) {
-          console.warn("❌ [DEBUG STEP 3.4] Failed to fetch period snapshots:", e);
-        }
+        } catch { }
       }
 
       if (!snapshotId) {
-        console.log("🔍 [DEBUG STEP 3.5] Snapshot ID still missing, trying series ranking history fallback...");
         try {
           const resHistory = await fetchAPI<{ data: any[] }>(`/api/ranking/series/${seriesId}`);
           const history = (resHistory as any).data || resHistory || [];
-          console.log("🔍 [DEBUG STEP 3.6] Series ranking history count:", history.length);
           if (Array.isArray(history) && history.length > 0) {
             const match = history.find((h: any) => h.seriesId?.toLowerCase() === seriesId?.toLowerCase()) || history[0];
             snapshotId = match.rankingSnapshotId || match.id;
-            console.log("🔍 [DEBUG STEP 3.7] Resolved snapshotId from history:", snapshotId);
           }
-        } catch (err) {
-          console.warn("❌ [DEBUG STEP 3.8] Failed to fetch ranking snapshot history:", err);
-        }
+        } catch { }
       }
 
       if (!snapshotId) {
@@ -704,24 +685,20 @@ export const seriesService = {
       // Create open elimination board decision using the ranking snapshot
       const nextWeek = new Date();
       nextWeek.setDate(nextWeek.getDate() + 7);
-      console.log("🔍 [DEBUG STEP 4] Creating elimination decision for snapshotId:", snapshotId);
 
       try {
-        const eliminationRes = await fetchAPI(`/api/ranking/snapshots/${snapshotId}/elimination-decision`, {
+        await fetchAPI(`/api/ranking/snapshots/${snapshotId}/elimination-decision`, {
           method: 'POST',
           body: JSON.stringify({ votingDeadline: nextWeek.toISOString() })
         });
-        console.log("✅ [DEBUG STEP 4.1] Elimination decision created:", eliminationRes);
 
         resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${seriesId}/board-decisions`);
         decisions = resDecisions.data || resDecisions || [];
         openDecision = Array.isArray(decisions) 
           ? decisions.find((d: any) => d.status?.toLowerCase() === 'open' && (d.decisionType === 'RankingElimination' || d.decisionType === 'Elimination'))
           : null;
-        console.log("🔍 [DEBUG STEP 4.2] Refetched open decision:", openDecision ? openDecision.boardDecisionId || openDecision.id : "STILL NULL");
       } catch (err: any) {
         const msg = err?.message || String(err);
-        console.error("❌ [DEBUG STEP 4 ERROR] Failed to create elimination decision:", msg);
         if (msg.toLowerCase().includes("bottom 20 percent")) {
           throw new Error("Backend quy định chỉ các bộ truyện thuộc nhóm Bottom 20% (kỳ xếp hạng cần ít nhất 5 bộ truyện) mới được phép mở phiên biểu quyết loại.");
         }
@@ -737,7 +714,6 @@ export const seriesService = {
     const finalComment = comment ? comment.trim() : '';
 
     const decisionId = openDecision.boardDecisionId || openDecision.id;
-    console.log("🔍 [DEBUG STEP 5] Submitting vote to board decision ID:", decisionId);
 
     try {
       const voteRes = await fetchAPI<any>(`/api/board-decisions/${decisionId}/votes`, {
@@ -748,11 +724,9 @@ export const seriesService = {
         })
       });
 
-      console.log("✅ [DEBUG STEP 5.1] Vote submitted successfully:", voteRes);
       return voteRes;
     } catch (err: any) {
       const msg = err?.message || String(err);
-      console.error("❌ [DEBUG STEP 5 ERROR] Vote submission failed:", msg);
       if (msg.toLowerCase().includes("conflict of interest")) {
         throw new Error("Phiên biểu quyết đã được mở thành công! Tuy nhiên, theo quy định (BR-14: Xung đột lợi ích), người vừa khởi tạo phiên biểu quyết không thể tự bỏ phiếu cho phiên do chính mình tạo ra. Phiên biểu quyết sẽ dành cho các thành viên khác trong Ban Biên Tập bỏ phiếu.");
       }
