@@ -39,7 +39,6 @@ import { useRole } from '@/context/RoleContext'
 const { getProposals, updateProposalStatus } = proposalService
 import { notificationStore } from '@/store/notificationStore'
 import { seriesService } from '@/services/seriesService'
-import { fetchAPI } from '@/services/api'
 import { API_BASE_URL } from '@/lib/constants'
 import { toast } from 'sonner'
 import { ZipImageViewer } from '@/components/annotations/zip-image-viewer'
@@ -307,15 +306,6 @@ export default function ReviewProposalsPage() {
     try {
       await seriesService.castBoardVote(boardDecision.boardDecisionId, voteValue, comment)
 
-      // Proactively trigger activate endpoint if vote is positive
-      try {
-        if (voteValue) {
-          await fetchAPI(`/api/proposals/${selectedProposalId}/activate`, { method: 'POST' })
-        }
-      } catch (err) {
-        console.warn("Failed to auto-activate series on vote:", err)
-      }
-
       showNotification(`Successfully voted ${voteValue ? 'Approve' : 'Reject'}!`, 'success')
       await loadVotingData(selectedProposalId!)
       await loadProposals()
@@ -350,15 +340,12 @@ export default function ReviewProposalsPage() {
     try {
       await seriesService.overrideBoardDecision(boardDecision.boardDecisionId, overrideChoice, overrideReason.trim())
 
-      // Call corresponding finalize status API: activate or reject
+      // Call corresponding finalize status API: activate or reject via proposalService
       try {
         if (overrideChoice === 'Approved') {
-          await fetchAPI(`/api/proposals/${selectedProposalId}/activate`, { method: 'POST' })
+          await proposalService.activateProposal(selectedProposalId!)
         } else if (overrideChoice === 'Rejected') {
-          await fetchAPI(`/api/proposals/${selectedProposalId}/reject`, {
-            method: 'POST',
-            body: JSON.stringify({ rejectReason: overrideReason.trim() })
-          })
+          await proposalService.rejectProposal(selectedProposalId!, overrideReason.trim())
         }
       } catch (err) {
         console.warn("Failed to finalize series status on override:", err)
@@ -390,15 +377,6 @@ export default function ReviewProposalsPage() {
         <p className="text-muted-foreground text-sm max-w-md">
           Only members of the <strong>Editorial Board</strong> or the <strong>Editor-in-Chief</strong> can review series proposals.
         </p>
-        <p className="text-xs text-muted-foreground bg-muted p-3 rounded-lg border border-border">
-          💡 <strong>Tip:</strong> Use the role switcher in the bottom left of the sidebar to change your active role to <strong>Editorial Board</strong> or <strong>Editor-in-Chief</strong>.
-        </p>
-        <Link
-          href="/dashboard/mangaka"
-          className="mt-2 text-sm font-semibold text-primary hover:underline"
-        >
-          Return to Mangaka Dashboard
-        </Link>
       </div>
     )
   }

@@ -1,6 +1,7 @@
 import { seriesService } from "@/services/seriesService";
 import type { Proposal, ProposalStatus } from "@/types/proposal";
 import { compareImages } from "@/lib/imageCompare";
+import { fetchAPI } from "@/services/api";
 
 const SOURCE_ZIP_CACHE_KEY = 'proposal_source_zip_file_asset_ids';
 
@@ -334,6 +335,33 @@ export const proposalService = {
       else if (status === 'Pending Review') backendStatus = 'PendingReview';
       
       await seriesService.updateProposalStatus(id, backendStatus, rejectReason);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Activate an approved proposal/series officially for publishing.
+   */
+  activateProposal: async (id: string): Promise<boolean> => {
+    try {
+      await fetchAPI(`/api/proposals/${id}/activate`, { method: 'POST' });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Reject a proposal with a mandatory rejection reason.
+   */
+  rejectProposal: async (id: string, reason: string): Promise<boolean> => {
+    try {
+      await fetchAPI(`/api/proposals/${id}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ rejectReason: reason }),
+      });
       return true;
     } catch {
       return false;

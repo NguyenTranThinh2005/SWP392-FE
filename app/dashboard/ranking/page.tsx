@@ -161,12 +161,12 @@ export default function RankingPage() {
     return allVoteRecords.some(r => r.confirmed && (r.period === selectedPeriod || formatPeriodToDdMmYyyy(r.period) === formattedSelected))
   }, [allVoteRecords, selectedPeriod])
 
-  // Fetch all eligible series for ranking (Active, Cancelled, Discontinued, Paused)
+  // Fetch all eligible series for ranking (Active, Cancelled, Discontinued)
   useEffect(() => {
     seriesService.listSeries().then((list) => {
       const eligibleSeries = list.filter((s) => {
         const rawStatus = (s.status || s.rawStatus || '').toLowerCase().replace(/[\s_]/g, '')
-        return rawStatus === 'active' || rawStatus === 'cancelled' || rawStatus === 'discontinued' || rawStatus === 'paused' || rawStatus === 'completed'
+        return rawStatus === 'active' || rawStatus === 'cancelled' || rawStatus === 'discontinued'
       })
 
       setAllSeries(eligibleSeries.map(s => ({
