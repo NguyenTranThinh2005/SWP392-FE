@@ -1,7 +1,7 @@
 'use client'
 
 import { toast as sonnerToast } from 'sonner'
-import { compareAny,extractImagesFromZip  } from '@/lib/imageCompare'
+import { compareAny, extractImagesFromZip } from '@/lib/imageCompare'
 import { ZipImageViewer } from '@/components/annotations/zip-image-viewer'
 import { getSalaryByAssistant, formatVND } from '@/lib/salary'
 import { useCallback, useEffect, useState } from 'react'
@@ -36,7 +36,9 @@ import {
   Info,
   Layers,
   Sparkles,
-  Send
+  Send,
+  FolderDown,
+  Download
 } from 'lucide-react'
 import {
   TASK_TYPE_SUGGESTIONS,
@@ -115,7 +117,7 @@ export default function ChaptersPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-const [subCompareLoading, setSubCompareLoading] = useState(false)
+  const [subCompareLoading, setSubCompareLoading] = useState(false)
 
   const [taskResolvedFileName, setTaskResolvedFileName] = useState('')
 
@@ -141,9 +143,9 @@ const [subCompareLoading, setSubCompareLoading] = useState(false)
     return () => { cancelled = true }
   }, [isReviewModalOpen, activeTaskToReview])
 
-const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string; pages?: any[] } | null>(null)  
-const [comparePage, setComparePage] = useState(0)
-const [subCompareError, setSubCompareError] = useState('')
+  const [subCompareResult, setSubCompareResult] = useState<{ percent: number; diff?: string; pages?: any[] } | null>(null)
+  const [comparePage, setComparePage] = useState(0)
+  const [subCompareError, setSubCompareError] = useState('')
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<null | { type: 'approve' | 'reject'; task: any }>(null)
 
@@ -439,6 +441,25 @@ const [subCompareError, setSubCompareError] = useState('')
     return fileAssetId ? `${API_BASE_URL}/api/files/${fileAssetId}` : undefined
   }
 
+  const handleDownloadAllGuidelines = async (files: { publicUrl?: string; originalFileName?: string }[]) => {
+    if (!files || files.length === 0) return
+    for (const f of files) {
+      if (!f.publicUrl) continue
+      try {
+        const link = document.createElement('a')
+        link.href = f.publicUrl
+        link.download = f.originalFileName || 'guideline-file'
+        link.target = '_blank'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        await new Promise((resolve) => setTimeout(resolve, 300))
+      } catch (err) {
+        console.warn("Download guideline failed:", f.publicUrl, err)
+      }
+    }
+  }
+
   const mapBackendTaskStatus = (status: any, submissions?: any[]): TaskStatus => {
     const statusStr = String(status).trim().toUpperCase();
     const latestSubmission = getLatestSubmission(submissions);
@@ -490,7 +511,7 @@ const [subCompareError, setSubCompareError] = useState('')
               if (started.includes(taskId)) {
                 uiStatus = 'In-Progress'
               }
-            } catch {}
+            } catch { }
           }
 
           return {
@@ -505,7 +526,7 @@ const [subCompareError, setSubCompareError] = useState('')
             dueDate: t.dueDate || undefined,
             pageStart: t.pageStart,
             pageEnd: t.pageEnd,
-ratePerPage: t.ratePerPage ?? 0,
+            ratePerPage: t.ratePerPage ?? 0,
             submittedWorkUrl: getSubmissionFileUrl(latestSub),
             prevSubmittedWorkUrl: getSubmissionFileUrl(prevSub),
             submittedFileAssetId: latestSub?.submittedFileAssetId || latestSub?.SubmittedFileAssetId || undefined,
@@ -581,7 +602,7 @@ ratePerPage: t.ratePerPage ?? 0,
         setChapterTasks([])
       }
 
-     // 3. Load Assistant list from backend (try/catch block: Assistant gets 403, should not crash refreshData)
+      // 3. Load Assistant list from backend (try/catch block: Assistant gets 403, should not crash refreshData)
       let assistantsList: any[] = []
       try {
         const usersRes = await userService.getAssistants()
@@ -819,18 +840,18 @@ ratePerPage: t.ratePerPage ?? 0,
       return
     }
     try {
-     // Neu chi doi assistant -> chi gui assistantId (tranh BE chan "khong sua duoc khi da co submission")
+      // Neu chi doi assistant -> chi gui assistantId (tranh BE chan "khong sua duoc khi da co submission")
       const onlyChangeAssistant = editTaskAssistantId && editTaskAssistantId !== editTaskOriginalAssistantId
       const body = onlyChangeAssistant
         ? { assistantId: editTaskAssistantId }
         : {
-            pageStart: editTaskPageStart,
-            pageEnd: editTaskPageEnd,
-            description: editTaskDescription,
-            dueDate: editTaskDueDate || null,
-            ratePerPage: editTaskRate,
-            assistantId: editTaskAssistantId || undefined,
-          }
+          pageStart: editTaskPageStart,
+          pageEnd: editTaskPageEnd,
+          description: editTaskDescription,
+          dueDate: editTaskDueDate || null,
+          ratePerPage: editTaskRate,
+          assistantId: editTaskAssistantId || undefined,
+        }
       await fetchAPI(`/api/page-tasks/${editTaskId}`, {
         method: 'PUT',
         body: JSON.stringify(body)
@@ -885,7 +906,7 @@ ratePerPage: t.ratePerPage ?? 0,
       showToast(`All ${totalPages} pages have been assigned. No pages left for a new task.`, 'error')
       return
     }
-   const nextStart = maxEnd + 1
+    const nextStart = maxEnd + 1
     const chapterEnd = selectedChapter?.totalPages || nextStart
     setNewTaskPageStart(nextStart)
     setNewTaskPageEnd(chapterEnd >= nextStart ? chapterEnd : nextStart)
@@ -920,20 +941,20 @@ ratePerPage: t.ratePerPage ?? 0,
       showToast(`This chapter has only ${selectedChapter.totalPages} pages.`, 'error')
       return
     }
-const payload = {
-        chapterId: selectedChapterId,
-        assistantId: newTaskAssistantId,
-        pageStart: newTaskPageStart,
-        pageEnd: newTaskPageEnd,
-        taskType: newTaskType.trim(),
-        ratePerPage: newTaskRate,
-        description: newTaskDesc,
-        dueDate: newTaskDueDate ? new Date(newTaskDueDate).toISOString() : null
-      }
-      setCreatingTask(true)
-      return fetchAPI('/api/page-tasks', {
-        method: 'POST',
-        body: JSON.stringify(payload)
+    const payload = {
+      chapterId: selectedChapterId,
+      assistantId: newTaskAssistantId,
+      pageStart: newTaskPageStart,
+      pageEnd: newTaskPageEnd,
+      taskType: newTaskType.trim(),
+      ratePerPage: newTaskRate,
+      description: newTaskDesc,
+      dueDate: newTaskDueDate ? new Date(newTaskDueDate).toISOString() : null
+    }
+    setCreatingTask(true)
+    return fetchAPI('/api/page-tasks', {
+      method: 'POST',
+      body: JSON.stringify(payload)
     }).then(async (taskRes: any) => {
       const created = (taskRes as any)?.data || taskRes
       const newTaskId = created?.pageTaskId || created?.id
@@ -1207,34 +1228,34 @@ const payload = {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => {
-                setNewChapterSeriesId(selectedSeriesId)
-                setNewChapterNo('')
-                setNewChapterTitle('')
-                setNewChapterPages(24)
-                setNewChapterPubDate('')
-                setNewChapterSynopsis('')
-                setNewChapterNotes('')
-                setNewChapterStoryboardFiles([])
-                setNewChapterManuscriptFiles([])
-                setErrors({})
-                setIsChapterModalOpen(true)
-              }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all duration-150 active:scale-95 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" /> Create Chapter
-            </button>
-            {selectedChapter && (
               <button
-                type="button"
-                onClick={openEditChapter}
-                title={`Edit Chapter ${selectedChapter.number}`}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-card border border-border text-foreground font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-muted hover:border-primary/40 transition-all cursor-pointer"
+                onClick={() => {
+                  setNewChapterSeriesId(selectedSeriesId)
+                  setNewChapterNo('')
+                  setNewChapterTitle('')
+                  setNewChapterPages(24)
+                  setNewChapterPubDate('')
+                  setNewChapterSynopsis('')
+                  setNewChapterNotes('')
+                  setNewChapterStoryboardFiles([])
+                  setNewChapterManuscriptFiles([])
+                  setErrors({})
+                  setIsChapterModalOpen(true)
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm shadow-primary/15 hover:bg-primary/90 transition-all duration-150 active:scale-95 cursor-pointer"
               >
-                <FileEdit className="w-4 h-4" /> Edit Chapter {selectedChapter.number}
+                <Plus className="w-4 h-4" /> Create Chapter
               </button>
-            )}
+              {selectedChapter && (
+                <button
+                  type="button"
+                  onClick={openEditChapter}
+                  title={`Edit Chapter ${selectedChapter.number}`}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-card border border-border text-foreground font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-muted hover:border-primary/40 transition-all cursor-pointer"
+                >
+                  <FileEdit className="w-4 h-4" /> Edit Chapter {selectedChapter.number}
+                </button>
+              )}
             </div>
           </div>
 
@@ -1681,14 +1702,14 @@ const payload = {
                             {task.description}
                           </p>
                           {task.referenceFiles && task.referenceFiles.length > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-[10px] uppercase font-bold text-muted-foreground">📎 Reference Material</p>
-                              {task.referenceFiles.map((f: any) => (
-                                <a key={f.fileAssetId} href={f.publicUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline truncate">
-                                  📄 {f.originalFileName}
-                                </a>
-                              ))}
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadAllGuidelines(task.referenceFiles!)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-98"
+                            >
+                              <FolderDown className="w-3.5 h-3.5 text-emerald-500" />
+                              Download Guidelines ({task.referenceFiles.length})
+                            </button>
                           )}
 
                           {/* Rejections & Feedback Box */}
@@ -1758,77 +1779,7 @@ const payload = {
                 </div>
               </div>
 
-              {/* Task Archives / Finished Work */}
-              <div className="space-y-6">
-                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                  Submitted & Completed ({stats.completed})
-                </h2>
 
-                <div className="space-y-4">
-                  {completedTasks.length === 0 ? (
-                    <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-2">
-                      <Clock className="w-8 h-8 text-muted-foreground/20 mx-auto" />
-                      <p className="text-xs text-muted-foreground">No completed tasks yet</p>
-                    </div>
-                  ) : (
-                    completedTasks.map((task) => (
-                      <div key={task.id} className="bg-card border border-border/60 rounded-2xl p-4.5 space-y-3.5 hover:border-primary/10 transition-colors">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h4 className="font-bold text-xs text-foreground">{task.type} · Trang {task.pageStart}–{task.pageEnd}</h4>
-                            <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">{getChapterInfo(task.chapterId)}</p>
-                          </div>
-                          {getTaskStatusBadge(task.status)}
-                        </div>
-
-                        {/* Submitted mockup file preview */}
-                        {task.submittedWorkUrl && (
-                          <div className="relative h-20 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center group">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={task.submittedWorkUrl}
-                              alt="Submitted Work"
-                              className="w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
-                              <button
-                                onClick={() => {
-                                  setActiveTaskToView(task)
-                                  setIsViewDetailModalOpen(true)
-                                }}
-                                className="p-1.5 bg-card rounded-lg text-foreground text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1 cursor-pointer"
-                              >
-                                <Eye className="w-3.5 h-3.5" /> Details & Feedback
-                              </button>
-                              <a
-                                href={task.submittedWorkUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-1.5 bg-card rounded-lg text-foreground text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1"
-                              >
-                                <ArrowRight className="w-3.5 h-3.5" /> Original File
-                              </a>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Feedback summary */}
-                        {task.status === 'Approved' && task.feedback && (
-                          <div className="bg-emerald-500/8 border border-emerald-500/15 rounded-xl p-2.5 text-[11px] text-emerald-600 dark:text-emerald-400">
-                            <span className="font-bold">Author Feedback: </span>
-                            <span className="italic">"{task.feedback}"</span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-end text-[9px] text-muted-foreground font-semibold pt-1">
-                          <span>Updated: {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString() : 'N/A'}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         )
@@ -1916,7 +1867,7 @@ const payload = {
               <label className="text-xs font-bold text-muted-foreground">Total Pages</label>
               <input
                 type="number"
-               value={editChapterPages === 0 ? '' : editChapterPages}
+                value={editChapterPages === 0 ? '' : editChapterPages}
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => setEditChapterPages(e.target.value === '' ? 0 : Number(e.target.value))}
                 className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
@@ -2270,8 +2221,8 @@ const payload = {
                   Cancel
                 </button>
                 <button
-                  type="submit"      
-                  disabled={creatingChapter}     
+                  type="submit"
+                  disabled={creatingChapter}
                   className="px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 disabled:opacity-60 disabled:cursor-not-allowed font-bold text-xs rounded-xl shadow-md shadow-primary/10 transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
                   <PlusCircle className="w-4 h-4" /> {creatingChapter ? 'Creating...' : 'Register Chapter to System'}
@@ -2406,7 +2357,7 @@ const payload = {
                   </select>
                 </div>
               </div>
-                  <div className="space-y-1.5">
+              <div className="space-y-1.5">
                 <label className="text-xs font-bold text-muted-foreground">Unit Price / Page (VND)</label>
                 <input
                   type="number"
@@ -2418,7 +2369,7 @@ const payload = {
                 />
                 {newTaskPageEnd >= newTaskPageStart && newTaskPageStart > 0 && (
                   <p className="text-xs font-bold text-primary flex items-center gap-1">
-                     Sẽ giao: Trang {newTaskPageStart}–{newTaskPageEnd}
+                    Sẽ giao: Trang {newTaskPageStart}–{newTaskPageEnd}
                     <span className="font-normal text-muted-foreground">({newTaskPageEnd - newTaskPageStart + 1} trang)</span>
                   </p>
                 )}
@@ -2504,11 +2455,11 @@ const payload = {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Start Page</label>
-               <input type="number" value={editTaskPageStart === 0 ? '' : editTaskPageStart} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageStart(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+                <input type="number" value={editTaskPageStart === 0 ? '' : editTaskPageStart} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageStart(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">End Page</label>
-               <input type="number" value={editTaskPageEnd === 0 ? '' : editTaskPageEnd} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageEnd(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
+                <input type="number" value={editTaskPageEnd === 0 ? '' : editTaskPageEnd} onFocus={(e) => e.target.select()} onChange={(e) => setEditTaskPageEnd(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm" />
               </div>
             </div>
             <div className="space-y-1">
@@ -2584,16 +2535,16 @@ const payload = {
                   <img src={zipPages[currentPage].dataUrl} alt="submission" className="max-h-[80vh] max-w-full object-contain pointer-events-none" />
                   {imagePins.map((pin, idx) => pin.page === currentPage && (
                     <div key={idx} className="group/pin absolute w-7 h-7 -ml-3.5 -mt-3.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white transition-transform hover:scale-110 hover:z-30 cursor-help" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
-                  {idx + 1}
-                    {pin.note && pin.note.trim() && (
-                      <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden group-hover/pin:block z-40">
-                        <div className="relative bg-neutral-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2 shadow-xl max-w-[240px] whitespace-normal text-left font-normal">
-                          <span className="block text-[9px] uppercase tracking-wide text-red-300 font-bold mb-0.5">Góp ý #{idx + 1}</span>
-                          {pin.note}
-                          <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900" />
+                      {idx + 1}
+                      {pin.note && pin.note.trim() && (
+                        <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden group-hover/pin:block z-40">
+                          <div className="relative bg-neutral-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2 shadow-xl max-w-[240px] whitespace-normal text-left font-normal">
+                            <span className="block text-[9px] uppercase tracking-wide text-red-300 font-bold mb-0.5">Góp ý #{idx + 1}</span>
+                            {pin.note}
+                            <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900" />
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                     </div>
                   ))}
                 </div>
@@ -2719,7 +2670,7 @@ const payload = {
 
                 {activeTaskToReview.prevSubmittedWorkUrl && (
                   <div className="space-y-2">
-                   <button
+                    <button
                       onClick={handleCompareSubmissions}
                       disabled={subCompareLoading}
                       className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all duration-150 active:scale-95 transition-colors"
@@ -2751,7 +2702,7 @@ const payload = {
                             style={{ width: `${Math.min(subCompareResult.percent, 100)}%` }}
                           />
                         </div>
-                       {subCompareResult.diff && (
+                        {subCompareResult.diff && (
                           <div className="space-y-1">
                             <img src={subCompareResult.diff} alt="Changes" className="w-full border border-border rounded-lg" />
                             <p className="text-[10px] text-muted-foreground text-center">🔴 Red highlighted areas show differences from the previous submission</p>
@@ -2791,7 +2742,7 @@ const payload = {
                       Manga: {getMangaTitleForTask(activeTaskToReview)}
                     </span>
                     <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded inline-block">
-                    {activeTaskToReview.type} · Trang {activeTaskToReview.pageStart}–{activeTaskToReview.pageEnd}
+                      {activeTaskToReview.type} · Trang {activeTaskToReview.pageStart}–{activeTaskToReview.pageEnd}
                     </span>
                   </div>
 
@@ -2818,14 +2769,14 @@ const payload = {
                     className="w-full h-20 px-3 py-2 bg-muted/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-foreground"
                   />
                 </div>
-               {(() => {
+                {(() => {
                   const pages = (activeTaskToReview.pageEnd || 0) - (activeTaskToReview.pageStart || 0) + 1
                   const rate = activeTaskToReview.ratePerPage || 0
                   const total = pages * rate
                   return (
                     <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3 mb-2 text-xs space-y-1">
                       <p className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                         Salary preview when approving
+                        Salary preview when approving
                       </p>
                       <div className="flex justify-between text-muted-foreground">
                         <span>Pages count:</span><span className="font-semibold text-foreground">{pages}</span>
@@ -3038,19 +2989,14 @@ const payload = {
                   {activeTaskToView.referenceFiles && activeTaskToView.referenceFiles.length > 0 && (
                     <div className="space-y-1.5">
                       <p className="text-xs font-bold text-muted-foreground">Attached Guidelines</p>
-                      <div className="space-y-1">
-                        {activeTaskToView.referenceFiles.map((f) => (
-                          <a
-                            key={f.fileAssetId}
-                            href={f.publicUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs text-primary hover:underline p-2 bg-muted/20 border border-border/40 rounded-xl"
-                          >
-                            <span className="truncate flex-1">{f.originalFileName}</span>
-                          </a>
-                        ))}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadAllGuidelines(activeTaskToView.referenceFiles!)}
+                        className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-98"
+                      >
+                        <FolderDown className="w-4 h-4 text-emerald-500" />
+                        Download All Guidelines ({activeTaskToView.referenceFiles.length} {activeTaskToView.referenceFiles.length === 1 ? 'File' : 'Files'})
+                      </button>
                     </div>
                   )}
 
