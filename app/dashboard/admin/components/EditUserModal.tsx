@@ -201,7 +201,7 @@ export default function EditUserModal({
   const tabs: { id: Tab; label: string; icon: React.ReactNode; hidden?: boolean }[] = [
     { id: 'info', label: 'Account Info', icon: <User2 className="w-3.5 h-3.5" /> },
     { id: 'editor', label: 'Assign Editor', icon: <Link className="w-3.5 h-3.5" />, hidden: !isMangaka },
-    { id: 'assistant', label: 'Assign Assistant', icon: <Bot className="w-3.5 h-3.5" />, hidden: !isMangaka },
+    { id: 'assistant', label: 'Assign Assistant', icon: <Bot className="w-3.5 h-3.5" />, hidden: true },
   ]
 
   return (

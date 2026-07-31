@@ -153,10 +153,7 @@ export default function UserListTab({
                 <TableHead className="w-24 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Role</TableHead>
                 <TableHead className="w-24 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Created</TableHead>
                 {role === 'Admin' && (
-                  <>
-                    <TableHead className="w-28 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Resp. Editor</TableHead>
-                    <TableHead className="w-28 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Asst.</TableHead>
-                  </>
+                  <TableHead className="w-28 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Resp. Editor</TableHead>
                 )}
                 <TableHead className="w-20 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Status</TableHead>
                 <TableHead className="w-28 shrink-0 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center">Actions</TableHead>
@@ -165,7 +162,7 @@ export default function UserListTab({
             <TableBody className="divide-y divide-border">
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={role === 'Admin' ? 10 : 8} className="p-12 text-center text-muted-foreground space-y-2">
+                  <TableCell colSpan={role === 'Admin' ? 9 : 8} className="p-12 text-center text-muted-foreground space-y-2">
                     <Users className="w-8 h-8 mx-auto text-muted-foreground/30" />
                     <p className="text-xs">No accounts found matching the filters.</p>
                   </TableCell>
@@ -219,19 +216,11 @@ export default function UserListTab({
                       </TableCell>
 
                       {role === 'Admin' && (
-                        <>
-                          <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[110px] truncate">
-                            {user.role === 'Mangaka'
-                              ? (user.assignedEditorName || getEditorName(user.editorId) || <span className="text-muted-foreground/40">Unassigned</span>)
-                              : <span className="text-muted-foreground/30">—</span>}
-                          </TableCell>
-
-                          <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[110px] truncate">
-                            {user.role === 'Mangaka'
-                              ? (user.assignedAssistantName || getAssistantName(user.assistantId) || <span className="text-muted-foreground/40">Unassigned</span>)
-                              : <span className="text-muted-foreground/30">—</span>}
-                          </TableCell>
-                        </>
+                        <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[110px] truncate">
+                          {user.role === 'Mangaka'
+                            ? (user.assignedEditorName || getEditorName(user.editorId) || <span className="text-muted-foreground/40">Unassigned</span>)
+                            : <span className="text-muted-foreground/30">—</span>}
+                        </TableCell>
                       )}
 
                       <TableCell className="text-center">
