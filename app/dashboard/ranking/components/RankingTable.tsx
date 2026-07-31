@@ -130,6 +130,10 @@ export default function RankingTable({
                           <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-black text-[10px] px-2.5 py-1 rounded-md">
                             CANCELLED
                           </span>
+                        ) : row.continueVotes && row.continueVotes > 0 && row.continueVotes >= (row.discontinueVotes || 0) ? (
+                          <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-black text-[10px] px-2.5 py-1 rounded-md">
+                            CONTINUED
+                          </span>
                         ) : !isPeriodLocked ? (
                           <span className="inline-flex items-center gap-1 bg-muted/60 text-muted-foreground border border-border font-semibold text-[10px] px-2.5 py-1 rounded-md" title="Confirm & Lock rankings for this period first before voting on decisions.">
                             Lock Required

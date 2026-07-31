@@ -41,7 +41,7 @@ export interface RankingRow {
   voteCount: number
   readerCount: number
   score: number
-  status: 'TOP 3' | 'BOTTOM 20%' | 'INACTIVE' | 'Rejected' | 'Cancelled' | '—'
+  status: 'TOP 3' | 'BOTTOM 20%' | 'INACTIVE' | 'Rejected' | 'Cancelled' | 'Active' | '—' | string
   rankingSnapshotId?: string
   boardDecisionId?: string
   createdBy?: string
@@ -164,21 +164,9 @@ export default function RankingPage() {
   // Fetch all active series for ranking (Explicitly filter eligible statuses)
   useEffect(() => {
     seriesService.listSeries().then((list) => {
-      // Statuses allowed for ranking & Excel download
-      const ALLOWED_STATUSES = ['active']
-      // Statuses strictly excluded (drafts, pending proposals, under review, cancelled)
-      const EXCLUDED_STATUSES = ['underreview', 'pendingreview', 'rejected', 'draft', 'boardvoting', 'cancelled', 'inactive', 'expired', 'approved', 'approve']
-
       const activeSeriesOnly = list.filter((s) => {
         const rawStatus = (s.status || s.rawStatus || '').toLowerCase().replace(/[\s_]/g, '')
-
-        // 1. If explicitly in allowed active statuses -> ACCEPT
-        if (ALLOWED_STATUSES.includes(rawStatus)) return true
-        // 2. If in excluded proposal/review statuses -> REJECT
-        if (EXCLUDED_STATUSES.includes(rawStatus)) return false
-
-        // 3. Fallback: accept if not excluded
-        return true
+        return rawStatus === 'active'
       })
 
       setAllSeries(activeSeriesOnly.map(s => ({
@@ -557,8 +545,14 @@ export default function RankingPage() {
   const handleDownloadTemplate = async () => {
     try {
       const XLSX = await import('xlsx')
-      const templateData = allSeries.length > 0
-        ? allSeries.map((s) => ({
+      const latestSeriesList = await seriesService.listSeries()
+      const currentActiveSeries = latestSeriesList.filter((s) => {
+        const rawStatus = (s.status || s.rawStatus || '').toLowerCase().replace(/[\s_]/g, '')
+        return rawStatus === 'active'
+      })
+
+      const templateData = currentActiveSeries.length > 0
+        ? currentActiveSeries.map((s) => ({
           "Series Title": s.title,
           "Period": selectedPeriod || "2026-Q1",
           "Readers": 0,
@@ -571,7 +565,7 @@ export default function RankingPage() {
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, "RankingImportTemplate")
       XLSX.writeFile(workbook, `Ranking_Vote_Import_Template_${selectedPeriod || '2026-Q1'}.xlsx`)
-      toast.success(`Excel template downloaded with ${allSeries.length} active series!`)
+      toast.success(`Excel template downloaded with ${currentActiveSeries.length} active series!`)
     } catch (err) {
       console.error("Failed to download template:", err)
       toast.error("Failed to download template file.")
