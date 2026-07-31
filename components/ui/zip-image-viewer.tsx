@@ -16,6 +16,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { extractImagesFromZip } from '@/lib/imageCompare'
+import { API_BASE_URL } from '@/lib/constants'
+import { tokenService } from '@/services/tokenService'
 
 export interface ZipImageFile {
   name: string
@@ -99,6 +101,51 @@ export function ZipImageViewer({
     onPageChange?.(index, pages[index])
   }
 
+  const handleDownloadOriginal = async () => {
+    if (!fileUrl) return
+    try {
+      const token = tokenService.getToken()
+      const headers: Record<string, string> = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const response = await fetch(fileUrl, { headers })
+      if (!response.ok) {
+        window.open(fileUrl, '_blank')
+        return
+      }
+
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const json = await response.json()
+        const actualUrl = json?.data?.publicUrl || json?.publicUrl || json?.data?.fileUrl || json?.url || json?.data?.url
+        if (actualUrl) {
+          const fullUrl = actualUrl.startsWith('http') ? actualUrl : `${API_BASE_URL}${actualUrl.startsWith('/') ? '' : '/'}${actualUrl}`
+          const binRes = await fetch(fullUrl, { headers })
+          if (binRes.ok) {
+            const b = await binRes.blob()
+            const blobUrl = URL.createObjectURL(b)
+            const a = document.createElement('a')
+            a.href = blobUrl
+            a.download = `manuscript_package.zip`
+            a.click()
+            URL.revokeObjectURL(blobUrl)
+            return
+          }
+        }
+      }
+
+      const b = await response.blob()
+      const blobUrl = URL.createObjectURL(b)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `manuscript_package.zip`
+      a.click()
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      window.open(fileUrl, '_blank')
+    }
+  }
+
   if (!fileUrl) {
     return (
       <div className={`p-6 text-center border border-dashed border-border rounded-xl bg-muted/20 text-muted-foreground ${className}`}>
@@ -155,15 +202,13 @@ export function ZipImageViewer({
           )}
 
           {/* Download Original File */}
-          <a
-            href={fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
+          <button
+            type="button"
+            onClick={handleDownloadOriginal}
             className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-primary bg-muted/40 hover:bg-muted px-2.5 py-1.5 rounded-lg border border-border transition-colors cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" /> Download Original
-          </a>
+          </button>
         </div>
       </div>
 

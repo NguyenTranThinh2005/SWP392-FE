@@ -161,21 +161,22 @@ export default function RankingPage() {
     return allVoteRecords.some(r => r.confirmed && (r.period === selectedPeriod || formatPeriodToDdMmYyyy(r.period) === formattedSelected))
   }, [allVoteRecords, selectedPeriod])
 
-  // Fetch all active series for ranking (Explicitly filter eligible statuses)
+  // Fetch all eligible series for ranking (Active, Cancelled, Discontinued, Paused)
   useEffect(() => {
     seriesService.listSeries().then((list) => {
-      const activeSeriesOnly = list.filter((s) => {
+      const eligibleSeries = list.filter((s) => {
         const rawStatus = (s.status || s.rawStatus || '').toLowerCase().replace(/[\s_]/g, '')
-        return rawStatus === 'active'
+        return rawStatus === 'active' || rawStatus === 'cancelled' || rawStatus === 'discontinued' || rawStatus === 'paused' || rawStatus === 'completed'
       })
 
-      setAllSeries(activeSeriesOnly.map(s => ({
+      setAllSeries(eligibleSeries.map(s => ({
         id: s.id,
         title: s.title,
-        genre: s.genre?.join(', ') || ''
+        genre: s.genre?.join(', ') || '',
+        rawStatus: s.status || s.rawStatus || ''
       })))
     }).catch((err) => {
-      console.warn("Failed to load active series:", err)
+      console.warn("Failed to load series for ranking:", err)
       setAllSeries([])
       setIsLoadingData(false)
     })
@@ -208,6 +209,7 @@ export default function RankingPage() {
                 voteCount: r.voteCount,
                 score: Math.round(((r.voteCount / (r.readerCount || 1)) * 100) * 100) / 100,
                 confirmed: r.status?.toLowerCase() === 'confirmed',
+                confirmedBy: r.confirmedBy || r.ConfirmedBy || r.confirmerId || r.createdById || r.createdBy,
                 createdAt: r.createdAt
               }))
             }
@@ -320,20 +322,17 @@ export default function RankingPage() {
       try {
         calculatedRankings = await Promise.all(
           calculatedRankings.map(async (row) => {
+            const seriesObj = allSeries.find(s => s.id === row.seriesId)
+            const rawStat = (seriesObj?.rawStatus || '').toLowerCase().replace(/[\s_]/g, '')
+            const isBackendCancelled = rawStat === 'cancelled' || rawStat === 'discontinued'
+
+            // Find confirmedBy user ID for THIS selected period's vote record
+            const currentPeriodRecord = confirmedForPeriod.find(r => r.seriesId === row.seriesId)
+            const recordConfirmedBy = currentPeriodRecord?.confirmedBy
+
             try {
               const resDecisions = await fetchAPI<{ data: any[] }>(`/api/series/${row.seriesId}/board-decisions`)
               const decisions = (resDecisions as any).data || resDecisions || []
-
-              // 🔍 DEBUG: Log all decisions for every series
-              console.log(`[DEBUG-RANKING] Series: "${row.seriesTitle}" (${row.seriesId})`, {
-                totalDecisions: Array.isArray(decisions) ? decisions.length : 'NOT_ARRAY',
-                decisions: Array.isArray(decisions) ? decisions.map((d: any) => ({
-                  id: d.boardDecisionId || d.id,
-                  type: d.decisionType,
-                  status: d.status,
-                  result: d.result,
-                })) : decisions
-              })
 
               if (Array.isArray(decisions) && decisions.length > 0) {
                 // Strictly filter ONLY RankingElimination decisions for Ranking dashboard
@@ -341,24 +340,32 @@ export default function RankingPage() {
                   d.decisionType === 'RankingElimination' || d.decisionType === 'Elimination'
                 )
 
-                console.log(`[DEBUG-RANKING] Series: "${row.seriesTitle}" — eliminationDecisions count: ${eliminationDecisions.length}`, eliminationDecisions.map((d: any) => ({ type: d.decisionType, status: d.status, result: d.result })))
-
                 if (eliminationDecisions.length > 0) {
                   let cVotes = 0
                   let dVotes = 0
-                  let isDiscontinued = eliminationDecisions.some((d: any) =>
-                    d.status === 'Cancelled' || d.status === 'Discontinued' || d.result === 'Rejected'
+                  let isDiscontinued = isBackendCancelled || eliminationDecisions.some((d: any) =>
+                    d.status === 'Cancelled' || d.status === 'Discontinued' || d.status === 'Approved' || d.result === 'Rejected' || d.result === 'Approved'
                   )
 
-                  console.log(`[DEBUG-RANKING] Series: "${row.seriesTitle}" — isDiscontinued (status check): ${isDiscontinued}`)
+                  // Match decision specifically for this period/snapshot or open decision
+                  const matchingSnapshotDecision = row.rankingSnapshotId
+                    ? eliminationDecisions.find((d: any) => d.rankingSnapshotId && String(d.rankingSnapshotId).toLowerCase() === String(row.rankingSnapshotId).toLowerCase())
+                    : null
 
-                  const rankingDecision = eliminationDecisions.find((d: any) => d.status?.toLowerCase() === 'open') || eliminationDecisions[0]
-                  const decisionId = rankingDecision.boardDecisionId || rankingDecision.id
-                  const decisionCreatedBy = rankingDecision.createdBy || rankingDecision.userId || rankingDecision.createdById
+                  const openDecision = eliminationDecisions.find((d: any) => d.status?.toLowerCase() === 'open')
+                  const sortedDecisions = [...eliminationDecisions].sort((a, b) =>
+                    new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+                  )
 
-                  for (const decision of eliminationDecisions) {
-                    const dId = decision.boardDecisionId || decision.id
-                    const dCreatedBy = decision.createdBy || decision.userId || decision.createdById
+                  const rankingDecision = matchingSnapshotDecision || openDecision || sortedDecisions[0]
+                  const decisionId = rankingDecision?.boardDecisionId || rankingDecision?.id
+                  const decisionCreatedBy = rankingDecision?.createdBy || rankingDecision?.userId || rankingDecision?.createdById
+
+                  const effectiveCreatedBy = (openDecision ? (openDecision.createdBy || openDecision.userId || openDecision.createdById) : null) || recordConfirmedBy || decisionCreatedBy
+
+                  if (rankingDecision) {
+                    const dId = rankingDecision.boardDecisionId || rankingDecision.id
+                    const dCreatedBy = rankingDecision.createdBy || rankingDecision.userId || rankingDecision.createdById
                     try {
                       const resVotes = await fetchAPI<{ data: any[] }>(`/api/board-decisions/${dId}/votes`)
                       const votes = (resVotes as any).data || resVotes || []
@@ -366,9 +373,8 @@ export default function RankingPage() {
                         votes.forEach((v: any) => {
                           const voterId = v.voterId || v.createdBy || v.userId || v.voter?.id
 
-                          // BR-16: Exclude the decision creator's own vote (mirrors backend RecalculateAsync)
+                          // BR-16: Exclude the decision creator's own vote
                           if (dCreatedBy && voterId && String(voterId).toLowerCase() === String(dCreatedBy).toLowerCase()) {
-                            console.log(`[DEBUG-RANKING] Skipping creator vote for "${row.seriesTitle}" (voterId=${voterId} === createdBy=${dCreatedBy})`)
                             return
                           }
 
@@ -389,14 +395,12 @@ export default function RankingPage() {
                     isDiscontinued = true
                   }
 
-                  console.log(`[DEBUG-RANKING] Series: "${row.seriesTitle}" — FINAL: isDiscontinued=${isDiscontinued}, cVotes=${cVotes}, dVotes=${dVotes}`)
-
                   if (isDiscontinued) {
                     return {
                       ...row,
                       status: 'Cancelled' as const,
                       boardDecisionId: decisionId,
-                      createdBy: decisionCreatedBy,
+                      createdBy: effectiveCreatedBy,
                       continueVotes: cVotes,
                       discontinueVotes: dVotes,
                       isDiscontinued: true
@@ -406,17 +410,37 @@ export default function RankingPage() {
                   return {
                     ...row,
                     boardDecisionId: decisionId,
-                    createdBy: decisionCreatedBy,
+                    createdBy: effectiveCreatedBy,
                     continueVotes: cVotes,
                     discontinueVotes: dVotes,
                     isDiscontinued: false
                   }
                 }
               }
+
+              if (isBackendCancelled) {
+                return {
+                  ...row,
+                  status: 'Cancelled' as const,
+                  createdBy: recordConfirmedBy,
+                  isDiscontinued: true
+                }
+              }
             } catch (err) {
               console.error(`[DEBUG-RANKING] Error for "${row.seriesTitle}":`, err)
+              if (isBackendCancelled) {
+                return {
+                  ...row,
+                  status: 'Cancelled' as const,
+                  createdBy: recordConfirmedBy,
+                  isDiscontinued: true
+                }
+              }
             }
-            return row
+            return {
+              ...row,
+              createdBy: recordConfirmedBy || row.createdBy
+            }
           })
         )
       } catch (e) {
@@ -678,10 +702,9 @@ export default function RankingPage() {
   // Handle Chief Editor Veto / Discontinuation of Series
   const handleDiscontinueSeries = (seriesId: string, title: string) => {
     if (confirm(`Are you sure you want to discontinue the publication of "${title}"? This action is irreversible.`)) {
-      seriesService.deleteSeries(seriesId).then(() => {
+      seriesService.deleteSeries(seriesId).then(async () => {
         toast.success(`"${title}" has been discontinued from publication!`)
-        // Filter out from rankings locally
-        setRankings(prev => prev.filter(r => r.seriesId !== seriesId))
+        await refreshData()
       }).catch((err: any) => {
         toast.error(err.message || 'Failed to discontinue publication.')
       })
@@ -691,7 +714,7 @@ export default function RankingPage() {
   // Handle Editorial Board Member Vote on Discontinuation
   const handleVoteDiscontinue = (seriesId: string, vote: 'Approved' | 'Rejected', title: string) => {
     seriesService.voteSeries(seriesId, vote).then(() => {
-      const voteLabel = vote === 'Rejected' ? 'Discontinue' : 'Continue'
+      const voteLabel = vote === 'Approved' ? 'Discontinue' : 'Continue'
       toast.success(`Successfully cast vote to "${voteLabel}" for "${title}".`)
       setVotedSeries(prev => ({
         ...prev,

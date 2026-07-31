@@ -1,6 +1,7 @@
 import pixelmatch from 'pixelmatch'
 import JSZip from 'jszip'
 import { API_BASE_URL } from '@/lib/constants'
+import { tokenService } from '@/services/tokenService'
 
 // Tải 1 ảnh từ URL hoặc base64 về dạng HTMLImageElement
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -146,7 +147,23 @@ export async function extractImagesFromZip(
 
   const resolveActualFileBlob = async (targetUrl: string): Promise<Blob | null> => {
     try {
-      const r = await fetch(targetUrl)
+      const token = tokenService.getToken()
+      const reqHeaders: Record<string, string> = {}
+      if (token) {
+        reqHeaders['Authorization'] = `Bearer ${token}`
+      }
+
+      let r = await fetch(targetUrl, { headers: reqHeaders })
+      if (!r.ok && r.status === 401) {
+        try {
+          const newToken = await tokenService.getOrTriggerRefresh()
+          if (newToken) {
+            reqHeaders['Authorization'] = `Bearer ${newToken}`
+            r = await fetch(targetUrl, { headers: reqHeaders })
+          }
+        } catch { }
+      }
+
       if (!r.ok) return null
 
       const contentType = r.headers.get('content-type') || ''
@@ -158,7 +175,7 @@ export async function extractImagesFromZip(
           const fullUrl = actualUrl.startsWith('http')
             ? actualUrl
             : `${API_BASE_URL}${actualUrl.startsWith('/') ? '' : '/'}${actualUrl}`
-          const binaryRes = await fetch(fullUrl)
+          const binaryRes = await fetch(fullUrl, { headers: reqHeaders })
           if (binaryRes.ok) {
             return await binaryRes.blob()
           }

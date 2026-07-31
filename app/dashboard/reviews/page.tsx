@@ -42,6 +42,7 @@ import { seriesService } from '@/services/seriesService'
 import { fetchAPI } from '@/services/api'
 import { API_BASE_URL } from '@/lib/constants'
 import { toast } from 'sonner'
+import { ZipImageViewer } from '@/components/annotations/zip-image-viewer'
 
 const parseGenres = (genre: any): string[] => {
   if (!genre) return []
@@ -583,45 +584,18 @@ export default function ReviewProposalsPage() {
                       ? proposal.sampleFileUrl
                       : `${API_BASE_URL}/api/files/${proposal.sampleFileUrl}`;
 
-                  const zipFileName = proposal.sourceZipFileAssetId
-                    ? `source_manuscript_${proposal.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.zip`
-                    : `sample_pages_${proposal.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.zip`;
+                  const zipAssetId = proposal.sourceZipFileAssetId || null;
 
                   return (
-                    <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
-                          <FileArchive className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-foreground">
-                            Attached ZIP Manuscript Package
-                          </h3>
-                          <p className="text-xs text-muted-foreground">
-                            Original source files uploaded by the Mangaka
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-4 bg-muted/30 border border-border/80 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-foreground truncate">
-                            {zipFileName}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                            URL: {zipDownloadUrl}
-                          </p>
-                        </div>
-                        <a
-                          href={zipDownloadUrl}
-                          download={zipFileName}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-extrabold rounded-xl transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
-                        >
-                          <Download className="w-4 h-4" /> Download ZIP
-                        </a>
-                      </div>
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
+                        Attached ZIP Manuscript Package
+                      </h3>
+                      <ZipImageViewer
+                        fileUrl={zipDownloadUrl}
+                        assetId={zipAssetId}
+                        initialMode="slider"
+                      />
                     </div>
                   );
                 })()

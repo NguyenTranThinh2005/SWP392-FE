@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner'
 import { seriesService, type SeriesProposal } from '@/services/seriesService'
 import { API_BASE_URL } from '@/lib/constants'
+import { ZipImageViewer } from '@/components/annotations/zip-image-viewer'
 
 const parseGenres = (genre: any): string[] => {
   if (!genre) return []
@@ -451,45 +452,18 @@ export default function EditorProposalsTab({
                               ? `${API_BASE_URL}/api/files/${proposal.sampleFileUrl}`
                               : '');
 
-                      const zipFileName = proposal.sourceZipFile?.fileName
-                        || (proposal.sourceZipFileAssetId || proposal.sourceZipPublicUrl
-                          ? `source_manuscript_${proposal.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.zip`
-                          : `sample_pages_${proposal.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.zip`);
-
-                      const isLegacy = !proposal.sourceZipPublicUrl && !proposal.sourceZipFile && !proposal.sourceZipFileAssetId && !!proposal.sampleFileUrl;
+                      const zipAssetId = proposal.sourceZipFileAssetId || null;
 
                       return (
-                        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm p-6 space-y-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isLegacy ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'}`}>
-                              {isLegacy ? <FileText className="w-6 h-6" /> : <FileArchive className="w-6 h-6" />}
-                            </div>
-                            <div>
-                              <h3 className="text-sm font-bold text-foreground">
-                                {isLegacy ? 'Attached Sample Images Package' : 'Attached ZIP Manuscript Package'}
-                              </h3>
-                              <p className="text-xs text-muted-foreground">
-                                {isLegacy ? 'Legacy comma-separated image file sequence' : 'Original source files uploaded by the Mangaka'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="p-4 bg-muted/30 border border-border/80 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-bold text-foreground truncate">
-                                {zipFileName}
-                              </p>
-                            </div>
-                            <a
-                              href={zipDownloadUrl}
-                              download={zipFileName}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex items-center gap-1.5 py-2 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-extrabold rounded-lg transition-all shadow-sm flex-shrink-0 cursor-pointer w-full sm:w-auto justify-center"
-                            >
-                              <Download className="w-4 h-4" /> Download ZIP
-                            </a>
-                          </div>
+                        <div className="space-y-3">
+                          <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
+                            Attached ZIP Manuscript Package
+                          </h3>
+                          <ZipImageViewer
+                            fileUrl={zipDownloadUrl}
+                            assetId={zipAssetId}
+                            initialMode="slider"
+                          />
                         </div>
                       );
                     })()

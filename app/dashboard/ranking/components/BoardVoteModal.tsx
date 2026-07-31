@@ -275,7 +275,7 @@ export default function BoardVoteModal({
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {votesList.map((v: any, idx: number) => {
-                  const isContinue = v.voteValue === true || v.voteType === 'Approved'
+                  const isDiscontinue = v.voteValue === true || v.voteType === 'Approved'
                   const voterName = v.voterName || v.voter?.name || v.voter?.fullName || v.voter?.username || `Editorial Board Member ${idx + 1}`
                   const votedAt = v.createdAt || v.votedAt || v.timestamp
                   const rawComment = (v.comment || v.rationale || '').trim()
@@ -301,11 +301,11 @@ export default function BoardVoteModal({
                             </p>
                           )}
                         </div>
-                        <Badge className={isContinue
+                        <Badge className={!isDiscontinue
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-black text-[9px] px-2.5 py-0.5 rounded-md shrink-0'
                           : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-black text-[9px] px-2.5 py-0.5 rounded-md shrink-0'
                         }>
-                          {isContinue ? 'CONTINUE' : 'DISCONTINUE'}
+                          {isDiscontinue ? 'DISCONTINUE' : 'CONTINUE'}
                         </Badge>
                       </div>
                       {commentText && (
